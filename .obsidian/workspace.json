@@ -1,0 +1,213 @@
+{
+  "main": {
+    "id": "437a06163bbeb2c1",
+    "type": "split",
+    "children": [
+      {
+        "id": "23532be38efba204",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "509fa18ab81ebf8b",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {}
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "9d431fef7cc53048",
+    "type": "split",
+    "children": [
+      {
+        "id": "0fab231748dfcd82",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "b5694eaaf0a61907",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabeticalReverse"
+              }
+            }
+          },
+          {
+            "id": "00d6e096b5065ea1",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "tag:#Dockerfile",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              }
+            }
+          },
+          {
+            "id": "9453974d9aabe36b",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {}
+            }
+          },
+          {
+            "id": "36709694a5a512a2",
+            "type": "leaf",
+            "state": {
+              "type": "surfing-tab-tree",
+              "state": {}
+            }
+          },
+          {
+            "id": "f6a858050457fcb2",
+            "type": "leaf",
+            "state": {
+              "type": "file-tree-view",
+              "state": {}
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "cebb69594130e6fc",
+    "type": "split",
+    "children": [
+      {
+        "id": "62c3fb14e9924bed",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "338d5286debf44ef",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": true,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": true,
+                "unlinkedCollapsed": false
+              }
+            }
+          },
+          {
+            "id": "65722f4af5ccceee",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": true,
+                "unlinkedCollapsed": true
+              }
+            }
+          },
+          {
+            "id": "e429c86385f89bb4",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true
+              }
+            }
+          },
+          {
+            "id": "b8120e57485b50e2",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {}
+            }
+          },
+          {
+            "id": "b9657fd11db46bbc",
+            "type": "leaf",
+            "state": {
+              "type": "advanced-tables-toolbar",
+              "state": {}
+            }
+          }
+        ],
+        "currentTab": 3
+      }
+    ],
+    "direction": "horizontal",
+    "width": 438.5
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:打开快速切换": false,
+      "graph:查看关系图谱": false,
+      "canvas:新建白板": false,
+      "daily-notes:打开/创建今天的日记": false,
+      "templates:插入模板": false,
+      "command-palette:打开命令面板": false,
+      "workspaces:管理工作区布局": false,
+      "table-editor-obsidian:Advanced Tables Toolbar": false,
+      "obsidian-excalidraw-plugin:新建绘图文件": false,
+      "file-tree-alternative:File Tree Alternative Plugin": false
+    }
+  },
+  "active": "509fa18ab81ebf8b",
+  "lastOpenFiles": [
+    "README.md",
+    "-/README.md",
+    "-",
+    "docker.md",
+    "云原生/图片/可配额可度量 - Control Groups (cgroups).png",
+    "云原生/图片/容器和overlayFS视图.png",
+    "云原生/图片/Docker网络Bridge.jpg",
+    "云原生/图片/Docker网络Underlay.jpg",
+    "云原生/图片/Docker网络Overlay.jpg",
+    "云原生/docker/DockerFile.md",
+    "云原生/docker/docker技术实现/Union FS.md",
+    "云原生/docker",
+    "云原生/docker/docker常用命令",
+    "云原生/docker/docker技术实现",
+    "云原生/docker/docker网络/Null.md",
+    "云原生/docker/docker常用命令/常用命令.md",
+    "云原生/docker/docker技术实现/Cgroups.md",
+    "云原生/docker/docker技术实现/Namespace.md",
+    "云原生/docker/docker网络/Overlay.md",
+    "云原生/docker/docker网络/Bridge.md",
+    "Pasted image 20240203181317.png",
+    "Pasted image 20240203191518.png",
+    "云原生/docker/docker网络/Underlay.md",
+    "云原生/图片/1706958927121.jpg",
+    "云原生/图片/1706958818186.jpg",
+    "云原生/docker/docker网络",
+    "云原生/图片/查看容器网络.jpg",
+    "未命名",
+    "未命名.canvas",
+    "未命名 1.canvas",
+    "云原生/图片",
+    "算法/汇总.md",
+    "云原生",
+    "算法/链表题.md",
+    "2024-01-27.md",
+    "Excalidraw/Drawing 2024-01-27 10.22.23.excalidraw.md",
+    "算法/链表/addtwonumber1.jpg.crdownload",
+    "算法/链表",
+    "链表题‘.md",
+    "算法/位运算.md",
+    "Welc.md"
+  ]
+}
