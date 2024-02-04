@@ -46,18 +46,6 @@
     ],
     "defaultFilterType": "tree"
   },
-  "treeData": [
-    {
-      "id": "4c280a2d9e1a69b9",
-      "parent": 0,
-      "droppable": true,
-      "text": "101/module3/setup-network.md at master · cncamp/101 · GitHub",
-      "data": {
-        "fileType": "site",
-        "fileSize": "",
-        "icon": {}
-      }
-    }
-  ],
+  "treeData": [],
   "enableHtmlPreview": true
 }
