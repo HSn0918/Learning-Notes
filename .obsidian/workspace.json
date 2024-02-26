@@ -4,16 +4,16 @@
     "type": "split",
     "children": [
       {
-        "id": "c4eced381f8c2cf7",
+        "id": "a71b67dab267d79c",
         "type": "tabs",
         "children": [
           {
-            "id": "b571878dff8f3bc6",
+            "id": "3152713b2869b989",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "算法/栈和队列.md",
+                "file": "云原生/docker/docker技术实现/Namespace.md",
                 "mode": "source",
                 "backlinks": true,
                 "source": false
@@ -102,7 +102,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "算法/栈和队列.md",
+                "file": "云原生/docker/docker技术实现/Namespace.md",
                 "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -119,7 +119,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "算法/栈和队列.md",
+                "file": "云原生/docker/docker技术实现/Namespace.md",
                 "linksCollapsed": true,
                 "unlinkedCollapsed": true
               }
@@ -142,7 +142,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "算法/栈和队列.md"
+                "file": "云原生/docker/docker技术实现/Namespace.md"
               }
             }
           },
@@ -172,13 +172,33 @@
       "workspaces:管理工作区布局": false,
       "table-editor-obsidian:Advanced Tables Toolbar": false,
       "obsidian-excalidraw-plugin:新建绘图文件": false,
-      "file-tree-alternative:File Tree Alternative Plugin": false
+      "file-tree-alternative:File Tree Alternative Plugin": false,
+      "markdown-importer:打开 Markdown 格式转换器": false
     }
   },
-  "active": "b571878dff8f3bc6",
+  "active": "3152713b2869b989",
   "lastOpenFiles": [
-    "算法/链表题.md",
+    "云原生/docker/docker技术实现/Cgroup.md",
+    "云原生/docker/docker网络/Underlay.md",
+    "云原生/docker/docker网络/Overlay.md",
+    "云原生/docker/docker网络/Null.md",
+    "云原生/docker/docker网络/Bridge.md",
+    "云原生/kubernetes/Google Borg.md",
+    "云原生/docker/DockerFile.md",
+    "云原生/docker.md",
+    "云原生/kubernetes/etcd.md",
+    "Excalidraw/kubernetes架构.excalidraw.md",
+    "web开发/分布式事务.md",
+    "web开发/图片/传统分布式事务-成功.png",
+    "web开发/图片/传统分布式事务-失败.png",
+    "web开发/图片/DTM分布式事务.png",
+    "README.md",
+    "zsh.md",
+    "web开发/图片",
+    "web开发",
+    "云原生/kubernetes.md",
     "算法/汇总.md",
+    "算法/链表题.md",
     "算法/栈和队列.md",
     "算法/栈和队列/栈实现队列.png",
     "算法/栈和队列/栈实现队列.md",
@@ -186,43 +206,24 @@
     "算法/链表/addtwonumber1.jpg",
     "！栈实现队列.md",
     "算法/栈和队列",
-    "云原生/kubernetes.md",
-    "云原生/docker.md",
     "Excalidraw/Drawing 2024-02-04 22.58.56.excalidraw.md",
-    "Excalidraw/kubernetes架构.excalidraw.md",
-    "云原生/kubernetes/Google Borg.md",
-    "云原生/kubernetes/etcd.md",
     "云原生/图片/Kubernetes架构具体.png",
     "云原生/图片/混合部署（prod负载和non-prod负载）.png",
     "云原生/图片/可配额可度量 - Control Groups (cgroups).png",
     "云原生/图片/容器和overlayFS视图.png",
     "云原生/图片/查看容器网络.jpg",
-    "云原生/图片/控制器协同工作.png",
-    "云原生/图片/容器镜像.png",
-    "云原生/图片/Borg架构.png",
     "Go",
-    "README.md",
-    "云原生/docker/docker技术实现/Cgroup.md",
     "云原生/docker/docker技术实现/Namespace.md",
     "Excalidraw",
     "云原生/docker/docker常用命令/常用命令.md",
     "云原生/kubernetes",
-    "云原生/docker/docker网络/Null.md",
-    "云原生/docker/docker网络/Underlay.md",
-    "云原生/docker/docker网络/Overlay.md",
     "云原生/docker/docker技术实现/Union FS.md",
     "README.md~",
     "-/README.md",
     "-",
-    "云原生/docker/DockerFile.md",
     "云原生/docker",
     "云原生/docker/docker常用命令",
-    "云原生/docker/docker技术实现",
-    "云原生/docker/docker网络/Bridge.md",
-    "云原生/docker/docker网络",
     "未命名.canvas",
-    "未命名 1.canvas",
-    "2024-01-27.md",
-    "Excalidraw/Drawing 2024-01-27 10.22.23.excalidraw.md"
+    "未命名 1.canvas"
   ]
 }
