@@ -4,23 +4,50 @@
     "type": "split",
     "children": [
       {
-        "id": "a71b67dab267d79c",
+        "id": "1ac318aae3490efe",
         "type": "tabs",
         "children": [
           {
-            "id": "3152713b2869b989",
+            "id": "b01636d724d19b65",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "云原生/docker/docker技术实现/Namespace.md",
+                "file": "云原生/docker.md",
+                "mode": "source",
+                "backlinks": true,
+                "source": false
+              }
+            }
+          },
+          {
+            "id": "f20b2b0255c73cdc",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "云原生/docker.md",
+                "mode": "source",
+                "backlinks": true,
+                "source": false
+              }
+            }
+          },
+          {
+            "id": "cdc4a6ec1f731010",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "云原生/docker.md",
                 "mode": "source",
                 "backlinks": true,
                 "source": false
               }
             }
           }
-        ]
+        ],
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -49,7 +76,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "",
+                "query": "tag:#算法",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -102,7 +129,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "云原生/docker/docker技术实现/Namespace.md",
+                "file": "云原生/docker.md",
                 "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -119,7 +146,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "云原生/docker/docker技术实现/Namespace.md",
+                "file": "云原生/docker.md",
                 "linksCollapsed": true,
                 "unlinkedCollapsed": true
               }
@@ -142,7 +169,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "云原生/docker/docker技术实现/Namespace.md"
+                "file": "云原生/docker.md"
               }
             }
           },
@@ -155,7 +182,7 @@
             }
           }
         ],
-        "currentTab": 3
+        "currentTab": 4
       }
     ],
     "direction": "horizontal",
@@ -176,16 +203,26 @@
       "markdown-importer:打开 Markdown 格式转换器": false
     }
   },
-  "active": "3152713b2869b989",
+  "active": "cdc4a6ec1f731010",
   "lastOpenFiles": [
+    "云原生/kubernetes.md",
+    "云原生/图片/容器存储驱动.png",
+    "云原生/docker.md",
+    "云原生/docker/docker技术实现/Namespace.md",
+    "云原生/docker/docker技术实现/Union FS.md",
     "云原生/docker/docker技术实现/Cgroup.md",
-    "云原生/docker/docker网络/Underlay.md",
     "云原生/docker/docker网络/Overlay.md",
+    "云原生/docker/docker网络/Underlay.md",
+    "云原生/图片/容器和overlayFS视图.png",
+    "日记/2024-02-27.md",
+    "日记/2024-02-26.md",
+    "未命名.canvas",
     "云原生/docker/docker网络/Null.md",
+    "未命名.md",
+    "日记",
     "云原生/docker/docker网络/Bridge.md",
     "云原生/kubernetes/Google Borg.md",
     "云原生/docker/DockerFile.md",
-    "云原生/docker.md",
     "云原生/kubernetes/etcd.md",
     "Excalidraw/kubernetes架构.excalidraw.md",
     "web开发/分布式事务.md",
@@ -196,7 +233,6 @@
     "zsh.md",
     "web开发/图片",
     "web开发",
-    "云原生/kubernetes.md",
     "算法/汇总.md",
     "算法/链表题.md",
     "算法/栈和队列.md",
@@ -206,24 +242,15 @@
     "算法/链表/addtwonumber1.jpg",
     "！栈实现队列.md",
     "算法/栈和队列",
-    "Excalidraw/Drawing 2024-02-04 22.58.56.excalidraw.md",
     "云原生/图片/Kubernetes架构具体.png",
     "云原生/图片/混合部署（prod负载和non-prod负载）.png",
     "云原生/图片/可配额可度量 - Control Groups (cgroups).png",
-    "云原生/图片/容器和overlayFS视图.png",
-    "云原生/图片/查看容器网络.jpg",
     "Go",
-    "云原生/docker/docker技术实现/Namespace.md",
     "Excalidraw",
-    "云原生/docker/docker常用命令/常用命令.md",
     "云原生/kubernetes",
-    "云原生/docker/docker技术实现/Union FS.md",
     "README.md~",
-    "-/README.md",
     "-",
     "云原生/docker",
-    "云原生/docker/docker常用命令",
-    "未命名.canvas",
     "未命名 1.canvas"
   ]
 }
