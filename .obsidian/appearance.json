@@ -2,5 +2,7 @@
   "accentColor": "",
   "theme": "moonstone",
   "baseFontSize": 18,
-  "cssTheme": "Typora-Vue"
+  "cssTheme": "Typora-Vue",
+  "textFontFamily": "Inter",
+  "monospaceFontFamily": "Inter"
 }
