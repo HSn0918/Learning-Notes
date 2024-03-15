@@ -4,37 +4,23 @@
     "type": "split",
     "children": [
       {
-        "id": "9e1685bcd8c74a53",
+        "id": "ff634b288750d9c7",
         "type": "tabs",
         "children": [
           {
-            "id": "547ec055d9ee1903",
+            "id": "f5afa0dc00551229",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "elashticsearch/elashticsearch.md",
-                "mode": "source",
-                "backlinks": true,
-                "source": false
-              }
-            }
-          },
-          {
-            "id": "d366a0297caa1e8d",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "elashticsearch/elashticsearch.md",
+                "file": "算法/打家劫舍.md",
                 "mode": "source",
                 "backlinks": true,
                 "source": false
               }
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -63,7 +49,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "",
+                "query": "overlay",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -116,7 +102,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "elashticsearch/elashticsearch.md",
+                "file": "算法/打家劫舍.md",
                 "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -133,7 +119,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "elashticsearch/elashticsearch.md",
+                "file": "算法/打家劫舍.md",
                 "linksCollapsed": true,
                 "unlinkedCollapsed": true
               }
@@ -156,7 +142,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "elashticsearch/elashticsearch.md"
+                "file": "算法/打家劫舍.md"
               }
             }
           },
@@ -181,50 +167,51 @@
       "graph:查看关系图谱": false,
       "canvas:新建白板": false,
       "daily-notes:打开/创建今天的日记": false,
-      "templates:插入模板": false,
+      "templates:插入模板": true,
       "command-palette:打开命令面板": false,
-      "workspaces:管理工作区布局": false,
+      "workspaces:管理工作区布局": true,
+      "markdown-importer:打开 Markdown 格式转换器": false,
       "table-editor-obsidian:Advanced Tables Toolbar": false,
       "obsidian-excalidraw-plugin:新建绘图文件": false,
-      "file-tree-alternative:File Tree Alternative Plugin": false,
-      "markdown-importer:打开 Markdown 格式转换器": false
+      "file-tree-alternative:File Tree Alternative Plugin": false
     }
   },
-  "active": "d366a0297caa1e8d",
+  "active": "b5694eaaf0a61907",
   "lastOpenFiles": [
+    "日记/2024-03-15.md",
+    "算法/打家劫舍.md",
+    "算法/DFS.md",
+    "算法/BFS.md",
+    "算法/LCA.md",
+    "算法/异或.md",
+    "算法/随机快速排序.md",
+    "算法/链表题.md",
+    "算法/基数排序.md",
+    "算法/排序总结.md",
+    "算法/同与.md",
+    "算法/堆排序.md",
+    "算法/归并 分治.md",
+    "算法/汇总.md",
+    "日记/2024-03-13.md",
+    "算法/二叉树/未命名.md",
+    "云原生/kubernetes/etcd.md",
+    "云原生/图片/etcd写入数据.png",
+    "云原生/kubernetes.md",
+    "云原生/docker.md",
+    "go/gmp模型.md",
+    "elashticsearch/elashticsearch.md",
+    "日记/每日安排.md",
+    "elashticsearch^.md",
+    "日记/2024-03-11.md",
     "elashticsearch/es+kibana docker.md",
     "go/map底层实现.md",
-    "go/gmp模型.md",
-    "zsh.md",
-    "README.md",
-    "web开发/分布式事务.md",
-    "elashticsearch/elashticsearch.md",
     "云原生/图片/Kubernetes架构具体.png",
     "云原生/图片/Kubernetes 集群.png",
     "elashticsearch/图片/`text`类型.png",
-    "elashticsearch/ES详解 - ES字段类型.md",
-    "云原生/docker/docker常用命令/常用命令.md",
-    "云原生/docker.md",
-    "mysql/mysql索引.md",
-    "mysql/mysql存储引擎.md",
-    "mysql/mysql.md",
     "elashticsearch/图片/es和mysql对比.png",
     "elashticsearch/图片",
-    "日记/2024-03-11.md",
     "elashticsearch",
-    "日记/2024-03-10.md",
-    "日记/2024-03-07.md",
-    "云原生/kubernetes.md",
-    "算法/同与.md",
-    "算法/随机快速排序.md",
-    "算法/异或.md",
-    "未命名.md",
-    "kafka/kafka.md",
     "kafka/图片/kafka消费-订阅模型.png",
-    "kafka/kafka面经.md",
-    "日记/2024-03-05.md",
-    "日记/2024-03-06.md",
-    "算法/BFS.md",
     "未命名.canvas",
     "算法/二叉树",
     "算法/算法设计",
@@ -237,7 +224,6 @@
     "kafka/图片/kafka生产者.png",
     "kafka/图片",
     "kafka",
-    "Pasted image 20240229230251.png",
     "redis/图片",
     "未命名 1.canvas"
   ]

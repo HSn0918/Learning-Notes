@@ -36,3 +36,5 @@ Atomic Compare-and-Swap(CAS)指的是在对key进行赋值的时候,客户端需
 这样的话，key的设置是有前提的，需要知道这个key当前的具体情况才可以对其设置。
 # Raft协议
 [Raft可视化](https://thesecretlivesofdata.com/raft/)
+# 写入数据流程
+![[etcd写入数据.png]]
