@@ -8,43 +8,16 @@
         "type": "tabs",
         "children": [
           {
-            "id": "0b434bae8212bc43",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "云原生/kubernetes/etcd.md",
-                "mode": "source",
-                "backlinks": true,
-                "source": false
-              }
-            }
-          },
-          {
-            "id": "5353e448f19e7465",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "算法/随机快速排序.md",
-                "mode": "source",
-                "backlinks": true,
-                "source": false
-              }
-            }
-          },
-          {
             "id": "33c99ba703fbd142",
             "type": "leaf",
             "state": {
-              "type": "release-notes",
+              "type": "image",
               "state": {
-                "currentVersion": "1.5.11"
+                "file": "云原生/图片/etcd写入数据.png"
               }
             }
           }
-        ],
-        "currentTab": 2
+        ]
       }
     ],
     "direction": "vertical"
@@ -106,8 +79,7 @@
               "state": {}
             }
           }
-        ],
-        "currentTab": 3
+        ]
       }
     ],
     "direction": "horizontal",
@@ -127,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "算法/随机快速排序.md",
+                "file": "云原生/图片/etcd写入数据.png",
                 "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -144,7 +116,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "算法/随机快速排序.md",
+                "file": "云原生/图片/etcd写入数据.png",
                 "linksCollapsed": true,
                 "unlinkedCollapsed": true
               }
@@ -167,7 +139,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "算法/随机快速排序.md"
+                "file": "云原生/图片/etcd写入数据.png"
               }
             }
           },
@@ -203,10 +175,18 @@
   },
   "active": "33c99ba703fbd142",
   "lastOpenFiles": [
+    "云原生/图片/etcd写入数据.png",
+    "云原生/图片/etcd写入数据.png",
+    "云原生/kubernetes/etcd.md",
+    "算法/随机快速排序.md",
+    "算法/同与.md",
+    "算法/LCA.md",
+    "算法/DFS.md",
+    "算法/BFS.md",
+    "云原生/kubernetes/Google Borg.md",
     "算法/链表题.md",
     "算法/排序总结.md",
     "云原生/kubernetes.md",
-    "云原生/kubernetes/etcd.md",
     "云原生/图片/协同器工作原理.png",
     "云原生/docker.md",
     "云原生/docker/DockerFile.md",
@@ -214,14 +194,10 @@
     "云原生/docker/docker技术实现/Namespace.md",
     "云原生/docker/docker技术实现/Cgroup.md",
     "云原生/Excalidraw/kubernetes架构.excalidraw.md",
-    "云原生/kubernetes/Google Borg.md",
-    "算法/随机快速排序.md",
     "算法/堆排序.md",
     "云原生/图片/Kubernetes架构具体.png",
     "云原生/图片/Kubernetes 集群.png",
-    "算法/同与.md",
     "算法/异或.md",
-    "算法/DFS.md",
     "算法/算法设计/LFU.md",
     "云原生/图片/APIServer展开.png",
     "云原生/图片/Borg架构.png",
@@ -230,14 +206,10 @@
     "canal/canal.md",
     "算法/汇总.md",
     "云原生/图片/查看容器网络.jpg",
-    "云原生/图片/etcd写入数据.png",
-    "云原生/图片/Informer的内部机制.png",
     "算法/基数排序.md",
     "算法/打家劫舍.md",
     "日记/2024-03-11.md",
     "日记/2024-03-07.md",
-    "日记/2024-03-04.md",
-    "日记/2024-03-05.md",
     "elashticsearch/图片",
     "elashticsearch",
     "未命名.canvas",

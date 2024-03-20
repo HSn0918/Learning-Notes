@@ -1,8 +1,11 @@
 {
   "accentColor": "",
   "theme": "moonstone",
-  "baseFontSize": 18,
+  "baseFontSize": 20,
   "cssTheme": "Typora-Vue",
-  "textFontFamily": "Inter",
-  "monospaceFontFamily": "Inter"
+  "textFontFamily": "LXGW WenKai Mono GB Screen",
+  "monospaceFontFamily": "Inter",
+  "translucency": false,
+  "baseFontSizeAction": true,
+  "interfaceFontFamily": "LXGW WenKai Mono GB Screen"
 }

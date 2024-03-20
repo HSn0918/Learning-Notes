@@ -38,3 +38,6 @@ Atomic Compare-and-Swap(CAS)指的是在对key进行赋值的时候,客户端需
 [Raft可视化](https://thesecretlivesofdata.com/raft/)
 # 写入数据流程
 ![[etcd写入数据.png]]
+## Watch机制
+etcd v3 的watch机制支持watch某个固定的key，也支持watch一个范围(可以用于模拟目录的结构的watch)，所以 watchGroup 包含两种watcher，一种是 key watchers，数据结构是每个key对应一组watcher，另外一种是 range watchers,数据结构是一个 IntervalTree,方便通过区间查找到对应的watcher。
+同时，每个 WatchableStore 包含两种 watcherGroup,-种是synced，一种是unsynced前者表示该group的watcher数据都已经同步完毕，在等待新的变更，后者表示该group的watcher数据同步落后于当前最新变更，还在追赶当 etcd 收到客户端的watch请求,如果请求携带了revision参数，则比较请求的revision和store当前的revision，如果大于当前revision，则放入synced组中，否则放入unsynced组。同时 etcd 会启动一个后台的goroutine持续同步unsynced的watcher，然后将其迁移到synced组也就是这种机制下，etcd v3 支持从任意版本开始watch，没有v2的1000条历史event表限制的问题(当然这是指没有compact的情况下)
