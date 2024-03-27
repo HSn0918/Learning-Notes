@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "算法/归并 分治.md",
+                "file": "算法/回溯.md",
                 "mode": "source",
                 "backlinks": true,
                 "source": false
@@ -103,7 +103,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "算法/归并 分治.md",
+                "file": "算法/回溯.md",
                 "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -120,7 +120,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "算法/归并 分治.md",
+                "file": "算法/回溯.md",
                 "linksCollapsed": true,
                 "unlinkedCollapsed": true
               }
@@ -143,7 +143,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "算法/归并 分治.md"
+                "file": "算法/回溯.md"
               }
             }
           },
@@ -179,25 +179,30 @@
   },
   "active": "33c99ba703fbd142",
   "lastOpenFiles": [
+    "云原生/docker.md",
+    "算法/回溯.md",
+    "云原生/docker/docker网络/Underlay.md",
+    "云原生/docker/docker网络/Overlay.md",
+    "云原生/docker/docker网络/Null.md",
+    "云原生/docker/docker网络/Bridge.md",
+    "算法/归并 分治.md",
+    "算法/汇总.md",
+    "算法/链表题.md",
+    "算法/异或.md",
+    "算法/同与.md",
+    "算法/随机快速排序.md",
+    "算法/排序总结.md",
     "算法/LCA.md",
     "mysql/mysql存储引擎.md",
     "mysql/mysql索引.md",
-    "算法/随机快速排序.md",
-    "算法/同与.md",
-    "算法/异或.md",
     "算法/BFS.md",
     "算法/DFS.md",
     "博客/lesson1.md",
     "博客/tiny-redis.md",
     "go/COW.md",
     "博客",
-    "算法/排序总结.md",
-    "算法/链表题.md",
     "算法/基数排序.md",
-    "云原生/docker.md",
-    "云原生/docker/docker网络/Underlay.md",
     "云原生/docker/DockerFile.md",
-    "云原生/docker/docker网络/Bridge.md",
     "云原生/图片/Docker网络Underlay.jpg",
     "云原生/图片/Docker网络Overlay.jpg",
     "云原生/图片/Docker网络Bridge.jpg",
@@ -206,16 +211,11 @@
     "云原生/kubernetes.md",
     "Pasted image 20240321154012.png",
     "云原生/kubernetes/Google Borg.md",
-    "云原生/kubernetes/etcd.md",
     "云原生/图片/etcd备份.png",
     "云原生/图片/etcd日志.png",
     "云原生/图片/etcdstorage最佳实践.png",
     "云原生/图片/etcd磁盘io.png",
     "云原生/图片/etcd数据中心.png",
-    "云原生/docker/docker技术实现/Union FS.md",
-    "云原生/docker/docker技术实现/Namespace.md",
-    "云原生/docker/docker技术实现/Cgroup.md",
-    "云原生/Excalidraw/kubernetes架构.excalidraw.md",
     "elashticsearch/图片",
     "elashticsearch",
     "未命名.canvas",
