@@ -8,46 +8,19 @@
         "type": "tabs",
         "children": [
           {
-            "id": "33c99ba703fbd142",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "日记/2024-04-02.md",
-                "mode": "source",
-                "backlinks": true,
-                "source": false
-              }
-            }
-          },
-          {
-            "id": "f2bcd16b285d097a",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "算法/前缀和.md",
-                "mode": "source",
-                "backlinks": true,
-                "source": false
-              }
-            }
-          },
-          {
             "id": "cd21db3bebe6e050",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "算法/随机快速排序.md",
+                "file": "go/map底层实现.md",
                 "mode": "source",
                 "backlinks": true,
                 "source": false
               }
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -129,7 +102,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "算法/前缀和.md",
+                "file": "go/map底层实现.md",
                 "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -146,7 +119,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "算法/前缀和.md",
+                "file": "go/map底层实现.md",
                 "linksCollapsed": true,
                 "unlinkedCollapsed": true
               }
@@ -169,7 +142,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "算法/前缀和.md"
+                "file": "go/map底层实现.md"
               }
             }
           },
@@ -205,23 +178,32 @@
   },
   "active": "b5694eaaf0a61907",
   "lastOpenFiles": [
+    "go/图片/mapkey定位.png",
+    "go/图片/bmap.png",
+    "go/图片/map.png",
+    "go/gmp模型.md",
+    "算法/随机快速排序.md",
+    "云原生/图片/Kubernetes架构具体.png",
+    "云原生/图片/etcd安全性.png",
+    "云原生/图片/Docker网络Underlay.jpg",
+    "云原生/图片/Docker网络Bridge.jpg",
+    "云原生/图片/Docker网络Overlay.jpg",
+    "云原生/图片/etcd数据中心.png",
+    "云原生/图片/etcd与apiserve通讯.png",
+    "云原生/图片/etcd在k8s中堆叠式.png",
+    "云原生/kubernetes.md",
+    "canal/canal.md",
+    "日记/2024-04-02.md",
     "README.md",
     "博客/tiny-redis.md",
     "博客/lesson1.md",
-    "go/gmp模型.md",
     "go/gc.md",
     "go/COW.md",
     "go/map底层实现.md",
-    "go/图片/gmp流程.png",
-    "go/图片/three_color.gif",
-    "go/图片/gc过程.png",
     "go/图片",
     "日记/2024-03-15.md",
-    "日记/2024-04-02.md",
     "算法/排序总结.md",
-    "算法/随机快速排序.md",
     "算法/同与.md",
-    "云原生/kubernetes.md",
     "算法/归并 分治.md",
     "算法/二分查找.md",
     "算法/堆排序.md",
@@ -233,16 +215,7 @@
     "算法/打家劫舍.md",
     "云原生/docker.md",
     "云原生/docker/docker网络/Underlay.md",
-    "云原生/docker/docker网络/Overlay.md",
-    "云原生/docker/docker网络/Null.md",
     "博客",
-    "云原生/图片/Docker网络Underlay.jpg",
-    "云原生/图片/Docker网络Overlay.jpg",
-    "云原生/图片/Docker网络Bridge.jpg",
-    "云原生/图片/APISever控制平面细节.png",
-    "Pasted image 20240321154012.png",
-    "云原生/图片/etcd备份.png",
-    "云原生/图片/etcd日志.png",
     "elashticsearch/图片",
     "elashticsearch",
     "未命名.canvas",
