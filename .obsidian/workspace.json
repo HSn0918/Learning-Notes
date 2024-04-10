@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "go/map底层实现.md",
+                "file": "云原生/kubernetes/etcd.md",
                 "mode": "source",
                 "backlinks": true,
                 "source": false
@@ -102,7 +102,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "go/map底层实现.md",
+                "file": "云原生/kubernetes/etcd.md",
                 "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -119,7 +119,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "go/map底层实现.md",
+                "file": "云原生/kubernetes/etcd.md",
                 "linksCollapsed": true,
                 "unlinkedCollapsed": true
               }
@@ -142,7 +142,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "go/map底层实现.md"
+                "file": "云原生/kubernetes/etcd.md"
               }
             }
           },
@@ -176,30 +176,35 @@
       "file-tree-alternative:File Tree Alternative Plugin": false
     }
   },
-  "active": "b5694eaaf0a61907",
+  "active": "cd21db3bebe6e050",
   "lastOpenFiles": [
+    "云原生/kubernetes/APISever.md",
+    "go/map底层实现.md",
+    "go/图片/gmp流程.png",
     "go/图片/mapkey定位.png",
+    "go/图片/three_color.gif",
     "go/图片/bmap.png",
-    "go/图片/map.png",
+    "go/图片/gc过程.png",
+    "go/图片/对象以及波面之间的关系.png",
+    "go/gc.md",
     "go/gmp模型.md",
+    "博客/tiny-redis.md",
+    "mysql/mysql.md",
+    "mysql/mysql存储引擎.md",
+    "mysql/mysql索引.md",
+    "kafka/kafka.md",
+    "kafka/kafka面经.md",
+    "kafka/图片/kafka生产者.png",
+    "kafka/图片/kafka消费-订阅模型.png",
+    "go/图片/gc状态.png",
+    "go/COW.md",
+    "go/图片/map.png",
     "算法/随机快速排序.md",
-    "云原生/图片/Kubernetes架构具体.png",
-    "云原生/图片/etcd安全性.png",
-    "云原生/图片/Docker网络Underlay.jpg",
-    "云原生/图片/Docker网络Bridge.jpg",
-    "云原生/图片/Docker网络Overlay.jpg",
-    "云原生/图片/etcd数据中心.png",
-    "云原生/图片/etcd与apiserve通讯.png",
-    "云原生/图片/etcd在k8s中堆叠式.png",
     "云原生/kubernetes.md",
     "canal/canal.md",
     "日记/2024-04-02.md",
     "README.md",
-    "博客/tiny-redis.md",
     "博客/lesson1.md",
-    "go/gc.md",
-    "go/COW.md",
-    "go/map底层实现.md",
     "go/图片",
     "日记/2024-03-15.md",
     "算法/排序总结.md",
@@ -210,11 +215,6 @@
     "算法/回溯.md",
     "算法/链表题.md",
     "算法/基数排序.md",
-    "算法/前缀和.md",
-    "算法/汇总.md",
-    "算法/打家劫舍.md",
-    "云原生/docker.md",
-    "云原生/docker/docker网络/Underlay.md",
     "博客",
     "elashticsearch/图片",
     "elashticsearch",
