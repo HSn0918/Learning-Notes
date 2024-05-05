@@ -19,8 +19,22 @@
                 "source": false
               }
             }
+          },
+          {
+            "id": "e7f4252583d4e133",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "面试/自我介绍.md",
+                "mode": "source",
+                "backlinks": true,
+                "source": false
+              }
+            }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -102,7 +116,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "云原生/kubernetes/etcd.md",
+                "file": "面试/自我介绍.md",
                 "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -119,7 +133,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "云原生/kubernetes/etcd.md",
+                "file": "面试/自我介绍.md",
                 "linksCollapsed": true,
                 "unlinkedCollapsed": true
               }
@@ -142,7 +156,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "云原生/kubernetes/etcd.md"
+                "file": "面试/自我介绍.md"
               }
             }
           },
@@ -176,45 +190,46 @@
       "file-tree-alternative:File Tree Alternative Plugin": false
     }
   },
-  "active": "cd21db3bebe6e050",
+  "active": "e7f4252583d4e133",
   "lastOpenFiles": [
-    "云原生/kubernetes/APISever.md",
-    "go/map底层实现.md",
-    "go/图片/gmp流程.png",
-    "go/图片/mapkey定位.png",
-    "go/图片/three_color.gif",
-    "go/图片/bmap.png",
-    "go/图片/gc过程.png",
-    "go/图片/对象以及波面之间的关系.png",
-    "go/gc.md",
     "go/gmp模型.md",
-    "博客/tiny-redis.md",
-    "mysql/mysql.md",
-    "mysql/mysql存储引擎.md",
-    "mysql/mysql索引.md",
-    "kafka/kafka.md",
-    "kafka/kafka面经.md",
-    "kafka/图片/kafka生产者.png",
-    "kafka/图片/kafka消费-订阅模型.png",
-    "go/图片/gc状态.png",
+    "面试/自我介绍.md",
+    "面试",
     "go/COW.md",
-    "go/图片/map.png",
-    "算法/随机快速排序.md",
-    "云原生/kubernetes.md",
-    "canal/canal.md",
-    "日记/2024-04-02.md",
-    "README.md",
-    "博客/lesson1.md",
-    "go/图片",
-    "日记/2024-03-15.md",
-    "算法/排序总结.md",
-    "算法/同与.md",
-    "算法/归并 分治.md",
-    "算法/二分查找.md",
+    "go/gc.md",
+    "go/图片/对象以及波面之间的关系.png",
+    "go/图片/bmap.png",
+    "go/图片/gmp流程.png",
+    "go/图片/gc状态.png",
+    "go/图片/gc过程.png",
+    "算法/BFS.md",
+    "算法/前缀和.md",
+    "算法/打家劫舍.md",
     "算法/堆排序.md",
+    "算法/二分查找.md",
+    "算法/归并 分治.md",
+    "算法/滑动窗口.md",
     "算法/回溯.md",
+    "算法/算法设计/LRU.md",
+    "算法/算法设计/LFU.md",
+    "算法/LCA.md",
+    "算法/DFS.md",
     "算法/链表题.md",
     "算法/基数排序.md",
+    "算法/差分数组.md",
+    "算法/排序总结.md",
+    "算法/随机快速排序.md",
+    "算法/汇总.md",
+    "算法/异或.md",
+    "算法/同与.md",
+    "云原生/kubernetes.md",
+    "云原生/kubernetes/Google Borg.md",
+    "云原生/图片/etcd写入数据.png",
+    "go/图片/mapkey定位.png",
+    "go/图片/three_color.gif",
+    "kafka/图片/kafka生产者.png",
+    "kafka/图片/kafka消费-订阅模型.png",
+    "go/图片",
     "博客",
     "elashticsearch/图片",
     "elashticsearch",
@@ -224,7 +239,6 @@
     "canal/图片",
     "canal",
     "go",
-    "kafka/图片",
     "未命名 1.canvas"
   ]
 }
