@@ -26,7 +26,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "面试/自我介绍.md",
+                "file": "算法/单调栈.md",
                 "mode": "source",
                 "backlinks": true,
                 "source": false
@@ -96,7 +96,8 @@
               "state": {}
             }
           }
-        ]
+        ],
+        "currentTab": 3
       }
     ],
     "direction": "horizontal",
@@ -116,7 +117,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "面试/自我介绍.md",
+                "file": "算法/单调栈.md",
                 "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -133,7 +134,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "面试/自我介绍.md",
+                "file": "算法/单调栈.md",
                 "linksCollapsed": true,
                 "unlinkedCollapsed": true
               }
@@ -156,7 +157,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "面试/自我介绍.md"
+                "file": "算法/单调栈.md"
               }
             }
           },
@@ -192,8 +193,27 @@
   },
   "active": "e7f4252583d4e133",
   "lastOpenFiles": [
-    "go/gmp模型.md",
+    "kafka/图片/kafka生产者.png",
+    "算法/单调栈.md",
+    "kafka/图片/kafka消费-订阅模型.png",
     "面试/自我介绍.md",
+    "算法/LCA.md",
+    "算法/DFS.md",
+    "算法/BFS.md",
+    "算法/同与.md",
+    "算法/随机快速排序.md",
+    "算法/前缀和.md",
+    "算法/排序总结.md",
+    "算法/基数排序.md",
+    "算法/二分查找.md",
+    "算法/打家劫舍.md",
+    "go/gmp模型.md",
+    "go/map底层实现.md",
+    "日记/每日安排.md",
+    "日记/2024-04-02.md",
+    "elashticsearch/elashticsearch.md",
+    "elashticsearch/es+kibana docker.md",
+    "算法/堆排序.md",
     "面试",
     "go/COW.md",
     "go/gc.md",
@@ -202,33 +222,13 @@
     "go/图片/gmp流程.png",
     "go/图片/gc状态.png",
     "go/图片/gc过程.png",
-    "算法/BFS.md",
-    "算法/前缀和.md",
-    "算法/打家劫舍.md",
-    "算法/堆排序.md",
-    "算法/二分查找.md",
     "算法/归并 分治.md",
     "算法/滑动窗口.md",
     "算法/回溯.md",
     "算法/算法设计/LRU.md",
-    "算法/算法设计/LFU.md",
-    "算法/LCA.md",
-    "算法/DFS.md",
-    "算法/链表题.md",
-    "算法/基数排序.md",
-    "算法/差分数组.md",
-    "算法/排序总结.md",
-    "算法/随机快速排序.md",
-    "算法/汇总.md",
-    "算法/异或.md",
-    "算法/同与.md",
-    "云原生/kubernetes.md",
-    "云原生/kubernetes/Google Borg.md",
     "云原生/图片/etcd写入数据.png",
     "go/图片/mapkey定位.png",
     "go/图片/three_color.gif",
-    "kafka/图片/kafka生产者.png",
-    "kafka/图片/kafka消费-订阅模型.png",
     "go/图片",
     "博客",
     "elashticsearch/图片",
