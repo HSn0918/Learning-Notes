@@ -26,7 +26,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "算法/单调栈.md",
+                "file": "云原生/docker.md",
                 "mode": "source",
                 "backlinks": true,
                 "source": false
@@ -96,8 +96,7 @@
               "state": {}
             }
           }
-        ],
-        "currentTab": 3
+        ]
       }
     ],
     "direction": "horizontal",
@@ -117,7 +116,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "算法/单调栈.md",
+                "file": "云原生/docker.md",
                 "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -134,7 +133,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "算法/单调栈.md",
+                "file": "云原生/docker.md",
                 "linksCollapsed": true,
                 "unlinkedCollapsed": true
               }
@@ -157,7 +156,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "算法/单调栈.md"
+                "file": "云原生/docker.md"
               }
             }
           },
@@ -193,16 +192,23 @@
   },
   "active": "e7f4252583d4e133",
   "lastOpenFiles": [
-    "kafka/图片/kafka生产者.png",
-    "算法/单调栈.md",
-    "kafka/图片/kafka消费-订阅模型.png",
+    "云原生/kubernetes.md",
+    "云原生/docker.md",
+    "云原生/etcd.md",
+    "云原生/kubernetes/Google Borg.md",
+    "云原生/kubernetes/APISever.md",
+    "算法/前缀和.md",
+    "算法/图片/二维前缀和.png",
     "面试/自我介绍.md",
+    "算法/图片",
+    "算法/单调栈.md",
+    "kafka/图片/kafka生产者.png",
+    "kafka/图片/kafka消费-订阅模型.png",
     "算法/LCA.md",
     "算法/DFS.md",
     "算法/BFS.md",
     "算法/同与.md",
     "算法/随机快速排序.md",
-    "算法/前缀和.md",
     "算法/排序总结.md",
     "算法/基数排序.md",
     "算法/二分查找.md",
@@ -222,13 +228,8 @@
     "go/图片/gmp流程.png",
     "go/图片/gc状态.png",
     "go/图片/gc过程.png",
-    "算法/归并 分治.md",
-    "算法/滑动窗口.md",
-    "算法/回溯.md",
-    "算法/算法设计/LRU.md",
     "云原生/图片/etcd写入数据.png",
     "go/图片/mapkey定位.png",
-    "go/图片/three_color.gif",
     "go/图片",
     "博客",
     "elashticsearch/图片",
@@ -238,7 +239,6 @@
     "算法/算法设计",
     "canal/图片",
     "canal",
-    "go",
     "未命名 1.canvas"
   ]
 }
