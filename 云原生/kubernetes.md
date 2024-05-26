@@ -44,7 +44,6 @@ Kube-APIServer是Kubernetes 最重要的核心组件之一，主要提供以下�
 - 作用是确保 Kubernetes 遵循声明式系统规范，确保系统的真实状态(Actual State)与用户定义的期望状态(Desired State)一致;
 - Controller Manager 是多个控制器的组合，每个Controler 事实上都是一个 controlloop，负责侦听其管控的对象，当对象发生变更时完成配置;
 - Controller 配置失败通常会触发自动重试，整个集群会在控制器不断重试的机制下确保最终一致性( Eventual Consistency)。
-![[控制器流程.png]]
 ## Informer的内部机制
 ![[Informer的内部机制.png]]
  ## 控制器协同工作
