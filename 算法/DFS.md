@@ -41,3 +41,42 @@ func isValidBST(root *TreeNode) bool {
     return dfs(root)  
 }
 ```
+
+笛卡尔积
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	arrays := [][]string{
+		{"a", "b"},
+		{"1", "2"},
+		{"x", "y"},
+	}
+	result := cartesianProduct(arrays)
+	for _, combo := range result {
+		fmt.Println(combo)
+	}
+}
+
+// cartesianProduct 计算多个字符串数组的笛卡尔积
+func cartesianProduct(arrays [][]string) [][]string {
+	if len(arrays) == 0 {
+		return [][]string{{}}
+	}
+	
+	// 递归地获取后面的笛卡尔积
+	rest := cartesianProduct(arrays[1:])
+	
+	var result [][]string
+	for _, val := range arrays[0] {
+		for _, r := range rest {
+			result = append(result, append([]string{val}, r...))
+		}
+	}
+	return result
+}
+```
