@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "云原生/kubernetes.md",
+                "file": "云原生/kubernetes/kubebuilder.md",
                 "mode": "source",
                 "backlinks": true,
                 "source": false
@@ -82,8 +82,7 @@
               "state": {}
             }
           }
-        ],
-        "currentTab": 3
+        ]
       }
     ],
     "direction": "horizontal",
@@ -103,7 +102,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "云原生/kubernetes.md",
+                "file": "云原生/kubernetes/kubebuilder.md",
                 "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -120,7 +119,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "云原生/kubernetes.md",
+                "file": "云原生/kubernetes/kubebuilder.md",
                 "linksCollapsed": true,
                 "unlinkedCollapsed": true
               }
@@ -143,7 +142,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "云原生/kubernetes.md"
+                "file": "云原生/kubernetes/kubebuilder.md"
               }
             }
           },
@@ -164,26 +163,37 @@
   },
   "left-ribbon": {
     "hiddenItems": {
-      "switcher:打开快速切换": false,
-      "graph:查看关系图谱": false,
-      "canvas:新建白板": false,
-      "daily-notes:打开/创建今天的日记": false,
-      "templates:插入模板": true,
-      "command-palette:打开命令面板": false,
-      "workspaces:管理工作区布局": true,
-      "markdown-importer:打开 Markdown 格式转换器": false,
-      "table-editor-obsidian:Advanced Tables Toolbar": false,
-      "obsidian-excalidraw-plugin:新建绘图文件": false,
-      "file-tree-alternative:File Tree Alternative Plugin": false
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "markdown-importer:Open format converter": false,
+      "workspaces:Manage workspace layouts": false
     }
   },
   "active": "71077dfc081208f5",
   "lastOpenFiles": [
+    "云原生/kubernetes/Velero 的工作原理.md",
+    "云原生/Velero 的工作原理.md",
+    "Velero 的工作原理.md",
+    "云原生/图片/删除关联资源.png",
+    "云原生/图片/Untitled diagram-2024-07-26-021703.png",
+    "云原生/图片/Borg架构.png",
+    "云原生/图片/APIServer展开 1.png",
+    "云原生/kubernetes/kubebuilder.md",
+    "云原生/图片/Pasted image 20240808190532.png",
+    "云原生/图片/自定义controller运行原理.png",
+    "算法/回溯.md",
+    "云原生/kubernetes/etcd.md",
+    "云原生/docker.md",
+    "云原生/etcd.md",
+    "云原生/kubernetes/APISever.md",
+    "云原生/kubernetes.md",
     "云原生/图片/容器存储驱动比较.png",
     "云原生/docker/docker常用命令/常用命令.md",
     "云原生/图片/容器镜像.png",
-    "云原生/kubernetes/etcd.md",
-    "云原生/kubernetes/APISever.md",
     "云原生/docker/DockerFile.md",
     "云原生/docker/docker技术实现/Cgroup.md",
     "八股pdf/计网_网安_操作系统.pdf",
@@ -199,30 +209,17 @@
     "博客/lesson1.md",
     "博客/点赞设计.md",
     "操作系统/调度算法.md",
-    "云原生/kubernetes.md",
     "云原生/图片/容器和overlayFS视图.png",
     "云原生/图片/可配额可度量 - Control Groups (cgroups).png",
-    "云原生/图片/混合部署（prod负载和non-prod负载）.png",
     "算法/排序总结.md",
     "算法/基数排序.md",
-    "算法/回溯.md",
     "算法/堆排序.md",
     "算法/二分查找.md",
     "算法/归并 分治.md",
-    "云原生/图片/etcd写入数据.png",
-    "云原生/图片/etcd数据中心.png",
-    "云原生/图片/etcd磁盘io.png",
-    "云原生/图片/etcd备份.png",
-    "云原生/图片/APIServer展开.png",
     "go/gmp模型.md",
     "go/map底层实现.md",
     "云原生/kubernetes/Google Borg.md",
     "云原生/docker/docker网络/Bridge.md",
-    "云原生/docker/docker网络/Null.md",
-    "云原生/docker/docker网络/Overlay.md",
-    "云原生/docker/docker网络/Underlay.md",
-    "kafka/生产者消息分区.md",
-    "kafka/生产者压缩算法.md",
     "计算机网络",
     "未命名.canvas",
     "未命名 1.canvas"
