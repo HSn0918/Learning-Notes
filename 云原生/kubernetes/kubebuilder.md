@@ -26,7 +26,7 @@
 - **Process Item**：处理任务队列中对象的函数，这些函数通常使用 Indexer 引用或 Listing 包装器来重试与该 key 对应的对象。
 
 ## 自定义控制器运行原理
-![[Pasted image 20240808190532.png]]
+![](自定义控制器运行原理.png)
 
 ```
 Reflector：通过检测Kubernetes API来跟踪资源变化，将变化存入DeltaFIFO队列。
@@ -173,7 +173,7 @@ Controller 的 Reconcile 如下：
 
 - 使用 Annotations 记录当前 Spec 的值
 
-![[Untitled diagram-2024-07-26-021703.png]]
+![[AppService控制器流程.png]]
 ### 删除资源
 
 - **开始删除处理**：表示流程的起始点。
