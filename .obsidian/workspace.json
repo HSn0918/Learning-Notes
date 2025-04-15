@@ -30,15 +30,108 @@
               "state": {
                 "file": "云原生/kubernetes/什么是无头服务（Headless Service）？.md",
                 "mode": "source",
+                "source": false,
                 "backlinks": true,
-                "source": false
+                "backlinkOpts": {
+                  "collapseAll": false,
+                  "extraContext": false,
+                  "sortOrder": "alphabetical",
+                  "showSearch": false,
+                  "searchQuery": "",
+                  "backlinkCollapsed": false,
+                  "unlinkedCollapsed": true
+                }
               },
               "icon": "lucide-file",
               "title": "什么是无头服务（Headless Service）？"
             }
+          },
+          {
+            "id": "93578a3060856c09",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "云原生/docker/docker技术实现/Union FS.md",
+                "mode": "source",
+                "source": false,
+                "backlinks": true,
+                "backlinkOpts": {
+                  "collapseAll": false,
+                  "extraContext": false,
+                  "sortOrder": "alphabetical",
+                  "showSearch": false,
+                  "searchQuery": "",
+                  "backlinkCollapsed": false,
+                  "unlinkedCollapsed": true
+                }
+              },
+              "icon": "lucide-file",
+              "title": "Union FS"
+            }
+          },
+          {
+            "id": "f57a28488a661b5d",
+            "type": "leaf",
+            "state": {
+              "type": "release-notes",
+              "state": {
+                "currentVersion": "1.8.7"
+              },
+              "icon": "lucide-book-up",
+              "title": "Release Notes 1.8.7"
+            }
+          },
+          {
+            "id": "9518661ee28977c1",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "go/gmp模型.md",
+                "mode": "source",
+                "source": false,
+                "backlinks": true,
+                "backlinkOpts": {
+                  "collapseAll": false,
+                  "extraContext": false,
+                  "sortOrder": "alphabetical",
+                  "showSearch": false,
+                  "searchQuery": "",
+                  "backlinkCollapsed": false,
+                  "unlinkedCollapsed": true
+                }
+              },
+              "icon": "lucide-file",
+              "title": "gmp模型"
+            }
+          },
+          {
+            "id": "5054fda98bbe8fba",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "算法/随机快速排序.md",
+                "mode": "preview",
+                "source": false,
+                "backlinks": true,
+                "backlinkOpts": {
+                  "collapseAll": false,
+                  "extraContext": false,
+                  "sortOrder": "alphabetical",
+                  "showSearch": false,
+                  "searchQuery": "",
+                  "backlinkCollapsed": false,
+                  "unlinkedCollapsed": true
+                }
+              },
+              "icon": "lucide-file",
+              "title": "随机快速排序"
+            }
           }
         ],
-        "currentTab": 1
+        "currentTab": 5
       }
     ],
     "direction": "vertical"
@@ -57,10 +150,11 @@
             "state": {
               "type": "file-explorer",
               "state": {
-                "sortOrder": "alphabeticalReverse"
+                "sortOrder": "alphabeticalReverse",
+                "autoReveal": false
               },
               "icon": "lucide-folder-closed",
-              "title": "Files"
+              "title": "文件列表"
             }
           },
           {
@@ -69,7 +163,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "docker网络",
+                "query": "",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -97,7 +191,7 @@
               "type": "file-tree-view",
               "state": {},
               "icon": "lucide-file",
-              "title": "Plugin no longer active"
+              "title": "插件不再活动"
             }
           },
           {
@@ -107,10 +201,31 @@
               "type": "surfing-tab-tree",
               "state": {},
               "icon": "lucide-file",
-              "title": "Plugin no longer active"
+              "title": "插件不再活动"
+            }
+          },
+          {
+            "id": "c56dcb0f12d0686f",
+            "type": "leaf",
+            "state": {
+              "type": "surfing-tab-tree",
+              "state": {},
+              "icon": "chrome",
+              "title": "Surfing Tab Tree"
+            }
+          },
+          {
+            "id": "e1b9761fec9edf61",
+            "type": "leaf",
+            "state": {
+              "type": "file-tree-view",
+              "state": {},
+              "icon": "sheets-in-box",
+              "title": "File Tree"
             }
           }
-        ]
+        ],
+        "currentTab": 6
       }
     ],
     "direction": "horizontal",
@@ -164,10 +279,12 @@
               "type": "tag",
               "state": {
                 "sortOrder": "frequency",
-                "useHierarchy": true
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
               },
               "icon": "lucide-tags",
-              "title": "Tags"
+              "title": "标签"
             }
           },
           {
@@ -176,10 +293,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "云原生/kubernetes/什么是无头服务（Headless Service）？.md"
+                "file": "算法/随机快速排序.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of 什么是无头服务（Headless Service）？"
+              "title": "随机快速排序 的大纲"
             }
           },
           {
@@ -189,56 +309,61 @@
               "type": "advanced-tables-toolbar",
               "state": {},
               "icon": "lucide-file",
-              "title": "Plugin no longer active"
+              "title": "插件不再活动"
             }
           }
         ],
-        "currentTab": 3
+        "currentTab": 2
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 200,
+    "collapsed": true
   },
   "left-ribbon": {
     "hiddenItems": {
-      "switcher:Open quick switcher": false,
-      "graph:Open graph view": false,
-      "canvas:Create new canvas": false,
-      "daily-notes:Open today's daily note": false,
-      "templates:Insert template": false,
-      "command-palette:Open command palette": false,
-      "markdown-importer:Open format converter": false,
-      "workspaces:Manage workspace layouts": false
+      "switcher:打开快速切换": false,
+      "graph:查看关系图谱": false,
+      "canvas:新建白板": false,
+      "daily-notes:打开/创建今天的日记": false,
+      "templates:插入模板": false,
+      "command-palette:打开命令面板": false,
+      "markdown-importer:打开 Markdown 格式转换器": false,
+      "workspaces:管理工作区布局": false,
+      "table-editor-obsidian:Advanced Tables Toolbar": false,
+      "obsidian-excalidraw-plugin:新建绘图文件": false,
+      "file-tree-alternative:File Tree Alternative Plugin": false
     }
   },
-  "active": "b5694eaaf0a61907",
+  "active": "5054fda98bbe8fba",
   "lastOpenFiles": [
+    "云原生/kubernetes/informer机制.md",
     "云原生/kubernetes/k8s 的 RESTful API 是怎么设计的？.md",
-    "云原生/kubernetes/kubernetes RBAC.md",
     "云原生/kubernetes/Kubernetes调度器为什么需要设计assume阶段.md",
-    "云原生/kubernetes/kubebuilder.md",
-    "云原生/kubernetes/Velero 的工作原理.md",
-    "面试/自我介绍.md",
-    "go/context.md",
-    "go/Go P.runnext 是什么？.md",
     "云原生/docker/大镜像文件上传解决方案基于buildah的大镜像文件上传解决方案.md",
-    "云原生/kubernetes/api-resource.md",
-    "云原生/kubernetes/k8s面试题.md",
-    "云原生/kubernetes/什么是无头服务（Headless Service）？.md",
     "云原生/kubernetes.md",
-    "云原生/kubernetes/etcd.md",
-    "云原生/kubernetes/APISever.md",
-    "云原生/kubernetes/Google Borg.md",
-    "博客/技术方案/语雀.md",
-    "算法/同与.md",
-    "算法/前缀和.md",
-    "算法/链表题.md",
-    "算法/回溯.md",
-    "算法/基数排序.md",
-    "算法/归并 分治.md",
-    "算法/排序总结.md",
-    "算法/异或.md",
-    "博客/技术方案/点赞设计.md",
+    "go/map底层实现.md",
+    "go/gc.md",
+    "go/Go P.runnext 是什么？.md",
+    "go/gmp模型.md",
+    "go/COW.md",
+    "go/context.md",
+    "go/图片/gmp流程.png",
+    "云原生/docker/docker技术实现/Union FS.md",
+    "云原生/docker.md",
+    "云原生/etcd.md",
+    "云原生/docker/docker技术实现/Cgroup.md",
+    "云原生/docker/docker技术实现/Namespace.md",
+    "云原生/docker/DockerFile.md",
+    "云原生/docker/docker网络/Bridge.md",
+    "云原生/docker/docker网络/Null.md",
+    "云原生/docker/docker网络/Overlay.md",
+    "云原生/docker/docker网络/Underlay.md",
+    "云原生/docker/docker常用命令/常用命令.md",
+    "算法/堆排序.md",
+    "算法/滑动窗口.md",
+    "算法/打家劫舍.md",
+    "算法/差分数组.md",
     "博客/技术方案",
     "Pasted image 20241022095229.png",
     "博客/图片/点赞设计.png",
@@ -250,7 +375,6 @@
     "云原生/图片/Borg架构.png",
     "云原生/图片/APIServer展开 1.png",
     "云原生/图片/容器存储驱动比较.png",
-    "云原生/图片/容器镜像.png",
     "八股pdf/计网_网安_操作系统.pdf",
     "八股pdf/华为面试，复盘笔试题.pdf",
     "八股pdf/JAVA IO.pdf",
