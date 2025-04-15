@@ -112,7 +112,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "算法/随机快速排序.md",
+                "file": "算法/算法设计/LRU.md",
                 "mode": "preview",
                 "source": false,
                 "backlinks": true,
@@ -127,7 +127,7 @@
                 }
               },
               "icon": "lucide-file",
-              "title": "随机快速排序"
+              "title": "LRU"
             }
           }
         ],
@@ -190,8 +190,8 @@
             "state": {
               "type": "file-tree-view",
               "state": {},
-              "icon": "lucide-file",
-              "title": "插件不再活动"
+              "icon": "sheets-in-box",
+              "title": "File Tree"
             }
           },
           {
@@ -337,6 +337,7 @@
   },
   "active": "5054fda98bbe8fba",
   "lastOpenFiles": [
+    "算法/随机快速排序.md",
     "云原生/kubernetes/informer机制.md",
     "云原生/kubernetes/k8s 的 RESTful API 是怎么设计的？.md",
     "云原生/kubernetes/Kubernetes调度器为什么需要设计assume阶段.md",
@@ -363,7 +364,6 @@
     "算法/堆排序.md",
     "算法/滑动窗口.md",
     "算法/打家劫舍.md",
-    "算法/差分数组.md",
     "博客/技术方案",
     "Pasted image 20241022095229.png",
     "博客/图片/点赞设计.png",
