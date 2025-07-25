@@ -28,7 +28,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "云原生/kubernetes/什么是无头服务（Headless Service）？.md",
+                "file": "算法/LCA.md",
                 "mode": "source",
                 "source": false,
                 "backlinks": true,
@@ -43,16 +43,16 @@
                 }
               },
               "icon": "lucide-file",
-              "title": "什么是无头服务（Headless Service）？"
+              "title": "LCA"
             }
           },
           {
-            "id": "93578a3060856c09",
+            "id": "4388e7698bb06f47",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "云原生/docker/docker技术实现/Union FS.md",
+                "file": "云原生/kubernetes.md",
                 "mode": "source",
                 "source": false,
                 "backlinks": true,
@@ -67,28 +67,16 @@
                 }
               },
               "icon": "lucide-file",
-              "title": "Union FS"
+              "title": "kubernetes"
             }
           },
           {
-            "id": "f57a28488a661b5d",
-            "type": "leaf",
-            "state": {
-              "type": "release-notes",
-              "state": {
-                "currentVersion": "1.8.7"
-              },
-              "icon": "lucide-book-up",
-              "title": "Release Notes 1.8.7"
-            }
-          },
-          {
-            "id": "9518661ee28977c1",
+            "id": "a16841c6251173a9",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "go/gmp模型.md",
+                "file": "操作系统/调度算法.md",
                 "mode": "source",
                 "source": false,
                 "backlinks": true,
@@ -103,35 +91,11 @@
                 }
               },
               "icon": "lucide-file",
-              "title": "gmp模型"
-            }
-          },
-          {
-            "id": "5054fda98bbe8fba",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "算法/算法设计/LRU.md",
-                "mode": "preview",
-                "source": false,
-                "backlinks": true,
-                "backlinkOpts": {
-                  "collapseAll": false,
-                  "extraContext": false,
-                  "sortOrder": "alphabetical",
-                  "showSearch": false,
-                  "searchQuery": "",
-                  "backlinkCollapsed": false,
-                  "unlinkedCollapsed": true
-                }
-              },
-              "icon": "lucide-file",
-              "title": "LRU"
+              "title": "调度算法"
             }
           }
         ],
-        "currentTab": 5
+        "currentTab": 3
       }
     ],
     "direction": "vertical"
@@ -163,7 +127,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "",
+                "query": "docker网络",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -205,7 +169,7 @@
             }
           },
           {
-            "id": "c56dcb0f12d0686f",
+            "id": "d76c726efc1654c7",
             "type": "leaf",
             "state": {
               "type": "surfing-tab-tree",
@@ -215,7 +179,7 @@
             }
           },
           {
-            "id": "e1b9761fec9edf61",
+            "id": "781a8f6b96a6d076",
             "type": "leaf",
             "state": {
               "type": "file-tree-view",
@@ -245,9 +209,9 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "博客/技术方案/语雀.md",
+                "file": "云原生/kubernetes/k8s面试题.md",
                 "collapseAll": true,
-                "extraContext": false,
+                "extraContext": true,
                 "sortOrder": "alphabetical",
                 "showSearch": false,
                 "searchQuery": "",
@@ -255,7 +219,7 @@
                 "unlinkedCollapsed": false
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for 语雀"
+              "title": "k8s面试题 的反向链接列表"
             }
           },
           {
@@ -279,12 +243,10 @@
               "type": "tag",
               "state": {
                 "sortOrder": "frequency",
-                "useHierarchy": true,
-                "showSearch": false,
-                "searchQuery": ""
+                "useHierarchy": true
               },
               "icon": "lucide-tags",
-              "title": "标签"
+              "title": "Tags"
             }
           },
           {
@@ -293,13 +255,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "算法/随机快速排序.md",
+                "file": "算法/排序总结.md",
                 "followCursor": false,
-                "showSearch": false,
+                "showSearch": true,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "随机快速排序 的大纲"
+              "title": "排序总结 的大纲"
             }
           },
           {
@@ -308,16 +270,16 @@
             "state": {
               "type": "advanced-tables-toolbar",
               "state": {},
-              "icon": "lucide-file",
-              "title": "插件不再活动"
+              "icon": "spreadsheet",
+              "title": "Advanced Tables"
             }
           }
         ],
-        "currentTab": 2
+        "currentTab": 3
       }
     ],
     "direction": "horizontal",
-    "width": 200,
+    "width": 504.5,
     "collapsed": true
   },
   "left-ribbon": {
@@ -335,54 +297,54 @@
       "file-tree-alternative:File Tree Alternative Plugin": false
     }
   },
-  "active": "5054fda98bbe8fba",
+  "active": "a16841c6251173a9",
   "lastOpenFiles": [
-    "算法/随机快速排序.md",
-    "云原生/kubernetes/informer机制.md",
-    "云原生/kubernetes/k8s 的 RESTful API 是怎么设计的？.md",
-    "云原生/kubernetes/Kubernetes调度器为什么需要设计assume阶段.md",
-    "云原生/docker/大镜像文件上传解决方案基于buildah的大镜像文件上传解决方案.md",
-    "云原生/kubernetes.md",
-    "go/map底层实现.md",
-    "go/gc.md",
-    "go/Go P.runnext 是什么？.md",
-    "go/gmp模型.md",
-    "go/COW.md",
-    "go/context.md",
-    "go/图片/gmp流程.png",
-    "云原生/docker/docker技术实现/Union FS.md",
-    "云原生/docker.md",
-    "云原生/etcd.md",
-    "云原生/docker/docker技术实现/Cgroup.md",
-    "云原生/docker/docker技术实现/Namespace.md",
-    "云原生/docker/DockerFile.md",
+    "面试准备/自我介绍.md",
+    "算法/排序总结.md",
     "云原生/docker/docker网络/Bridge.md",
-    "云原生/docker/docker网络/Null.md",
-    "云原生/docker/docker网络/Overlay.md",
-    "云原生/docker/docker网络/Underlay.md",
-    "云原生/docker/docker常用命令/常用命令.md",
-    "算法/堆排序.md",
-    "算法/滑动窗口.md",
-    "算法/打家劫舍.md",
-    "博客/技术方案",
-    "Pasted image 20241022095229.png",
-    "博客/图片/点赞设计.png",
-    "博客/图片",
-    "云原生/图片/自定义控制器运行原理.png",
-    "云原生/图片/自定义controller运行原理.png",
-    "云原生/图片/AppService控制器流程.png",
-    "云原生/图片/删除关联资源.png",
-    "云原生/图片/Borg架构.png",
-    "云原生/图片/APIServer展开 1.png",
-    "云原生/图片/容器存储驱动比较.png",
-    "八股pdf/计网_网安_操作系统.pdf",
+    "日记/2024-02-29.md",
+    "kafka/kafka面经.md",
+    "web开发/分布式事务.md",
+    "web开发/图片/2PC.pdf",
+    "web开发/图片/传统分布式事务-成功.png",
+    "web开发/图片/传统分布式事务-失败.png",
+    "web开发/图片/DTM分布式事务.png",
+    "面试准备/面试重点.md",
+    "面试准备/go.md",
+    "面试准备/informer.md",
+    "云原生/kubernetes/k8s面试题.md",
+    "云原生/kubernetes.md",
+    "go/图片/gc过程.png",
+    "go/图片/gc状态.png",
+    "go/图片/mapkey定位.png",
+    "go/图片/three_color.gif",
+    "go/图片/bmap.png",
+    "go/图片/map.png",
+    "go/图片/gmp流程.png",
+    "mysql/mysql索引.md",
+    "mysql/mysql.md",
+    "mysql/mysql存储引擎.md",
     "八股pdf/华为面试，复盘笔试题.pdf",
-    "八股pdf/JAVA IO.pdf",
+    "八股pdf/计网_网安_操作系统.pdf",
     "八股pdf/Java并发-基础.pdf",
+    "八股pdf/Java基础和集合.pdf",
+    "八股pdf/Kafka和RabbitMQ.pdf",
+    "八股pdf/MySQL基础与锁.pdf",
     "八股pdf/MySQL事务与日志.pdf",
     "八股pdf/Mysql索引和性能调优.pdf",
-    "八股pdf/Raft论文剖析.pdf",
-    "八股pdf/Redis八股.pdf",
+    "Excalidraw/Drawing 2025-05-05 13.25.47.excalidraw.md",
+    "操作系统/调度算法.md",
+    "Excalidraw",
+    "云原生/docker.md",
+    "云原生/docker/docker技术实现/Cgroup.md",
+    "云原生/docker/DockerFile.md",
+    "云原生/docker/docker常用命令/常用命令.md",
+    "云原生/docker/docker技术实现/Union FS.md",
+    "云原生/docker/docker网络/Underlay.md",
+    "云原生/docker/docker网络/Overlay.md",
+    "云原生/docker/docker网络/Null.md",
+    "云原生/docker/docker技术实现/Namespace.md",
+    "面试准备/自我介绍~.md",
     "未命名.canvas",
     "未命名 1.canvas"
   ]

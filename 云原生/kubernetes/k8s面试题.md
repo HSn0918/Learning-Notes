@@ -650,7 +650,7 @@ kube-proxy运行在node节点上，在Node节点上实现Pod网络代理，维�
 
 **无头service使用场景：**
 
-无头service一般用于有状态的应用场景，如Kaka集群、Redis集群等，这类pod之间需要相互通信相互组成集群，不在需要所谓的service负载均衡。
+无头service一般用于有状态的应用场景，如Kafka集群、Redis集群等，这类pod之间需要相互通信相互组成集群，不在需要所谓的service负载均衡。
 
 ## deployment怎么扩容或缩容？
 
@@ -1199,7 +1199,6 @@ kubernetes原生的，一个Service的ServiceType决定了其发布服务的方�
 
 7）集群监控与Leader精选：通过etcd来进行监控实现起来非常简单并且实时性强；
 
-注：本文以 PDF 持续更新，最新尼恩 架构笔记、面试题 的PDF文件，请从下面的链接获取：[码云](https://gitee.com/crazymaker/SimpleCrayIM/blob/master/%E7%96%AF%E7%8B%82%E5%88%9B%E5%AE%A2%E5%9C%88%E6%80%BB%E7%9B%AE%E5%BD%95.md) 或者 [语雀](https://www.yuque.com/crazymakercircle/gkkw8s/khigna)
 
 ## 简述Kubernetes RC的机制?
 

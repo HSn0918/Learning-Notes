@@ -77,6 +77,3 @@ Kubernetes 内建了 **DNS 服务**，使得集群中的服务能够自动发�
     - DNS 解析到每个 Pod 的 IP 地址，客户端可以直接访问特定的 Pod。
         - 例子：`pod-0.servicename.namespcae.svc.cluster.local` 会解析为 Pod 0 的 IP 地址，客户端可以直接访问该 Pod。
 
-0
-
-采纳
