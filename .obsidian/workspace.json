@@ -74,24 +74,12 @@
             "id": "a16841c6251173a9",
             "type": "leaf",
             "state": {
-              "type": "markdown",
+              "type": "image",
               "state": {
-                "file": "操作系统/调度算法.md",
-                "mode": "source",
-                "source": false,
-                "backlinks": true,
-                "backlinkOpts": {
-                  "collapseAll": false,
-                  "extraContext": false,
-                  "sortOrder": "alphabetical",
-                  "showSearch": false,
-                  "searchQuery": "",
-                  "backlinkCollapsed": false,
-                  "unlinkedCollapsed": true
-                }
+                "file": "ai/图片/prefill&decode.webp"
               },
-              "icon": "lucide-file",
-              "title": "调度算法"
+              "icon": "lucide-image",
+              "title": "prefill&decode"
             }
           }
         ],
@@ -188,8 +176,7 @@
               "title": "File Tree"
             }
           }
-        ],
-        "currentTab": 6
+        ]
       }
     ],
     "direction": "horizontal",
@@ -299,6 +286,20 @@
   },
   "active": "a16841c6251173a9",
   "lastOpenFiles": [
+    "ai/大模型 prefill 一些缓存未击中原因.md",
+    "ai/大模型推理全流程.md",
+    "云原生/kubernetes.md",
+    "云原生/kubernetes/Google Borg.md",
+    "go/gc.md",
+    "elashticsearch/ES详解 - ES字段类型.md",
+    "ai/图片/prefill&decode.webp",
+    "go/gmp模型.md",
+    "go/Go P.runnext 是什么？.md",
+    "go/map底层实现.md",
+    "elashticsearch/elashticsearch.md",
+    "elashticsearch/es+kibana docker.md",
+    "Pasted image 20250726000556.png",
+    "操作系统/调度算法.md",
     "面试准备/自我介绍.md",
     "算法/排序总结.md",
     "云原生/docker/docker网络/Bridge.md",
@@ -313,14 +314,11 @@
     "面试准备/go.md",
     "面试准备/informer.md",
     "云原生/kubernetes/k8s面试题.md",
-    "云原生/kubernetes.md",
     "go/图片/gc过程.png",
     "go/图片/gc状态.png",
     "go/图片/mapkey定位.png",
     "go/图片/three_color.gif",
     "go/图片/bmap.png",
-    "go/图片/map.png",
-    "go/图片/gmp流程.png",
     "mysql/mysql索引.md",
     "mysql/mysql.md",
     "mysql/mysql存储引擎.md",
@@ -333,18 +331,7 @@
     "八股pdf/MySQL事务与日志.pdf",
     "八股pdf/Mysql索引和性能调优.pdf",
     "Excalidraw/Drawing 2025-05-05 13.25.47.excalidraw.md",
-    "操作系统/调度算法.md",
     "Excalidraw",
-    "云原生/docker.md",
-    "云原生/docker/docker技术实现/Cgroup.md",
-    "云原生/docker/DockerFile.md",
-    "云原生/docker/docker常用命令/常用命令.md",
-    "云原生/docker/docker技术实现/Union FS.md",
-    "云原生/docker/docker网络/Underlay.md",
-    "云原生/docker/docker网络/Overlay.md",
-    "云原生/docker/docker网络/Null.md",
-    "云原生/docker/docker技术实现/Namespace.md",
-    "面试准备/自我介绍~.md",
     "未命名.canvas",
     "未命名 1.canvas"
   ]
