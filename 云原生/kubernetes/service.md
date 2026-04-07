@@ -1,8 +1,0 @@
-#service 
-
-service就是将多个POD划分到同一个逻辑组中，并统一向外提供服务，POD是通过Label Selector加入到指定的service中。
-Service相当于是一个负载均衡器，用户请求会先到达service，再由service转发到它内部的某个POD上，通过 services.spec.type 字段来指定：
-1. ClusterIP：用于集群内部访问。该类型会为service分配一个IP，集群内部请求先到达service，再由service转发到其内部的某个POD上；
-2. NodePort：用于集群外部访问。该类型会将Service的Port映射到集群的每个Node节点上，然后在集群之外，就能通过Node节点上的映射端口访问到这个Service；
-3. LoadBalancer：用于集群外部访问。该类型是在所有Node节点前又挂了一个负载均衡器，作为集群外部访问的统一入口，外部流量会先到达LoadBalancer，再由它转发到集群的node节点上，通过nodePort再转发给对应的service，最后由service转发到后端Pod中；
-4. ExternalName：创建一个DNS别名（即CNAME）并指向到某个Service Name上，也就是为某个Service Name添加一条CNAME记录，当有请求访问这个CNAME时会自动解析到这个Service Name上；
