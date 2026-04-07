@@ -32,6 +32,7 @@
   - [[kafka-basics]] - 架构设计与核心概念
   - [[kafka-interview]] | [[producer-partition]] | [[producer-compression]]
   - [[zero-message-loss]] | [[cluster-config]]
+- **NATS**：[[nats-basics]] | [[nats-jetstream]]
 - **Canal**：[[canal]] - MySQL Binlog 增量同步
 - **Distributed Transaction**：[[distributed-transaction]] - 2PC、DTM 框架
 

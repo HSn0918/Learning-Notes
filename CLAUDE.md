@@ -57,6 +57,7 @@ database/
 
 middleware/
   kafka/            - 架构、面试题、生产者、零消息丢失、集群配置
+  nats/             - NATS 消息系统、JetStream 持久化
   canal/            - MySQL Binlog 同步
   distributed-transaction/ - 2PC、TCC、Saga、DTM
 
