@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fake-gpu-consumer
+  labels:
+    app: fake-gpu-consumer
+spec:
+  restartPolicy: Never
+  containers:
+    - name: app
+      image: busybox:1.36
+      # 打印所有 env, 重点关注 NVIDIA_VISIBLE_DEVICES / FAKE_GPU_DEVICES,
+      # 它们是 Device Plugin Allocate 返回的 Envs 字段被 kubelet 合并进
+      # CRI CreateContainer 的最终结果.
+      command: ["sh", "-c"]
+      args:
+        - |
+          echo "=== 来自 fake-gpu device plugin 的 envs ==="
+          env | grep -E '^(NVIDIA_|FAKE_)' | sort
+          echo
+          echo "=== 真实 NVIDIA 环境会在这里 mount /dev/nvidiaX, 本 demo 没有真实 runtime, 故 /dev 中无 GPU 设备:"
+          ls /dev | grep -E 'nvidia|fake' || echo "(空, 符合预期)"
+          sleep 3600
+      resources:
+        limits:
+          # Extended Resource 必须 requests == limits, 这是 K8s 的硬性约束.
+          # 请 1 块 fake GPU, DeviceManager 会从 ListAndWatch 上报的 4 块里挑 1 个 UUID,
+          # 调插件 Allocate 拿到 envs, 注入下面 env grep 能看到的那串值.
+          fake-gpu.k8s.io/gpu: 1

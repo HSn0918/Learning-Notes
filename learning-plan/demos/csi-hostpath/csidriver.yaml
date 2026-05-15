@@ -1,0 +1,24 @@
+# CSIDriver 对象：告诉 K8s 这个驱动的"上层行为约定"。
+# 一个 CSI driver 在集群中只需要创建一个 CSIDriver 对象。
+apiVersion: storage.k8s.io/v1
+kind: CSIDriver
+metadata:
+  name: learning-plan.csi.k8s.io      # 必须与 GetPluginInfo 返回的 Name 完全一致
+spec:
+  # attachRequired=false: 跳过 attach 阶段（不创建 VolumeAttachment 对象）。
+  # 本 demo 的 hostPath 卷不需要 attach——卷源就在节点本地，没有远端块设备要 attach。
+  # 远端块存储如 EBS 必须设为 true，让 external-attacher 调 ControllerPublishVolume。
+  attachRequired: false
+
+  # podInfoOnMount=true: 在 NodePublishVolume 请求里塞进 pod.namespace / pod.name / pod.uid，
+  # 这样 driver 可以做"基于 Pod 身份"的逻辑（如审计、租户隔离）。
+  podInfoOnMount: true
+
+  # volumeLifecycleModes: 支持的卷生命周期。
+  # Persistent：通过 PVC → PV 的常规模式（本 demo 主要场景）
+  # Ephemeral：Pod inline volume（spec.volumes[].csi.driver）
+  volumeLifecycleModes:
+    - Persistent
+
+  # fsGroupPolicy=File: 在挂载完成后 kubelet 会对挂载点 chown 到 spec.securityContext.fsGroup
+  fsGroupPolicy: File

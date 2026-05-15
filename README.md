@@ -4,6 +4,14 @@
 
 ---
 
+## Learning Plan
+
+- [[k8s-development-roadmap]] - Kubernetes 开发学习路线图（12 主题 + 阶段计划）
+- **源码导读**（基于本地 `~/github/kubernetes` 源码，含真实行号引用 + 手写简化复现）：[[client-go-source]] | [[controller-runtime-source]] | [[scheduler-framework-source]] | [[kubelet-cri-source]] | [[etcd-source]] | [[csi-source]] | [[gpu-scheduling-source]]
+- **可运行 demo**：[[demo-sample-controller]] | [[demo-kubebuilder-operator]] | [[demo-scheduler-plugin]] | [[demo-device-plugin]] | [[demo-raftexample-walkthrough]] | [[demo-csi-hostpath]] | [[demo-fake-gpu]]
+
+---
+
 ## Cloud Native
 
 - **Docker**

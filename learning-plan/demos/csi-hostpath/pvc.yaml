@@ -1,0 +1,36 @@
+# PVC + Pod 验证用例：用 csi-hostpath StorageClass 申请一个 1Gi 卷，
+# 挂载到 busybox Pod 的 /data，写入文件测试卷工作正常。
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: csi-hostpath-test
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: csi-hostpath
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: csi-hostpath-test
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "csi-hostpath demo works at $(date)" > /data/marker
+          ls -la /data
+          sleep 3600
+      volumeMounts:
+        - name: data
+          mountPath: /data
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: csi-hostpath-test

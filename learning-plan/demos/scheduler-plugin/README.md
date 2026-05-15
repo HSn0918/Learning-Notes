@@ -1,0 +1,182 @@
+# scheduler-plugin demo: NodeLabelScore
+
+一个最小可运行的 **out-of-tree kube-scheduler 自定义插件** 示例。它做的事很简单：
+在原生 kube-scheduler 之上多注册一个 `Score` 扩展点插件 `NodeLabelScore`，
+带 label `learning-plan/preferred=true` 的节点拿满分（`framework.MaxNodeScore`），
+其他节点 0 分，再交给 framework 加权汇总参与最终选节点。
+
+相关笔记：
+- [[scheduler-framework-source]] —— framework 与扩展点源码导读
+- [[scheduler-deep-dive]] —— 调度器整体设计
+- [[k8s-development-roadmap]] —— K8s 开发学习路线
+
+## 目录结构
+
+```
+scheduler-plugin/
+├── main.go                  入口，使用 app.NewSchedulerCommand + app.WithPlugin 注册插件
+├── pkg/
+│   └── nodelabel/
+│       └── nodelabel.go     ScorePlugin 实现（Name / Score / ScoreExtensions / NormalizeScore）
+├── config.yaml              KubeSchedulerConfiguration v1 示例（profile: learning-plan-scheduler）
+├── go.mod                   依赖 k8s.io/kubernetes + 一组 staging replace
+└── README.md                本文档
+```
+
+## 代码要点
+
+### 1. main.go — 用 `app.WithPlugin` 把插件挂进 registry
+
+```go
+command := app.NewSchedulerCommand(
+    app.WithPlugin(nodelabel.Name, nodelabel.New),
+)
+```
+
+`app.NewSchedulerCommand` 返回一个完整的 `*cobra.Command`，命令行参数、leader election、
+配置文件解析、metrics endpoint 等全都和原版 kube-scheduler 一致——我们只是多塞了一个插件工厂。
+
+### 2. nodelabel.go — 实现 `framework.ScorePlugin`
+
+| 方法 | 作用 |
+|------|------|
+| `Name() string` | 返回 `"NodeLabelScore"`，必须与 KubeSchedulerConfiguration 里的 `plugins.score.enabled[].name` 一致 |
+| `Score(ctx, state, pod, nodeName) (int64, *Status)` | 单节点打分。被 framework 跨节点并行调用 |
+| `ScoreExtensions() ScoreExtensions` | 返回 NormalizeScore 扩展；不需要归一化可以 `return nil` |
+| `NormalizeScore(...)` | 把本插件在所有节点上的原始分映射到 `[0, MaxNodeScore]` |
+
+`New` 是 `framework.PluginFactory`，被 `app.WithPlugin` 注册到 out-of-tree registry，
+其签名 `func(ctx, args runtime.Object, handle framework.Handle) (framework.Plugin, error)`。
+通过 `handle.SnapshotSharedLister().NodeInfos().Get(nodeName)` 拿到当前周期的 snapshot 中的
+NodeInfo —— **不要直接读 Informer cache**，否则会与 Filter 阶段看到的状态不一致。
+
+### 3. config.yaml — 把插件注入到一个 profile
+
+```yaml
+profiles:
+  - schedulerName: learning-plan-scheduler
+    plugins:
+      score:
+        enabled:
+          - name: NodeLabelScore
+            weight: 5
+```
+
+业务 Pod 想用这套打分，就在 spec 里指定调度器名：
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hello
+spec:
+  schedulerName: learning-plan-scheduler   # 不写则走 default-scheduler
+  containers:
+    - name: app
+      image: nginx
+```
+
+## 编译说明 —— 为什么 `go build` 不能直接跑通
+
+`k8s.io/kubernetes` 主仓 go.mod 里把所有 staging 子模块（`k8s.io/api`、
+`k8s.io/component-base`、`k8s.io/kube-scheduler` 等）都标成 `v0.0.0` 占位版本，
+社区约定 out-of-tree 用户必须在自己的 go.mod 里通过 `replace` 把它们指向真实版本号
+（或者直接指向源码目录）。
+
+最干净的两种做法：
+
+### 做法 A：fork `scheduler-plugins` 仓
+
+```
+git clone https://github.com/kubernetes-sigs/scheduler-plugins.git
+cd scheduler-plugins
+# 把本目录的 pkg/nodelabel 拷进去
+# 在 cmd/scheduler/main.go 里加一行 app.WithPlugin(nodelabel.Name, nodelabel.New)
+make local-image
+```
+
+`scheduler-plugins` 仓的 go.mod 已经准备好了完整的 staging replace 列表，
+跟着它的版本走是最省心的方案，社区里 Volcano、Coscheduling、CapacityScheduling
+等大家熟知的插件也都是这么打的包。
+
+### 做法 B：手写 replace 列表
+
+在本目录的 `go.mod` 里把注释掉的那一段 `replace (...)` 启用，并把版本号对齐到
+你要跟随的 K8s 版本（例如要构建在 v1.34 之上，全部用 `v0.34.0`）。
+
+```
+go mod tidy
+go build -o scheduler-plugin .
+```
+
+## 部署：作为第二调度器跑起来
+
+把上面编译出的 `scheduler-plugin` 二进制塞进镜像（基础镜像用 `registry.k8s.io/kube-scheduler`
+同款 distroless 即可），然后用 Deployment 部署到 `kube-system`：
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: learning-plan-scheduler
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: learning-plan-scheduler }
+  template:
+    metadata:
+      labels: { app: learning-plan-scheduler }
+    spec:
+      serviceAccountName: learning-plan-scheduler   # 需要绑定调度器 RBAC（参考 default-scheduler）
+      containers:
+        - name: scheduler
+          image: registry.example.com/learning-plan-scheduler:dev
+          command:
+            - /scheduler-plugin
+            - --config=/etc/kubernetes/scheduler-plugin/config.yaml
+            - --leader-elect=true
+            - -v=4
+          volumeMounts:
+            - name: config
+              mountPath: /etc/kubernetes/scheduler-plugin
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: learning-plan-scheduler-config
+```
+
+ConfigMap 直接装上面的 `config.yaml` 即可。注意几点：
+- 必须用**独立的** `leaderElection.resourceName`，否则与 default-scheduler 抢同一把锁。
+- RBAC：把 default-scheduler 的 ClusterRoleBinding 复制一份给新的 ServiceAccount。
+- 业务侧只要在 Pod `spec.schedulerName` 写 `learning-plan-scheduler`，调度走向就切过来了；
+  其他 Pod 仍走 default-scheduler，互不干扰。
+
+## 验证
+
+```bash
+# 给两个节点打不同 label
+kubectl label node node-a learning-plan/preferred=true
+kubectl label node node-b learning-plan/preferred=false
+
+# 跑一个测试 Pod
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nl-test
+spec:
+  schedulerName: learning-plan-scheduler
+  containers:
+    - name: pause
+      image: registry.k8s.io/pause:3.9
+EOF
+
+# 看它最终落在哪个节点
+kubectl get pod nl-test -o wide
+# 期望：在其他打分插件没有明显倾向的情况下，被调度到带 preferred=true 的 node-a。
+```
+
+如果你想验证打分细节，把 scheduler 的 `-v=6` 打开，会在日志里看到每个节点经过
+`NodeLabelScore` 后的 weighted score。

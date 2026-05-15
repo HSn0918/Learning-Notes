@@ -1,0 +1,26 @@
+# StorageClass：触发 dynamic provisioning 的入口。
+# 当 PVC.spec.storageClassName 指向本 SC，且 PVC 还没有 PV 时，
+# external-provisioner sidecar 会调 driver 的 CreateVolume 创建卷。
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: csi-hostpath
+provisioner: learning-plan.csi.k8s.io   # 必须与 CSIDriver.metadata.name 一致
+
+# 回收策略：PVC 删除后是 Retain（保留 PV）还是 Delete（删 PV + 调 DeleteVolume）。
+# Demo 用 Delete 方便清理；生产环境慎用，避免误删数据。
+reclaimPolicy: Delete
+
+# volumeBindingMode=WaitForFirstConsumer:
+# 推迟 PV 创建到 Pod 被调度后，让调度器先选好节点。
+# 对 hostPath 这种"卷源固定在某个节点"的驱动非常重要——否则可能在 node-A 上 provision 出卷，
+# 但 Pod 被调度到 node-B，结果挂载失败。
+volumeBindingMode: WaitForFirstConsumer
+
+# allowVolumeExpansion: 允许 `kubectl edit pvc` 改大容量。
+# 本 demo 没实现 ControllerExpandVolume，设 false。
+allowVolumeExpansion: false
+
+# parameters: 透传给 driver.CreateVolume 的自定义参数。
+# 教学 demo 不需要参数；生产驱动会接受如 zone / replica-count / fsType 之类。
+parameters: {}

@@ -1,6 +1,6 @@
 #kubernetes #csi
 
-相关笔记：[[kubernetes-basics]] | [[cni]] | [[service]] | [[k8s-interview]] | [[ceph-csi]] | [[longhorn]] | [[openebs]] | [[nfs-csi]] | [[cloud-provider-csi]]
+相关笔记：[[kubernetes-basics]] | [[cni]] | [[service]] | [[k8s-interview]] | [[ceph-csi]] | [[longhorn]] | [[openebs]] | [[nfs-csi]] | [[cloud-provider-csi]] | [[csi-source]]
 
 ## CSI 概述
 

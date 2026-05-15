@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fake-device-plugin
+  namespace: kube-system
+  labels:
+    app: fake-device-plugin
+spec:
+  selector:
+    matchLabels:
+      app: fake-device-plugin
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: fake-device-plugin
+    spec:
+      # Device Plugin 必须运行在每个 Node 上, 即使 Node 还没 Ready 也要起。
+      # 因此显式 tolerate 所有 taint。生产环境可以收窄到 GPU 节点 affinity。
+      tolerations:
+        - operator: Exists
+      # 不要被 kubelet 驱逐
+      priorityClassName: system-node-critical
+      hostNetwork: false
+      containers:
+        - name: fake-device-plugin
+          image: learning-notes/fake-device-plugin:latest
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            # 需要写 /var/lib/kubelet/device-plugins/ 下的 unix socket
+            privileged: true
+          args:
+            - "-v=2"
+          volumeMounts:
+            # 这是核心: 把宿主机的 kubelet device-plugins 目录挂进来。
+            # 容器内 main.go 才能既连 kubelet.sock 又创建自己的 sock。
+            - name: device-plugin
+              mountPath: /var/lib/kubelet/device-plugins
+            # 给 Allocate 返回的 Mount.HostPath 准备一个真实目录。
+            - name: fake-devices
+              mountPath: /tmp/fake-devices
+      volumes:
+        - name: device-plugin
+          hostPath:
+            path: /var/lib/kubelet/device-plugins
+            type: Directory
+        - name: fake-devices
+          hostPath:
+            path: /tmp/fake-devices
+            type: DirectoryOrCreate

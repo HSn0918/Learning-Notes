@@ -39,6 +39,9 @@
 
 ## 目录结构
 ```
+learning-plan/      - Kubernetes 开发学习路线图与源码导读
+  demos/            - 7 个可运行 demo：sample-controller / kubebuilder-operator / scheduler-plugin / device-plugin / csi-hostpath / fake-gpu / raftexample-walkthrough
+
 cloud-native/
   docker/           - 容器基础、Dockerfile、网络模式、底层技术（Cgroup/Namespace/UnionFS）
   kubernetes/
