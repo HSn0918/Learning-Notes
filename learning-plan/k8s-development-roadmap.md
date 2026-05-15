@@ -202,6 +202,8 @@ mindmap
 
 **衡量标准**：能解释 Scheduler 与 kubelet 在 GPU 分配中的分工，能解决 kubelet 重启后插件失联的问题（fsnotify 重新注册）。
 
+**进阶 GPU 共享**：原生 Device Plugin 只能整卡分，看 [[hami-learning-path]] —— HAMi（CNCF Sandbox）的 GPU 虚拟化方案，把 device-plugin + scheduler-extender + webhook + LD_PRELOAD 的 libvgpu.so 串起来实现显存/算力级切分。
+
 ### 12. 社区跟进 — 持续输入
 
 - **Kubernetes**：订阅 `kubernetes-sigs` 各 SIG（SIG-Scheduling / SIG-Node / SIG-Storage / SIG-Network）的周会纪要与 KEP（Kubernetes Enhancement Proposal）
