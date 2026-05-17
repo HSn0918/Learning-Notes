@@ -1,0 +1,3 @@
+k8s.io/api v0.33.0/go.mod h1:CTO61ECK/KU7haa3qq8sarQ0biLq2ju405IZAd9zsiM=
+k8s.io/apimachinery v0.33.0/go.mod h1:BHW0YOu7n22fFv/JkYOEfkUYNRN0fj0BlvMFWA7b+SM=
+k8s.io/client-go v0.33.0/go.mod h1:kGkd+l/gNGg8GYWAPr0xF1rRKvVWvzh9vmZAMXtaKOg=

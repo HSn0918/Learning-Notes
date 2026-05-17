@@ -1,6 +1,6 @@
 #kubernetes #gpu #hami #ai-infra #学习计划
 
-相关笔记：[[gpu-scheduling-source]] | [[gpu-scheduling]] | [[scheduler-framework-source]] | [[kubelet-cri-source]] | [[controller-runtime-source]] | [[demo-fake-gpu]] | [[k8s-development-roadmap]]
+相关笔记：[[gpu-scheduling-source]] | [[gpu-scheduling]] | [[scheduler-framework-source]] | [[kubelet-cri-source]] | [[controller-runtime-source]] | [[demo-fake-gpu]] | [[demo-hami-mac]] | [[learn-k8s-via-hami]] | [[k8s-development-roadmap]]
 
 ## 概述
 
@@ -36,6 +36,50 @@ flowchart TB
 | HAMi-core (libvgpu.so) | C/CUDA 库，hook CUDA API 做配额隔离 | 无（新知识） | ★★★★ |
 
 四块组件里，**前三块都对应你已经过过源码的 K8s 机制**，第四块是新知识（CUDA / LD_PRELOAD / NVML）—— 这意味着你不是从零学 HAMi，而是把已有的 K8s 知识落地到一个真实的工业项目上。
+
+## Mac（无 GPU）实操方案
+
+> **TL;DR**：HAMi 4 块组件里有 3 块在 Mac + kind 上能完整跑（webhook / scheduler / device-plugin），只有第 4 块 libvgpu.so 必须真 NVIDIA driver。配套 demo 见 [[demo-hami-mac]]（fake device plugin + LD_PRELOAD env 注入）和 [[../libvgpu-hook-demo/README]]（50 行 C 的 malloc hook 模拟 cuMemAlloc 配额）。把它们都跑一遍 = 80% 的 HAMi 学习量。
+
+### 为什么 kwok 不合适做主力 demo
+
+直觉上，kwok（Kubernetes WithOut Kubelet）是 Mac 无硬件首选 —— 它能虚拟出几百个 Node、几千个 Pod，不烧本机资源。**但它把 kubelet 这一层断掉了**，对 HAMi 是致命的：
+
+| 维度 | kwok | kind + fake device plugin |
+| :--- | :--- | :--- |
+| 模拟节点规模 | ✅ 可造千节点 | ❌ 受本机资源限制 |
+| 真 kubelet | ❌ 无 | ✅ 有 |
+| Device Plugin gRPC 链路 | ❌ 无 kubelet 反向 dial | ✅ 完整跑 |
+| Allocate 注入的 env 在容器里 `echo` 出来 | ❌ Pod 不真跑 | ✅ 能 |
+| HAMi-webhook 改 Pod spec | ✅ 真 APIServer 可以 | ✅ |
+| HAMi-scheduler extender Filter/Bind | ✅ | ✅ |
+| 适合学的内容 | 调度策略压测 | 端到端机制 |
+
+HAMi 的核心机制是 **Allocate 时通过 env 注入 LD_PRELOAD + 配额** —— 这一步必须有真 kubelet + 真 CRI + 真容器进程，kwok 一个都没有。
+
+**结论**：主线用 [[demo-hami-mac]]（kind + fake device plugin + 真 HAMi 控制面）；kwok 留给后面"想看 HAMi-scheduler 在 100 节点下的 spread vs binpack 策略"这类大规模场景（见阶段 4）。
+
+### 每个阶段在 Mac 上能 / 不能验证什么
+
+| 阶段 | Mac 上能验证 | 必须真 GPU |
+| :--- | :--- | :--- |
+| 0 先决条件 | ✅ 全部（概念） | — |
+| 1 跑通最小集群 | ✅ 用 [[demo-hami-mac]] 替代「同卡共享」演示 env 注入 | ❌ 真显存隔离 |
+| 2 架构文档 | ✅ 全部 | — |
+| 3 webhook 源码 | ✅ 全部（可自己起一个 webhook，APIServer 行为完全一致） | — |
+| 4 scheduler extender 源码 | ✅ 主线（kind）+ 可选大规模（kwok） | — |
+| 5 device plugin 源码 | ✅ 全部（[[demo-hami-mac]] 就是这一阶段的"实物对照"） | — |
+| 6 libvgpu hook | ⚠️ 部分：用 [[../libvgpu-hook-demo/README]] 的 malloc hook 验证 LD_PRELOAD 机制；真 hook CUDA API 必须真 GPU | ✅ 真 hook 必须 |
+
+### Mac 用户的推荐学习节奏
+
+如果你只关心 K8s 这一侧（不深入 CUDA C），**做完阶段 1-5 + 阶段 6 的 malloc hook demo 就够了**。剩下阶段 6 的真 CUDA hook 部分等有 GPU 资源时再做：
+
+- vast.ai / RunPod / Lambda：消费卡 1-2 美元/小时，跑 2 小时做 demo 足够
+- 公司 / 学校的 GPU 服务器借 1 个 Pod
+- 阿里云 / 腾讯云 spot 实例：T4 大约 1 元/小时
+
+**配套总结文档**：[[learn-k8s-via-hami]] 把这条学习路径反过来用 —— 以 HAMi 为线索，一步步学透 K8s 的 12 个核心机制（APIServer / Informer / Controller / Webhook / Scheduler / DeviceManager / CRI / LD_PRELOAD）。如果你 K8s 基础还不扎实，先看那一篇。
 
 ## 6 阶段学习路径
 
@@ -76,7 +120,9 @@ gantt
 
 **目标**：先让它跑起来，不求懂。
 
-#### 1.1 准备环境
+> **Mac 无 GPU 用户**：直接跳到下面 **1.4 Mac 替代方案**，跑 [[demo-hami-mac]]。完了再回来读 1.1-1.3 理解真实环境部署，等有 GPU 时再补 1.1-1.3 的实操。
+
+#### 1.1 准备环境（真 GPU 路径）
 
 - 一台带 NVIDIA GPU 的机器（消费卡 RTX 30/40 系列都行，云上租也可）
 - 已装 NVIDIA Driver（`nvidia-smi` 能跑）
@@ -130,6 +176,25 @@ kubectl exec gpu-b -- nvidia-smi
 ```
 
 **产出**：截图保留，记住「同卡共享 + 显存隔离」的实际效果。
+
+#### 1.4 Mac 替代方案（无 GPU）
+
+跑 [[demo-hami-mac]]：
+
+```bash
+cd learning-plan/demos/hami-mac
+go mod tidy && go build ./... && docker build -t learning-notes/hami-mac:latest .
+kind create cluster --name hami-mac
+kind load docker-image learning-notes/hami-mac:latest --name hami-mac
+kubectl apply -f daemonset.yaml
+kubectl describe node | grep nvidia.com/gpu   # 期望: 40
+kubectl apply -f pod-hami-consumer.yaml
+kubectl logs hami-consumer
+```
+
+**期望看到**：`LD_PRELOAD=/usr/local/vgpu/libvgpu.so` + `CUDA_DEVICE_MEMORY_LIMIT_0=3000m` + `CUDA_DEVICE_SM_LIMIT_0=30` 三个 HAMi 标志性 env 出现在容器里。**这等价于阶段 1 的"产出"** —— 你看到了 HAMi 之所以是 HAMi 的核心 contract，只是后端是 fake 的没有真显存隔离。
+
+要看真"同卡共享 + 显存隔离"的实际效果，必须真 GPU（云上租 1 小时也行）。
 
 ---
 
@@ -250,6 +315,60 @@ HAMi 没用 etcd 存 GPU 状态，而是把每个节点的 GPU 占用记录在 *
 
 **产出**：手画 HAMi Filter 的伪代码（不超过 30 行），能跑一遍 dry-run。
 
+#### 4.5 进阶：用 kwok 做百节点级调度策略压测
+
+如果你想看 HAMi-scheduler 的 `spread` vs `binpack` 在不同集群规模下的实际效果，**这是 kwok 唯一合适的用武之地**：
+
+```bash
+# 1) 安装 kwok 控制器, 让 kwok 接管所有打了 type=kwok 的 Node
+helm install kwok kwok/kwok --version 0.5.0 -n kube-system
+
+# 2) 造 100 个虚拟 Node, 每个 capacity nvidia.com/gpu = 40
+for i in $(seq 1 100); do
+  cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Node
+metadata:
+  name: kwok-gpu-$i
+  labels:
+    type: kwok
+    node.kubernetes.io/exclude-from-external-load-balancers: ""
+  annotations:
+    node.alpha.kubernetes.io/ttl: "0"
+spec: {}
+status:
+  capacity:
+    cpu: "32"
+    memory: 64Gi
+    pods: "110"
+    nvidia.com/gpu: "40"
+  allocatable:
+    cpu: "32"
+    memory: 64Gi
+    pods: "110"
+    nvidia.com/gpu: "40"
+  conditions:
+  - type: Ready
+    status: "True"
+EOF
+done
+
+# 3) 部署真 HAMi-scheduler (chart), 让它接管 nvidia.com/gpu 调度
+# 4) 批量 apply 200 个 GPU Pod, 切换 binpack/spread 配置, 观察分布
+```
+
+**能学到什么**：
+- HAMi-scheduler 在 100 节点 + 200 Pod 下的调度延迟（每个 Filter 多少 ms）
+- spread / binpack 策略对节点利用率的实际影响（前者均匀、后者集中）
+- leader election 切换时调度行为
+
+**学不到什么**：
+- ❌ Allocate env 注入（kwok Pod 不真跑容器）
+- ❌ libvgpu 实际生效
+- ❌ webhook 改 Pod 后的下游 kubelet 行为
+
+→ kwok 只测调度面，**不要把它当 HAMi 主线 demo**。学机制还是用 [[demo-hami-mac]] 的 kind 路径。
+
 ---
 
 ### 阶段 5：源码 3 — Device Plugin（3-5 天）
@@ -296,7 +415,7 @@ LD_PRELOAD=/usr/local/vgpu/libvgpu.so         # 关键！容器启动后被 hook
 - 容器里 `nvidia-smi` 看到的"显存上限"是怎么变成 3GB 的？（提示：libvgpu hook 了 nvidia-smi 调的 NVML API）
 - 如果 Pod 不申请 `nvidia.com/gpumem`，会发生什么？（落到默认值或拒绝调度，看具体策略）
 
-**产出**：把 [[demo-fake-gpu]] 改造成"1 卡上报 4 份" + 在 Allocate 里注入 `LD_PRELOAD` env（即使没 libvgpu，看 env 注入工作即可）。
+**产出**：把 [[demo-fake-gpu]] 改造成"1 卡上报 4 份" + 在 Allocate 里注入 `LD_PRELOAD` env（即使没 libvgpu，看 env 注入工作即可）—— 这就是 [[demo-hami-mac]] 做的事，可以直接拿它当参考实现对照自己改的版本。
 
 ---
 
@@ -374,7 +493,7 @@ CUresult cuLaunchKernel(...) {
 - 为什么用 LD_PRELOAD 而不是修改 NVIDIA 驱动？（不可行 —— 驱动闭源）
 - 它对应用层是完全透明的吗？（基本透明，但对自己直接调 NVML 的应用会有差异）
 
-**产出**：手写一段 50 行 C 代码，实现一个简化版 `malloc` hook 限制堆内存（不用碰 CUDA，先用 malloc 练 LD_PRELOAD）。
+**产出**：手写一段 50 行 C 代码，实现一个简化版 `malloc` hook 限制堆内存（不用碰 CUDA，先用 malloc 练 LD_PRELOAD）—— 这就是 [[../libvgpu-hook-demo/README]] 那个 demo，Mac 用户用 `./run-in-docker.sh` 一键跑（Mac 上 libSystem 拦不住 malloc，必须 Linux 容器）。
 
 ---
 

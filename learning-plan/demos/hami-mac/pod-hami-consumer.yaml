@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hami-consumer
+  labels:
+    app: hami-consumer
+  annotations:
+    # 真实 HAMi 由 webhook 写入这个 annotation, 由 extender 在 Bind 时改写.
+    # 本 demo 只是放在这里给你"看一眼形状", plugin 不解析.
+    hami.io/vgpu-devices-to-allocate: ""
+spec:
+  restartPolicy: Never
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c"]
+      args:
+        - |
+          echo "=== HAMi 风格的 envs (kubelet Allocate 注入) ==="
+          env | grep -E '^(NVIDIA_|CUDA_|LD_PRELOAD|HAMI_)' | sort
+          echo
+          echo "=== 真实 HAMi 部署里, LD_PRELOAD 指向的 libvgpu.so 由 webhook 注入 volumeMount; 本 demo 没模拟 webhook, 所以这个文件不存在:"
+          ls -la /usr/local/vgpu/ 2>&1 || true
+          echo
+          echo "=== 同样, /dev/nvidia* 也由 nvidia-container-runtime 注入, Mac 上无 GPU, 故为空:"
+          ls /dev | grep -E 'nvidia' || echo "(空, 符合预期)"
+          sleep 3600
+      resources:
+        limits:
+          # 请 1 个 vGPU 切片. DeviceManager 从 40 个 vGPU 池里挑 1 个 slice ID,
+          # 调 Allocate 拿到注入 env. 真实 HAMi 这里通常配合 nvidia.com/gpumem / gpucores.
+          nvidia.com/gpu: 1
+---
+# 第二个消费 Pod, 验证"两 Pod 落在同一物理卡的不同 vGPU 切片上"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hami-consumer-b
+  labels:
+    app: hami-consumer
+spec:
+  restartPolicy: Never
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c"]
+      args:
+        - |
+          echo "=== consumer-b envs ==="
+          env | grep -E '^(NVIDIA_|CUDA_|LD_PRELOAD|HAMI_)' | sort
+          sleep 3600
+      resources:
+        limits:
+          nvidia.com/gpu: 1
