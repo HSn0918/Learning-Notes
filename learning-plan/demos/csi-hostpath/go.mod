@@ -24,6 +24,14 @@ require (
 	k8s.io/klog/v2 v2.130.1
 )
 
+require (
+	github.com/go-logr/logr v1.4.1 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
+	golang.org/x/net v0.25.0 // indirect
+	golang.org/x/text v0.15.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
+)
+
 // 间接依赖（go mod tidy 会自动补齐）：
 //   - github.com/golang/protobuf
 //   - golang.org/x/net

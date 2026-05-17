@@ -1,5 +1,7 @@
 # Kubebuilder Operator Demo (无需 CRD 版)
 
+> **状态**：✅ Mac 验证可运行（controller-runtime v0.19.3，先 `go mod tidy`） · 详见 [demos 验证总表](../README.md)
+
 这是一个最小可运行的 controller-runtime Operator 骨架，用来对照
 `controller-runtime-source.md` 的源码走读。**它不依赖任何 CRD**，
 只监听内置的 `ConfigMap` 资源，所以可以跑在任何 K8s 集群（Kind、

@@ -1,21 +1,37 @@
 #kubernetes #学习计划 #打卡
 
-相关笔记：[[k8s-development-roadmap]] | [[hami-learning-path]] | [[learn-k8s-via-hami]]
+相关笔记：[[START-HERE]] | [[k8s-development-roadmap]] | [[hami-learning-path]] | [[learn-k8s-via-hami]]
 
 ## 用法
 
 - 每完成一项把 `[ ]` 改成 `[x]`
 - 每周末在「周末复盘」处写一两句话：画了什么图、卡在哪、读了多少行源码
 - 卡住的题目记在最底部「待解决问题」，每周回顾一次
-- 每周允许 ±2 天浮动，但 6 周内必须收口
 
-起点日期：____________  目标完成日期：____________
+## 关于「6 周」——先读这段，别被节奏绑架
+
+下面的「Week 1 ~ Week 6」是**逻辑顺序**，不是**日历周**。「6 周」对应的是**全职脱产、每天 4-6 小时**的下限投入。按你的实际情况换算：
+
+| 你的情况 | 实际预期 | 每个「Week」实际花 |
+| :--- | :--- | :--- |
+| 全职脱产 4-6h/天 | 6-8 周 | 约 1-1.5 周 |
+| 在职 1.5-2h/天 + 周末 | 10-14 周 | 约 2 周 |
+| 在职碎片时间 | 4-6 个月 | 视情况 |
+
+**两个偏紧的点要特别注意**：
+- **Week 4（CSI）**：CSI 三 service + 6 sidecar + 端到端时序，新手吃透要 1.5-2 周，不是 1 周。
+- **Week 5（etcd 源码）**：etcd 的 raft 实现单独给 2 周都不算多。「1 周读完 etcd 源码」是不现实的——能读懂 raft Ready 循环 + WAL/snapshot 关系就算达标，MVCC 细节可以二刷。
+
+某周没按时完成 = 这张表对你的投入估得太乐观，**不是你太慢**。往后顺延，别因此否定自己，更别为了打勾而囫囵吞枣。
+
+起点日期：____________  目标完成日期（按上表换算后填）：____________
 
 ---
 
 ## Week 1：Scheduler-framework + 自定义插件
 
 > 目标：默写 11 扩展点顺序；解释 percentageOfNodesToScore / CycleState / Snapshot 设计动机。
+> 预计：全职 ~1 周 / 在职 ~2 周
 
 ### 阅读
 
@@ -48,6 +64,7 @@
 ## Week 2：Device Plugin + GPU/HAMi
 
 > 目标：解释 Scheduler 与 kubelet 在 GPU 分配中的分工；讲清 HAMi 4 块组件协作链路。
+> 预计：全职 ~1 周 / 在职 ~2 周
 
 ### 阅读
 
@@ -81,6 +98,7 @@
 ## Week 3：CRI 链路 + OCI Runtime
 
 > 目标：画完整链路 `kubelet → CRI → containerd → containerd-shim → runc`；能用 crictl/ctr 单步排查。
+> 预计：全职 ~1 周 / 在职 ~2 周
 
 ### 阅读
 
@@ -113,6 +131,7 @@
 ## Week 4：CSI 实战
 
 > 目标：画 PVC → Provision → Attach → Mount 完整时序；改一个最小 CSI driver。
+> 预计：全职 ~1.5-2 周 / 在职 ~3 周 ⚠️ 偏紧——CSI 三 service + 6 sidecar 内容量大，别赶。
 
 ### 阅读
 
@@ -143,6 +162,7 @@
 ## Week 5：etcd 源码 + 综合实战
 
 > 目标：解释 raft Ready 循环、WAL+snapshot+compact、MVCC revision 模型；拼一个综合小项目。
+> 预计：全职 ~2 周 / 在职 ~3-4 周 ⚠️ 偏紧——「读懂 etcd raft」单独 2 周不算多。达标线是 raft Ready 循环 + WAL/snapshot，MVCC 细节可二刷。
 
 ### 阅读
 
@@ -173,6 +193,7 @@
 ## Week 6：CNI + 面试冲刺
 
 > 目标：理解 CNI ADD/DEL；说清 Calico vs Cilium 数据面差异；面试题过 2 遍。
+> 预计：全职 ~1 周 / 在职 ~2 周
 
 ### 阅读
 

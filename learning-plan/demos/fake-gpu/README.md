@@ -1,5 +1,7 @@
 # fake-gpu
 
+> **状态**：✅ Mac 编过（先 `go mod tidy`）；需 kind 部署 · 详见 [demos 验证总表](../README.md)
+
 一个最小可运行的 GPU 风格 Kubernetes Device Plugin demo。它在不需要真实 GPU 硬件的前提下，模仿 NVIDIA k8s-device-plugin 的关键 SHAPE：4 块 fake GPU、UUID 风格 ID、`Allocate` 返回 NVIDIA 风格的 envs。让你在 Mac 上用 kind 就能跑通整条链路。
 
 配套阅读：

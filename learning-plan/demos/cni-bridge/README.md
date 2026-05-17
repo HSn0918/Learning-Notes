@@ -1,5 +1,7 @@
 # cni-bridge
 
+> **状态**：✅ bash 脚本语法校验通过；Mac 跑需 docker（`./run-in-docker.sh` 一键拉 ubuntu 容器） · 详见 [demos 验证总表](../README.md)
+
 100 行 bash 实现的 **CNI 0.4.0 bridge 插件**，配 docker 一键演示完整 `ADD` / `DEL` 协议、veth pair、IPAM。Mac 用户用 `./run-in-docker.sh` 一键跑。
 
 配套阅读：

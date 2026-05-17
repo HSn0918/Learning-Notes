@@ -1,5 +1,7 @@
 # scheduler-plugin demo: NodeLabelScore
 
+> **状态**：⚠️ 需手填 go.mod `replace` 列表（K8s 主仓 staging 占位版本问题），见下方「编译说明」 · 详见 [demos 验证总表](../README.md)
+
 一个最小可运行的 **out-of-tree kube-scheduler 自定义插件** 示例。它做的事很简单：
 在原生 kube-scheduler 之上多注册一个 `Score` 扩展点插件 `NodeLabelScore`，
 带 label `learning-plan/preferred=true` 的节点拿满分（`framework.MaxNodeScore`），

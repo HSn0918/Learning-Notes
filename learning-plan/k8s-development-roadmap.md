@@ -262,7 +262,7 @@ gantt
 
 ## 源码导读索引
 
-每篇都包含三层：① 概念与架构；② 从本地 `~/github/kubernetes` 提取的真实源码片段（带文件路径 + 行号）；③ 手写简化复现，配套有可直接 `go run` 的 demo。
+每篇都包含三层：① 概念与架构；② 真实源码片段；③ 手写简化复现，配套有可直接 `go run` 的 demo。其中第 ② 层的源码定位精度分两档：**7 篇**（client-go / controller-runtime / kube-scheduler / kubelet+CRI / CSI / GPU 调度 / etcd）基于本地 `~/github/kubernetes`、`~/github/etcd` 源码，带**文件路径 + 行号**；**2 篇**（[[cni-source]] / [[hami-source]]）因对应仓库（containernetworking、Project-HAMi）不在本地，只给**目录 + 函数名**定位，clone 后可补行号。
 
 | 源码 | 笔记 | 配套 demo | 关键模块 |
 | --- | --- | --- | --- |

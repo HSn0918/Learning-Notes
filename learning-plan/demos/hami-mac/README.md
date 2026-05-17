@@ -1,5 +1,7 @@
 # hami-mac
 
+> **状态**：✅ Mac 编过；需 docker build + kind load 部署 · 详见 [demos 验证总表](../README.md)
+
 在 Mac（无 NVIDIA GPU）+ kind 集群上，复现 HAMi 关键链路的可运行 fake device plugin。一句话定位：[[demo-fake-gpu]] 上报的是 1:1 物理卡 + 仅 `NVIDIA_VISIBLE_DEVICES` env，这个 demo 升级为 **1 卡切 N 份 vGPU + 注入 `LD_PRELOAD` + `CUDA_DEVICE_MEMORY_LIMIT_*` + `CUDA_DEVICE_SM_LIMIT_*`**，对应 HAMi device-plugin 的两件最关键的事。
 
 配套阅读：

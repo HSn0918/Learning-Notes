@@ -1,5 +1,7 @@
 # csi-hostpath demo
 
+> **状态**：⚠️ Mac 编不过（用了 Linux-only `unix.MS_BIND`），需 `GOOS=linux go build` 交叉编 + 在 Linux 节点（kind 容器）里跑 · 详见 [demos 验证总表](../README.md)
+
 一个最小可运行的 **hostPath 风格 CSI driver** 教学骨架。它把 dataRoot 下的子目录 bind mount 到 kubelet 给的 targetPath，模拟一个真实 CSI driver 的 publish 行为。
 
 相关笔记：

@@ -1,5 +1,7 @@
 # sample-controller demo
 
+> **状态**：✅ Mac 验证可运行（Go 1.26，先 `go mod tidy`） · 详见 [demos 验证总表](../README.md)
+
 一个最小化、可直接运行的 client-go 控制器示例：监听集群中所有 `ConfigMap`，把变更入队后异步 reconcile（这里只是打印一条 `reconciled <ns>/<name>` 日志）。
 
 它演示了标准 sample-controller 模式的完整骨架：

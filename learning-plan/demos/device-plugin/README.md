@@ -1,5 +1,7 @@
 # fake-device-plugin
 
+> **状态**：✅ Mac 编过（先 `go mod tidy`）；需 kind/真集群部署 · 详见 [demos 验证总表](../README.md)
+
 一个最小可运行的 Kubernetes Device Plugin demo，向 kubelet 宣告 8 个名为
 `learning-plan.io/fake-device` 的虚拟设备。配套阅读：
 [[../../kubelet-cri-source]] | [[../../gpu-scheduling]]

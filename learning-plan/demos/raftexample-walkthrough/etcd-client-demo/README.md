@@ -1,5 +1,7 @@
 # etcd-client-demo
 
+> **状态**：✅ Mac 验证可运行（先 `go mod tidy`）；运行前需本地 `etcd` 进程 · 详见 [demos 验证总表](../../README.md)
+
 用 `go.etcd.io/etcd/client/v3` 跑一遍 Put / Get / Watch / Lease，把 etcd 的 **revision** 概念直接打印出来——这就是 K8s `resourceVersion` 的底层物。配套笔记：[[etcd-source]]。
 
 ## 1. 起一个本地 etcd
