@@ -1,6 +1,6 @@
 #kubernetes #gpu #hami #ai-infra #学习计划
 
-相关笔记：[[gpu-scheduling-source]] | [[gpu-scheduling]] | [[scheduler-framework-source]] | [[kubelet-cri-source]] | [[controller-runtime-source]] | [[demo-fake-gpu]] | [[demo-hami-mac]] | [[learn-k8s-via-hami]] | [[k8s-development-roadmap]]
+相关笔记：[[hami-source]] | [[gpu-scheduling-source]] | [[gpu-scheduling]] | [[scheduler-framework-source]] | [[kubelet-cri-source]] | [[controller-runtime-source]] | [[demo-fake-gpu]] | [[demo-hami-mac]] | [[learn-k8s-via-hami]] | [[k8s-development-roadmap]]
 
 ## 概述
 

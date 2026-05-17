@@ -4,7 +4,7 @@
 
 ## 概述
 
-本笔记基于「Kubernetes 开发」学习路线图，把通往 Kubernetes 开发岗（控制器/调度器/平台/CSI/CNI/CRI/Device Plugin）所需的能力拆成 12 个主题，给出每个主题的子目标、推荐顺序、关键源码切入点、配套笔记，以及一份可执行的阶段化学习计划。配合 `learning-plan/` 目录下 8 篇源码导读笔记（client-go、controller-runtime、kube-scheduler、kubelet+CRI+Device-plugin、CSI、CNI、GPU 调度、etcd），形成「路线图 → 源码 → 面试」的闭环。
+本笔记基于「Kubernetes 开发」学习路线图，把通往 Kubernetes 开发岗（控制器/调度器/平台/CSI/CNI/CRI/Device Plugin）所需的能力拆成 12 个主题，给出每个主题的子目标、推荐顺序、关键源码切入点、配套笔记，以及一份可执行的阶段化学习计划。配合 `learning-plan/` 目录下 9 篇源码导读笔记（client-go、controller-runtime、kube-scheduler、kubelet+CRI+Device-plugin、CSI、CNI、GPU 调度、HAMi GPU 虚拟化、etcd），形成「路线图 → 源码 → 面试」的闭环。
 
 ## 学习路线图
 
@@ -205,7 +205,7 @@ mindmap
 
 **衡量标准**：能解释 Scheduler 与 kubelet 在 GPU 分配中的分工，能解决 kubelet 重启后插件失联的问题（fsnotify 重新注册）。
 
-**进阶 GPU 共享**：原生 Device Plugin 只能整卡分，看 [[hami-learning-path]] —— HAMi（CNCF Sandbox）的 GPU 虚拟化方案，把 device-plugin + scheduler-extender + webhook + LD_PRELOAD 的 libvgpu.so 串起来实现显存/算力级切分。
+**进阶 GPU 共享**：原生 Device Plugin 只能整卡分，看 [[hami-learning-path]]（学习路径）+ [[hami-source]]（源码导读）—— HAMi（CNCF Sandbox）的 GPU 虚拟化方案，把 device-plugin + scheduler-extender + webhook + LD_PRELOAD 的 libvgpu.so 串起来实现显存/算力级切分；配套可运行 demo [[demo-hami-mac]]。
 
 ### 12. 社区跟进 — 持续输入
 
@@ -273,6 +273,7 @@ gantt
 | CSI | [[csi-source]] | [[demo-csi-hostpath]] | pkg/volume/csi / sidecars / Identity-Controller-Node |
 | CNI | [[cni-source]] | [[demo-cni-bridge]] | CNI 协议 / libcni / bridge·host-local / Calico·Cilium·Flannel 数据面 |
 | GPU 调度 | [[gpu-scheduling-source]] | [[demo-fake-gpu]] | Scheduler ↔ DeviceManager ↔ Device Plugin / DRA |
+| HAMi GPU 虚拟化 | [[hami-source]] | [[demo-hami-mac]] | webhook / scheduler-extender / device-plugin / libvgpu.so CUDA hook |
 | etcd | [[etcd-source]] | [[demo-raftexample-walkthrough]] | raft / WAL / MVCC / Watch / Lease |
 
 ## 面试要点

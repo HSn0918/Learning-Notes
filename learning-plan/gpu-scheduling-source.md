@@ -1,6 +1,6 @@
 #kubernetes #gpu #scheduler #device-plugin #ai-infra #源码导读
 
-相关笔记：[[gpu-scheduling]] | [[scheduler-framework-source]] | [[kubelet-cri-source]] | [[k8s-development-roadmap]] | [[demo-fake-gpu]] | [[k8s-interview]]
+相关笔记：[[gpu-scheduling]] | [[scheduler-framework-source]] | [[kubelet-cri-source]] | [[k8s-development-roadmap]] | [[demo-fake-gpu]] | [[hami-source]] | [[hami-learning-path]] | [[k8s-interview]]
 
 ## 概述
 

@@ -54,6 +54,7 @@
 - [ ] [[kubelet-cri-source]] 第 3 节（Device Plugin）
 - [ ] [[gpu-scheduling-source]] 全篇
 - [ ] [[gpu-scheduling]]（概念层）
+- [ ] [[hami-source]] 全篇（HAMi 怎么实现 GPU 虚拟调度：webhook / extender / device-plugin / libvgpu）
 - [ ] [[hami-learning-path]] 阶段 3-5（webhook / extender / device-plugin 源码）
 - [ ] HAMi 真实仓库：`pkg/scheduler/webhook.go` + `pkg/scheduler/routes/` + `pkg/device-plugin/`
 

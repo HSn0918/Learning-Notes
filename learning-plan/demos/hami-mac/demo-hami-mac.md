@@ -1,6 +1,6 @@
 #kubernetes #gpu #hami #device-plugin #demo
 
-相关笔记：[[hami-learning-path]] | [[demo-fake-gpu]] | [[gpu-scheduling-source]] | [[gpu-scheduling]] | [[controller-runtime-source]]
+相关笔记：[[hami-learning-path]] | [[hami-source]] | [[demo-fake-gpu]] | [[gpu-scheduling-source]] | [[gpu-scheduling]] | [[controller-runtime-source]]
 
 ## 概述
 

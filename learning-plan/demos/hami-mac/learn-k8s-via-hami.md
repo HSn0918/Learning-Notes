@@ -1,6 +1,6 @@
 #kubernetes #gpu #hami #学习计划 #总结
 
-相关笔记：[[hami-learning-path]] | [[demo-hami-mac]] | [[demo-fake-gpu]] | [[k8s-development-roadmap]] | [[gpu-scheduling-source]] | [[scheduler-framework-source]] | [[kubelet-cri-source]] | [[controller-runtime-source]] | [[client-go-source]] | [[informer]] | [[kubernetes-basics]]
+相关笔记：[[hami-learning-path]] | [[hami-source]] | [[demo-hami-mac]] | [[demo-fake-gpu]] | [[k8s-development-roadmap]] | [[gpu-scheduling-source]] | [[scheduler-framework-source]] | [[kubelet-cri-source]] | [[controller-runtime-source]] | [[client-go-source]] | [[informer]] | [[kubernetes-basics]]
 
 ## 为什么用 HAMi 做主线
 
