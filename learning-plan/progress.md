@@ -175,13 +175,17 @@
 
 ### 阅读
 
+- [ ] [[cni-source]] § 1-4（CNI 协议 / libcni / bridge·host-local / containerd 调用时序）
+- [ ] [[cni-source]] § 6（Calico / Cilium / Flannel 数据面入口对照）
 - [ ] [[cni]] [[calico]] [[cilium]] [[flannel]] [[weave]] [[multus]]
 - [ ] [[service]] [[network-model]] [[headless-service]]
 - [ ] [[k8s-interview]] 全部题
 
 ### 动手
 
-- [ ] 手写最简 bridge CNI（shell + ip 命令，不用插件框架）
+- [ ] 跑 [[demo-cni-bridge]] 的 `./run-in-docker.sh`，看两个 netns 通过 cni0 互 ping
+- [ ] 读 `demos/cni-bridge/learning-bridge` 100 行 bash，对照 [[cni-source]] § 3 的真实 bridge 源码
+- [ ] **改造**：给 [[demo-cni-bridge]] 加一个 portmap 链插件，模拟 hostport
 - [ ] 在 kind 节点里看 iptables / ipvs 规则，对照 Service 配置
 
 ### 周末复盘 + 模拟面试

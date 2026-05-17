@@ -4,7 +4,7 @@
 
 ## 概述
 
-本笔记基于「Kubernetes 开发」学习路线图，把通往 Kubernetes 开发岗（控制器/调度器/平台/CSI/CNI/CRI/Device Plugin）所需的能力拆成 12 个主题，给出每个主题的子目标、推荐顺序、关键源码切入点、配套笔记，以及一份可执行的阶段化学习计划。配合 `learning-plan/` 目录下 5 篇源码导读笔记（client-go、controller-runtime、kube-scheduler、kubelet+CRI+Device-plugin、etcd），形成「路线图 → 源码 → 面试」的闭环。
+本笔记基于「Kubernetes 开发」学习路线图，把通往 Kubernetes 开发岗（控制器/调度器/平台/CSI/CNI/CRI/Device Plugin）所需的能力拆成 12 个主题，给出每个主题的子目标、推荐顺序、关键源码切入点、配套笔记，以及一份可执行的阶段化学习计划。配合 `learning-plan/` 目录下 8 篇源码导读笔记（client-go、controller-runtime、kube-scheduler、kubelet+CRI+Device-plugin、CSI、CNI、GPU 调度、etcd），形成「路线图 → 源码 → 面试」的闭环。
 
 ## 学习路线图
 
@@ -155,7 +155,8 @@ mindmap
 
 | 子目标 | 关键点 | 配套笔记 |
 | --- | --- | --- |
-| CNI 标准 | `ADD/DEL/CHECK`、二进制 + JSON 协议 | [[cni]] |
+| CNI 标准 | `ADD/DEL/CHECK`、二进制 + JSON 协议 | [[cni]]、[[cni-source]] |
+| libcni / conflist | 插件链、prevResult chain、fork+exec | [[cni-source]] |
 | Calico | BGP / IPIP / VXLAN、Felix、IPAM | [[calico]] |
 | Flannel | overlay 简单实现 | [[flannel]] |
 | Cilium | eBPF 数据面 | [[cilium]] |
@@ -163,6 +164,8 @@ mindmap
 | Service / 网络模型 | iptables/ipvs、Pod-Pod 通信 | [[service]]、[[network-model]] |
 
 **衡量标准**：能在一台机器上手写一个最简 CNI 插件实现 `ADD/DEL`，能解释 Calico BGP 路由与 Flannel VXLAN 转发的差异。
+
+**配套**：源码导读 [[cni-source]]（CNI 协议 / libcni / bridge 插件 / Calico·Cilium·Flannel 数据面入口）+ 可运行 demo [[demo-cni-bridge]]（100 行 bash 实现 bridge 插件，Mac 上 `./run-in-docker.sh` 一键跑）。
 
 ### 9. CSI — 容器存储
 
@@ -247,8 +250,8 @@ gantt
 
 ### Phase 3：进阶模块（7-8 周）
 1. 通读 [[scheduler-framework-source]]，开发一个自定义 Score 插件并部署为 secondary scheduler
-2. CNI：手写最简 bridge 插件；读 [[cni]]、[[calico]]、[[cilium]]
-3. CSI：基于 csi-driver-host-path 改造一个本地 CSI 插件；读 [[csi]]、[[openebs]]
+2. CNI：跑 [[demo-cni-bridge]] 手写最简 bridge 插件；读 [[cni-source]]、[[cni]]、[[calico]]、[[cilium]]
+3. CSI：基于 csi-driver-host-path 改造一个本地 CSI 插件；读 [[csi-source]]、[[csi]]、[[openebs]]
 4. CRI / Device Plugin：实现一个 fake-device-plugin 注册到 kubelet；读 [[kubelet-cri-source]]、[[gpu-scheduling]]
 
 ### Phase 4：综合（7-8 周）
@@ -268,6 +271,7 @@ gantt
 | kube-scheduler | [[scheduler-framework-source]] | [[demo-scheduler-plugin]] | Scheduler / Framework / SchedulingQueue / CycleState |
 | kubelet + CRI | [[kubelet-cri-source]] | [[demo-device-plugin]] | SyncLoop / PLEG / CRI / Device Plugin |
 | CSI | [[csi-source]] | [[demo-csi-hostpath]] | pkg/volume/csi / sidecars / Identity-Controller-Node |
+| CNI | [[cni-source]] | [[demo-cni-bridge]] | CNI 协议 / libcni / bridge·host-local / Calico·Cilium·Flannel 数据面 |
 | GPU 调度 | [[gpu-scheduling-source]] | [[demo-fake-gpu]] | Scheduler ↔ DeviceManager ↔ Device Plugin / DRA |
 | etcd | [[etcd-source]] | [[demo-raftexample-walkthrough]] | raft / WAL / MVCC / Watch / Lease |
 

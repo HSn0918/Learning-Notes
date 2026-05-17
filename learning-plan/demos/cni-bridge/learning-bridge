@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+# learning-bridge: 100 行 bash 实现的 CNI 0.4.0 bridge 插件.
+#
+# 协议契约 (CNI Spec, https://github.com/containernetworking/cni/blob/main/SPEC.md):
+#   - 二进制可执行文件, 通过环境变量传命令上下文, stdin 传 JSON 配置, stdout 返回 JSON 结果.
+#   - 必须实现: ADD / DEL / CHECK / VERSION 四个命令. 这里 CHECK 简化为成功.
+#
+# 行为:
+#   - ADD: 在宿主机 cni0 网桥上加 veth, 另一端塞进 Pod netns, 设 IP + 默认网关.
+#   - DEL: 把对应 veth 删掉 (在 netns 那一端会被自动回收).
+#   - VERSION: 返回支持的 spec 版本.
+#
+# IPAM 简化为"递增计数器, 用 /tmp/learning-bridge.next 持久化":
+#   每次 ADD 拿下一个 IP, DEL 不回收 (本 demo 演示用, 重启 docker 重置).
+#
+# 与 containernetworking-plugins 的 `bridge` + `host-local` 二进制做同样的事,
+# 只是把它压成一个文件 + 去掉错误处理边缘 case, 让你能一眼读完.
+
+set -euo pipefail
+
+LOG=/tmp/learning-bridge.log
+exec 2>>"$LOG"
+
+# 把 stdin JSON 读到变量里
+STDIN=$(cat)
+CMD=${CNI_COMMAND:-VERSION}
+CONTAINERID=${CNI_CONTAINERID:-}
+NETNS=${CNI_NETNS:-}
+IFNAME=${CNI_IFNAME:-eth0}
+
+echo "[$(date +%H:%M:%S)] CMD=$CMD CONTAINER=$CONTAINERID NETNS=$NETNS IFNAME=$IFNAME" >&2
+echo "stdin: $STDIN" >&2
+
+# 从 stdin JSON 取字段 (用 jq)
+SUBNET=$(echo "$STDIN" | jq -r '.subnet // "10.244.0.0/24"')
+GATEWAY=$(echo "$STDIN" | jq -r '.gateway // "10.244.0.1"')
+BRIDGE=$(echo "$STDIN" | jq -r '.bridge // "cni0"')
+
+# IPAM 状态文件: 简单递增计数, 从 2 开始 (1 留给网关)
+STATE=/tmp/learning-bridge.next
+[ -f "$STATE" ] || echo 2 > "$STATE"
+
+next_ip() {
+    local n
+    n=$(cat "$STATE")
+    echo $((n+1)) > "$STATE"
+    # 取 subnet 前缀 (假设 /24), 拼上 .n
+    local prefix=${SUBNET%.*}
+    echo "${prefix}.${n}/24"
+}
+
+ensure_bridge() {
+    if ! ip link show "$BRIDGE" >/dev/null 2>&1; then
+        ip link add "$BRIDGE" type bridge
+        ip addr add "${GATEWAY}/24" dev "$BRIDGE"
+        ip link set "$BRIDGE" up
+        # 打开 ip_forward 让跨网桥流量能转
+        sysctl -wq net.ipv4.ip_forward=1
+        # NAT 出网, 不然 Pod 出不了外网 (本 demo 学习用)
+        iptables -t nat -A POSTROUTING -s "$SUBNET" ! -o "$BRIDGE" -j MASQUERADE
+        echo "[hook] created bridge $BRIDGE with gw $GATEWAY" >&2
+    fi
+}
+
+cmd_add() {
+    ensure_bridge
+    IP=$(next_ip)
+    # veth pair: host 端 veth-<短ID>, container 端进 netns 后 rename 成 IFNAME
+    HOSTVETH="veth$(echo "$CONTAINERID" | cut -c1-8)"
+    CTRVETH="ctr$(echo "$CONTAINERID" | cut -c1-8)"
+
+    ip link add "$HOSTVETH" type veth peer name "$CTRVETH"
+    ip link set "$HOSTVETH" master "$BRIDGE"
+    ip link set "$HOSTVETH" up
+
+    # 把 container 端塞进目标 netns, 再 rename 成 eth0
+    ip link set "$CTRVETH" netns "$NETNS"
+    ip -n "$NETNS" link set "$CTRVETH" name "$IFNAME"
+    ip -n "$NETNS" addr add "$IP" dev "$IFNAME"
+    ip -n "$NETNS" link set "$IFNAME" up
+    ip -n "$NETNS" link set lo up
+    ip -n "$NETNS" route add default via "$GATEWAY"
+
+    # 按 CNI Spec 返回 JSON: interfaces + ips
+    MAC=$(ip -n "$NETNS" link show "$IFNAME" | awk '/link\/ether/ {print $2}')
+    cat <<EOF
+{
+  "cniVersion": "0.4.0",
+  "interfaces": [
+    {"name": "$BRIDGE", "mac": "$(cat /sys/class/net/$BRIDGE/address)"},
+    {"name": "$IFNAME", "mac": "$MAC", "sandbox": "$NETNS"}
+  ],
+  "ips": [
+    {"version": "4", "address": "$IP", "gateway": "$GATEWAY", "interface": 1}
+  ],
+  "routes": [{"dst": "0.0.0.0/0", "gw": "$GATEWAY"}]
+}
+EOF
+}
+
+cmd_del() {
+    # 容错: netns 可能已被销毁, host 端 veth 也可能不在
+    HOSTVETH="veth$(echo "$CONTAINERID" | cut -c1-8)"
+    ip link del "$HOSTVETH" 2>/dev/null || true
+    echo '{"cniVersion":"0.4.0"}'
+}
+
+cmd_check() { echo '{"cniVersion":"0.4.0"}'; }
+
+cmd_version() {
+    cat <<EOF
+{"cniVersion":"0.4.0","supportedVersions":["0.3.0","0.3.1","0.4.0"]}
+EOF
+}
+
+case "$CMD" in
+    ADD)     cmd_add ;;
+    DEL)     cmd_del ;;
+    CHECK)   cmd_check ;;
+    VERSION) cmd_version ;;
+    *) echo '{"code":4,"msg":"unknown command"}' >&2; exit 1 ;;
+esac

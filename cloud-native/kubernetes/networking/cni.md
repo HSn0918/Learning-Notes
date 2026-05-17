@@ -1,6 +1,6 @@
 #kubernetes #cni
 
-相关笔记：[[kubernetes-basics]] | [[csi]] | [[service]] | [[k8s-interview]] | [[calico]] | [[cilium]] | [[flannel]] | [[weave]] | [[multus]]
+相关笔记：[[kubernetes-basics]] | [[csi]] | [[service]] | [[k8s-interview]] | [[calico]] | [[cilium]] | [[flannel]] | [[weave]] | [[multus]] | [[cni-source]] | [[demo-cni-bridge]]
 
 ## CNI 概述
 
@@ -125,3 +125,8 @@ A: 小规模/学习用 Flannel；生产通用选 Calico（BGP + NetworkPolicy）
 **Q: eBPF 相比 iptables 有什么优势？**
 
 A: iptables 逐条匹配规则（O(n)），规则随 Service 数量线性增长；eBPF 使用 hash map 查找（O(1)），在内核最早的处理点拦截数据包，支持 JIT 编译为机器码，性能接近 native。详见 [[cilium]]。
+
+## 深入学习
+
+- **源码导读**：[[cni-source]] —— CNI 协议（env + stdin/stdout JSON）、libcni、`containernetworking/plugins` 的 bridge/host-local 源码、containerd 调 CNI 的端到端时序、Calico/Cilium/Flannel 数据面入口。
+- **可运行 demo**：[[demo-cni-bridge]] —— 100 行 bash 实现 CNI bridge 插件，Mac 上 `./run-in-docker.sh` 一键跑通 ADD/DEL + veth + 互 ping。

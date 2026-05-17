@@ -10,8 +10,8 @@
 - [[hami-learning-path]] - HAMi（GPU 虚拟化中间件）由浅入深学习路径
 - [[learn-k8s-via-hami]] - 以 HAMi 为线索一步步学透 K8s 的 12 个核心机制（Mac 友好）
 - [[progress]] - 6 周高阶学习打卡表（Scheduler → Device Plugin → CRI → CSI → etcd → CNI）
-- **源码导读**（基于本地 `~/github/kubernetes` 源码，含真实行号引用 + 手写简化复现）：[[client-go-source]] | [[controller-runtime-source]] | [[scheduler-framework-source]] | [[kubelet-cri-source]] | [[etcd-source]] | [[csi-source]] | [[gpu-scheduling-source]]
-- **可运行 demo**：[[demo-sample-controller]] | [[demo-kubebuilder-operator]] | [[demo-scheduler-plugin]] | [[demo-device-plugin]] | [[demo-raftexample-walkthrough]] | [[demo-csi-hostpath]] | [[demo-fake-gpu]] | [[demo-hami-mac]]（Mac 无 GPU 跑 HAMi 关键链路 + 50 行 C 的 libvgpu 简化 hook）
+- **源码导读**（基于本地 `~/github/kubernetes` 源码，含真实行号引用 + 手写简化复现）：[[client-go-source]] | [[controller-runtime-source]] | [[scheduler-framework-source]] | [[kubelet-cri-source]] | [[etcd-source]] | [[csi-source]] | [[cni-source]] | [[gpu-scheduling-source]]
+- **可运行 demo**：[[demo-sample-controller]] | [[demo-kubebuilder-operator]] | [[demo-scheduler-plugin]] | [[demo-device-plugin]] | [[demo-raftexample-walkthrough]] | [[demo-csi-hostpath]] | [[demo-cni-bridge]] | [[demo-fake-gpu]] | [[demo-hami-mac]]（Mac 无 GPU 跑 HAMi 关键链路 + 50 行 C 的 libvgpu 简化 hook）
 
 ---
 
