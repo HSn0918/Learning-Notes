@@ -1,6 +1,6 @@
 #kubernetes #学习计划 #打卡
 
-相关笔记：[[START-HERE]] | [[k8s-development-roadmap]] | [[hami-learning-path]] | [[learn-k8s-via-hami]]
+相关笔记：[[k8s-development-roadmap]] | [[hami-learning-path]] | [[learn-k8s-via-hami]]
 
 ## 用法
 
@@ -104,12 +104,14 @@
 
 - [ ] [[kubelet-cri-source]] 第 1-2 节（SyncLoop / PLEG）
 - [ ] [[kubelet-cri-source]] 第 4-5 节（CRI gRPC + containerd）
+- [ ] [[cri-source]] 全篇（CRI proto 契约 / cri-client / sandbox+container / dockershim 移除）
 - [ ] [[oci-runtime]]
 - [ ] 本地源码：`~/github/kubernetes/pkg/kubelet/kubelet.go` 的 syncLoop
 - [ ] 本地源码：`~/github/kubernetes/pkg/kubelet/pleg/` 
 
 ### 动手
 
+- [ ] 跑 [[demo-fake-cri]]，用 `crictl` 探测最小 fake CRI server
 - [ ] 在 kind 节点容器里跑 `crictl ps` / `crictl inspect <id>`
 - [ ] 用 `crictl exec` 进容器验证 env
 - [ ] 看一个真实容器的 OCI runtime spec：`docker exec kind-node crictl inspect <id> | jq '.info.runtimeSpec'`

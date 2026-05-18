@@ -6,15 +6,14 @@
 
 ## Learning Plan
 
-> 新手从 [[START-HERE]] 开始 —— 它用一张决策图告诉你该走哪条路径，不要直接乱点下面的链接。
+> 新手从 [[k8s-development-roadmap]] 开始 —— 它用一张决策图告诉你该走哪条路径，不要直接乱点下面的链接。
 
-- [[START-HERE]] - **learning-plan 唯一入口**：四条路径关系 + 你该走哪条的决策图
-- [[k8s-development-roadmap]] - Kubernetes 开发学习路线图（12 主题 + 阶段计划）
+- [[k8s-development-roadmap]] - **learning-plan 入口**：12 主题地图 + 阶段计划 + 你该走哪条路的决策图
 - [[hami-learning-path]] - HAMi（GPU 虚拟化中间件）由浅入深学习路径
 - [[learn-k8s-via-hami]] - 以 HAMi 为线索一步步学透 K8s 的 12 个核心机制（Mac 友好）
 - [[progress]] - 6 周高阶学习打卡表（Scheduler → Device Plugin → CRI → CSI → etcd → CNI）
-- **源码导读**（含真实源码片段 + 手写简化复现；7 篇带文件路径+行号，cni/hami 两篇带目录+函数名定位）：[[client-go-source]] | [[controller-runtime-source]] | [[scheduler-framework-source]] | [[kubelet-cri-source]] | [[etcd-source]] | [[csi-source]] | [[cni-source]] | [[gpu-scheduling-source]] | [[hami-source]]
-- **可运行 demo**：[[demo-sample-controller]] | [[demo-kubebuilder-operator]] | [[demo-scheduler-plugin]] | [[demo-device-plugin]] | [[demo-raftexample-walkthrough]] | [[demo-csi-hostpath]] | [[demo-cni-bridge]] | [[demo-fake-gpu]] | [[demo-hami-mac]]（Mac 无 GPU 跑 HAMi 关键链路 + 50 行 C 的 libvgpu 简化 hook）
+- **源码导读**（含真实源码片段 + 手写简化复现；8 篇带文件路径+行号，cni/hami 两篇带目录+函数名定位）：[[client-go-source]] | [[controller-runtime-source]] | [[scheduler-framework-source]] | [[kubelet-cri-source]] | [[cri-source]] | [[etcd-source]] | [[csi-source]] | [[cni-source]] | [[gpu-scheduling-source]] | [[hami-source]]
+- **可运行 demo**：[[demo-sample-controller]] | [[demo-kubebuilder-operator]] | [[demo-scheduler-plugin]] | [[demo-device-plugin]] | [[demo-fake-cri]] | [[demo-raftexample-walkthrough]] | [[demo-csi-hostpath]] | [[demo-cni-bridge]] | [[demo-fake-gpu]] | [[demo-hami-mac]]（Mac 无 GPU 跑 HAMi 关键链路 + 50 行 C 的 libvgpu 简化 hook）
 
 ---
 

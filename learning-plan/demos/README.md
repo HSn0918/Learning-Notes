@@ -7,6 +7,7 @@
 | :--- | :--- | :--- | :--- | :--- |
 | [sample-controller](sample-controller/) | ✅ | ✅ | `go mod tidy` + kubeconfig | 5 分钟反馈，最快入门 |
 | [device-plugin](device-plugin/) | ✅ | ⚠️ | `go mod tidy`、需 kind/真集群 | DaemonSet 部署，Mac kind 可跑 |
+| [fake-cri](fake-cri/) | ✅ | ✅ | `go mod tidy` | 最小 fake CRI server，`crictl` 直接探测 |
 | [fake-gpu](fake-gpu/) | ✅ | ⚠️ | `go mod tidy`、kind | 同上 |
 | [hami-mac](hami-mac/) | ✅ | ⚠️ | docker build + kind load | 看 README，含 walkthrough |
 | [kubebuilder-operator](kubebuilder-operator/) | ✅ | ✅ | `go mod tidy`、kubeconfig | 升 controller-runtime v0.19.3 已修复 |

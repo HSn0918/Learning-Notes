@@ -1,10 +1,61 @@
-#kubernetes #学习计划 #源码导读
+#kubernetes #学习计划 #源码导读 #导航
 
-相关笔记：[[client-go-source]] | [[controller-runtime-source]] | [[scheduler-framework-source]] | [[kubelet-cri-source]] | [[etcd-source]] | [[kubebuilder]] | [[operator-pattern]] | [[k8s-interview]]
+相关笔记：[[progress]] | [[hami-learning-path]] | [[client-go-source]] | [[controller-runtime-source]] | [[scheduler-framework-source]] | [[kubelet-cri-source]] | [[cri-source]] | [[etcd-source]] | [[kubebuilder]] | [[operator-pattern]] | [[k8s-interview]]
+
+> **这是 `learning-plan/` 的入口。** 先看下面的「你该走哪条路」决策图确定路线，再按路线推进，不要一上来就乱点。
+
+## learning-plan 里有什么
+
+```
+learning-plan/
+├── k8s-development-roadmap.md   ← 你在这里：入口 + 12 主题地图 + 阶段计划
+├── progress.md                  6 周高阶冲刺打卡表（逐项可勾选）
+├── source/                      源码导读 ×10 + HAMi 专题路径
+│   ├── client-go-source.md          controller-runtime-source.md
+│   ├── scheduler-framework-source.md kubelet-cri-source.md
+│   ├── cri-source.md                csi-source.md
+│   ├── cni-source.md                gpu-scheduling-source.md
+│   ├── hami-source.md               etcd-source.md
+│   └── hami-learning-path.md     HAMi GPU 虚拟化 6 阶段专题路径
+└── demos/                       可运行 demo ×10（见 demos/README.md）
+```
+
+三份「路线类」文档分工不同，不是三选一：
+
+- **本文（roadmap）= 地图**：12 主题全景 + 4 阶段计划，想知道「K8s 开发岗要学什么」时通读，之后当字典查。
+- **[[progress]] = 打卡表**：6 周高阶冲刺，决定开学后每天对着它勾选、写复盘。
+- **[[hami-learning-path]] = GPU 专题路径**：走 GPU/AI Infra 方向时的加餐，6 阶段深挖 HAMi。
+
+## 你该走哪条路？（决策图）
+
+```mermaid
+flowchart TD
+    A[开始] --> B{Go 语言熟不熟?}
+    B -->|不熟| C[先补 Go: GMP/GC/Channel/Context<br/>见 go/ 目录, 2-3 周]
+    B -->|熟| D{K8s 到什么程度?}
+    C --> D
+    D -->|只会 kubectl,<br/>没写过控制器| E[路线①: 零基础开局]
+    D -->|写过 Operator,<br/>想啃源码冲高阶| F[路线②: 高阶冲刺]
+    D -->|就冲 GPU/AI Infra| G[路线③: HAMi 专精]
+
+    E --> E1["读本文 Phase 1-2<br/>→ 跑 sample-controller<br/>→ 跑 kubebuilder-operator<br/>→ 8 周上控制器主线"]
+    F --> F1["直接用 progress.md<br/>6-10 周: Scheduler→DevicePlugin<br/>→CRI→CSI→CNI→etcd"]
+    G --> G1["hami-learning-path 6 阶段<br/>+ learn-k8s-via-hami 串机制<br/>+ 跑 hami-mac demo"]
+
+    style E fill:#f39c12,color:#000
+    style F fill:#3498db,color:#fff
+    style G fill:#2ecc71,color:#000
+```
+
+- **路线①：零基础开局**（K8s 只会用，没碰过源码）。Go 不熟先补 `go/` 目录笔记（2-3 周）；通读本文 **Phase 1-2**；跑 [[demo-sample-controller]] → [[demo-kubebuilder-operator]] 打通「Informer → Controller → Operator」；约 8 周后切到路线②。
+- **路线②：高阶冲刺**（写过 Operator，要啃源码）。直接打开 [[progress]] 逐日打卡，顺序 Scheduler → Device Plugin/GPU → CRI → CSI → CNI → etcd，每个主题「读源码导读 + 跑 demo + 白板默写」三件套。
+- **路线③：HAMi / GPU 专精**。走 [[hami-learning-path]] 的 6 阶段，配合 [[hami-source]] + [[demo-hami-mac]]；K8s 基础弱的话先用 [[learn-k8s-via-hami]] 把 12 个机制串一遍。
+
+> **学习时长**：[[progress]] 标的「6 周」是全职、每天 4-6h 的下限；在职按 10-14 周估，碎片时间 4-6 个月。详细换算与「CSI / etcd 偏紧」的提醒见 [[progress]] 开头。
 
 ## 概述
 
-本笔记基于「Kubernetes 开发」学习路线图，把通往 Kubernetes 开发岗（控制器/调度器/平台/CSI/CNI/CRI/Device Plugin）所需的能力拆成 12 个主题，给出每个主题的子目标、推荐顺序、关键源码切入点、配套笔记，以及一份可执行的阶段化学习计划。配合 `learning-plan/` 目录下 9 篇源码导读笔记（client-go、controller-runtime、kube-scheduler、kubelet+CRI+Device-plugin、CSI、CNI、GPU 调度、HAMi GPU 虚拟化、etcd），形成「路线图 → 源码 → 面试」的闭环。
+本笔记基于「Kubernetes 开发」学习路线图，把通往 Kubernetes 开发岗（控制器/调度器/平台/CSI/CNI/CRI/Device Plugin）所需的能力拆成 12 个主题，给出每个主题的子目标、推荐顺序、关键源码切入点、配套笔记，以及一份可执行的阶段化学习计划。配合 `learning-plan/source/` 下 10 篇源码导读笔记（client-go、controller-runtime、kube-scheduler、kubelet、CRI、CSI、CNI、GPU 调度、HAMi GPU 虚拟化、etcd），形成「路线图 → 源码 → 面试」的闭环。
 
 ## 学习路线图
 
@@ -186,12 +237,14 @@ mindmap
 
 | 子目标 | 关键点 | 配套笔记 |
 | --- | --- | --- |
-| CRI 接口 | RuntimeService / ImageService | [[kubelet-cri-source]] |
-| containerd | CRI plugin、containerd-shim | [[kubelet-cri-source]]、[[oci-runtime]] |
-| dockershim 移除 | 历史与影响 | [[kubelet-cri-source]] |
+| CRI 接口 | RuntimeService / ImageService | [[cri-source]]、[[kubelet-cri-source]] |
+| containerd | CRI plugin、containerd-shim | [[cri-source]]、[[oci-runtime]] |
+| dockershim 移除 | 历史与影响 | [[cri-source]] |
 | OCI Runtime | runc、镜像规范 | [[oci-runtime]] |
 
 **衡量标准**：能画出 `kubelet → CRI → containerd → containerd-shim → runc` 的完整链路，能解释 Sandbox / Pause 容器的作用。
+
+**配套**：源码导读 [[cri-source]]（CRI proto 契约 / cri-client / sandbox+container 双层模型 / Exec 两阶段 streaming / dockershim 移除）+ [[kubelet-cri-source]]（kubelet 内部 syncLoop/PLEG 怎么驱动 CRI 调用）+ 可运行 demo [[demo-fake-cri]]（最小 fake CRI server，可被 `crictl` 探测）。
 
 ### 11. Device Plugin — 异构资源
 
@@ -252,7 +305,7 @@ gantt
 1. 通读 [[scheduler-framework-source]]，开发一个自定义 Score 插件并部署为 secondary scheduler
 2. CNI：跑 [[demo-cni-bridge]] 手写最简 bridge 插件；读 [[cni-source]]、[[cni]]、[[calico]]、[[cilium]]
 3. CSI：基于 csi-driver-host-path 改造一个本地 CSI 插件；读 [[csi-source]]、[[csi]]、[[openebs]]
-4. CRI / Device Plugin：实现一个 fake-device-plugin 注册到 kubelet；读 [[kubelet-cri-source]]、[[gpu-scheduling]]
+4. CRI / Device Plugin：跑 [[demo-fake-cri]] 用最小 fake CRI server 骗过 crictl；实现一个 fake-device-plugin 注册到 kubelet；读 [[cri-source]]、[[kubelet-cri-source]]、[[gpu-scheduling]]
 
 ### Phase 4：综合（7-8 周）
 1. 通读 [[etcd-source]]，跑通 raftexample，理解 raft Ready 循环
@@ -262,19 +315,33 @@ gantt
 
 ## 源码导读索引
 
-每篇都包含三层：① 概念与架构；② 真实源码片段；③ 手写简化复现，配套有可直接 `go run` 的 demo。其中第 ② 层的源码定位精度分两档：**7 篇**（client-go / controller-runtime / kube-scheduler / kubelet+CRI / CSI / GPU 调度 / etcd）基于本地 `~/github/kubernetes`、`~/github/etcd` 源码，带**文件路径 + 行号**；**2 篇**（[[cni-source]] / [[hami-source]]）因对应仓库（containernetworking、Project-HAMi）不在本地，只给**目录 + 函数名**定位，clone 后可补行号。
+10 篇导读集中放在 `learning-plan/source/`，每篇都包含三层：① 概念与架构；② 真实源码片段；③ 手写简化复现，配套有可直接 `go run` 的 demo。其中第 ② 层的源码定位精度分两档：**8 篇**（client-go / controller-runtime / kube-scheduler / kubelet / CRI / CSI / GPU 调度 / etcd）基于本地 `~/github/kubernetes`、`~/github/etcd` 源码，带**文件路径 + 行号**；**2 篇**（[[cni-source]] / [[hami-source]]）因对应仓库（containernetworking、Project-HAMi）不在本地，只给**目录 + 函数名**定位，clone 后可补行号。
 
-| 源码 | 笔记 | 配套 demo | 关键模块 |
-| --- | --- | --- | --- |
-| client-go | [[client-go-source]] | [[demo-sample-controller]] | Reflector / DeltaFIFO / Indexer / SharedInformer / Workqueue |
-| controller-runtime | [[controller-runtime-source]] | [[demo-kubebuilder-operator]] | Manager / Controller / Reconciler / Cache / Builder / Webhook |
-| kube-scheduler | [[scheduler-framework-source]] | [[demo-scheduler-plugin]] | Scheduler / Framework / SchedulingQueue / CycleState |
-| kubelet + CRI | [[kubelet-cri-source]] | [[demo-device-plugin]] | SyncLoop / PLEG / CRI / Device Plugin |
-| CSI | [[csi-source]] | [[demo-csi-hostpath]] | pkg/volume/csi / sidecars / Identity-Controller-Node |
-| CNI | [[cni-source]] | [[demo-cni-bridge]] | CNI 协议 / libcni / bridge·host-local / Calico·Cilium·Flannel 数据面 |
-| GPU 调度 | [[gpu-scheduling-source]] | [[demo-fake-gpu]] | Scheduler ↔ DeviceManager ↔ Device Plugin / DRA |
-| HAMi GPU 虚拟化 | [[hami-source]] | [[demo-hami-mac]] | webhook / scheduler-extender / device-plugin / libvgpu.so CUDA hook |
-| etcd | [[etcd-source]] | [[demo-raftexample-walkthrough]] | raft / WAL / MVCC / Watch / Lease |
+| 源码 | 笔记 | 配套 demo | 关键模块 | demo 在 Mac 上能跑吗 |
+| --- | --- | --- | --- | --- |
+| client-go | [[client-go-source]] | [[demo-sample-controller]] | Reflector / DeltaFIFO / Indexer / SharedInformer / Workqueue | ✅ 先 `go mod tidy` |
+| controller-runtime | [[controller-runtime-source]] | [[demo-kubebuilder-operator]] | Manager / Controller / Reconciler / Cache / Builder / Webhook | ✅ 先 `go mod tidy` |
+| kube-scheduler | [[scheduler-framework-source]] | [[demo-scheduler-plugin]] | Scheduler / Framework / SchedulingQueue / CycleState | ⚠️ 需手填 go.mod replace（见其 README） |
+| kubelet | [[kubelet-cri-source]] | [[demo-device-plugin]] | SyncLoop / PLEG / Device Plugin | ✅ 先 `go mod tidy` |
+| CRI | [[cri-source]] | [[demo-fake-cri]] | CRI proto / cri-client / sandbox+container / Exec streaming | ✅ 先 `go mod tidy` |
+| CSI | [[csi-source]] | [[demo-csi-hostpath]] | pkg/volume/csi / sidecars / Identity-Controller-Node | ⚠️ 需 `GOOS=linux go build`（Linux-only 系统调用） |
+| CNI | [[cni-source]] | [[demo-cni-bridge]] | CNI 协议 / libcni / bridge·host-local / Calico·Cilium·Flannel 数据面 | ✅ bash 实现，`./run-in-docker.sh` 需 docker |
+| GPU 调度 | [[gpu-scheduling-source]] | [[demo-fake-gpu]] | Scheduler ↔ DeviceManager ↔ Device Plugin / DRA | ✅ 先 `go mod tidy` |
+| HAMi GPU 虚拟化 | [[hami-source]] | [[demo-hami-mac]] | webhook / scheduler-extender / device-plugin / libvgpu.so CUDA hook | ✅ 直接编过；libvgpu hook 部分需 docker |
+| etcd | [[etcd-source]] | [[demo-raftexample-walkthrough]] | raft / WAL / MVCC / Watch / Lease | ✅ etcd-client-demo 先 `go mod tidy` |
+
+> **demo 通用前置**：除 hami-mac 外，多数 demo 首次构建要先 `cd <demo> && go mod tidy` 补全 go.sum。每个 demo 的 README 有具体步骤，验证状态见 `demos/README.md`。
+
+## 这套路线的边界（先知道它「不教什么」）
+
+这套 learning-plan 是**研发向、源码向**的，专攻「K8s 内部机制 + 扩展开发」。它**不覆盖**以下内容，如果目标岗位偏 SRE / 平台运维，这些要另外补：
+
+- 线上排障（Pod 起不来 / Node NotReady 的定位套路）
+- 可观测性（Prometheus / Grafana / 日志体系）
+- 交付与运维（Helm / GitOps / ArgoCD / CI 流水线）
+- 生产事故复盘与容量规划
+
+→ 适合目标：**K8s 研发岗、Operator/调度/CSI/CNI 开发、云原生中间件、AI Infra**。
 
 ## 面试要点
 
