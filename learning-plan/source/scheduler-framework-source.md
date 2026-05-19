@@ -4,7 +4,7 @@
 
 ## 概述
 
-本篇是 kube-scheduler 的源码导读笔记，聚焦 `kubernetes/kubernetes` 仓库下的 `pkg/scheduler` 包。kube-scheduler 从 v1.19 开始全面采用 **Scheduling Framework** 架构：调度逻辑被拆解为一系列有序的 **扩展点（Extension Point）**，每个扩展点上挂载若干 **Plugin**，整个调度流程由 framework 串联驱动。一次 Pod 的调度被划分为同步的 **scheduling cycle**（QueueSort → PreFilter → Filter → PostFilter → PreScore → Score → NormalizeScore → Reserve → Permit）和异步的 **binding cycle**（PreBind → Bind → PostBind）；scheduling cycle 串行执行保证调度决策的一致性，binding cycle 异步执行避免被慢速的 apiserver 写入拖累吞吐。待调度 Pod 经由 Informer 进入三级 **scheduling queue**（activeQ / backoffQ / unschedulablePods），由 `Scheduler.ScheduleOne` 逐个取出处理。本文按"调度器骨架 → 调度队列 → 扩展点流水线 → CycleState 数据传递 → Filter/Score 细节 → Reserve/Permit/Assume → 自定义插件开发"的顺序通读源码，并给出一个自定义 Score 插件的完整骨架。
+本篇是 kube-scheduler 的源码导读笔记，聚焦 `kubernetes/kubernetes` 仓库下的 `pkg/scheduler` 包。kube-scheduler 从 v1.19 开始全面采用 **Scheduling Framework** 架构：调度逻辑被拆解为一系列有序的 **扩展点（Extension Point）**，每个扩展点上挂载若干 **Plugin**，整个调度流程由 framework 串联驱动。一次 Pod 的调度被划分为同步的 **scheduling cycle**（QueueSort → PreFilter → Filter → PostFilter → PreScore → Score → NormalizeScore → Reserve → Permit）和异步的 **binding cycle**（PreBind → Bind → PostBind）；scheduling cycle 串行执行保证调度决策的一致性，binding cycle 异步执行避免被慢速的 apiserver 写入拖累吞吐。待调度 Pod 经由 Informer 进入三级 **scheduling queue**（activeQ / backoffQ / unschedulablePods），由 `Scheduler.ScheduleOne` 逐个取出处理。本文按"调度器骨架 → 调度队列 → 扩展点流水线 → CycleState 数据传递 → Filter/Score 细节 → Reserve/Permit/Assume → 端到端实例走查 → 自定义插件开发"的顺序通读源码，并给出一个自定义 Score 插件的完整骨架。
 
 ## 一、调度器骨架：scheduler.go 与 ScheduleOne
 
@@ -114,20 +114,20 @@ flowchart TD
 
 各扩展点职责与所属周期：
 
-| 扩展点 | 周期 | 接口（interface.go） | 职责 | 失败后果 |
-|--------|------|----------------------|------|----------|
-| **QueueSort** | 队列 | `QueueSortPlugin.Less` | 决定 activeQ 中 Pod 顺序，全局唯一 | — |
-| **PreFilter** | Scheduling | `PreFilterPlugin.PreFilter` | 预计算并写入 CycleState；可返回节点子集裁剪 Filter 范围 | 返回 `Unschedulable`/`UnschedulableAndUnresolvable` 直接终止 |
-| **Filter** | Scheduling | `FilterPlugin.Filter` | 判断单个 Node 是否能放下该 Pod（等价旧 Predicates） | 该节点被剔除 |
-| **PostFilter** | Scheduling | `PostFilterPlugin.PostFilter` | Filter 后无可用节点时触发，默认实现是 `DefaultPreemption` 抢占 | 抢占成功则提名节点，否则 Pod Unschedulable |
-| **PreScore** | Scheduling | `PreScorePlugin.PreScore` | Score 前的共享数据预计算 | 终止调度周期 |
-| **Score** | Scheduling | `ScorePlugin.Score` | 给单个 Node 打分（等价旧 Priorities），原始分范围由插件自定 | 终止调度周期 |
-| **NormalizeScore** | Scheduling | `ScoreExtensions.NormalizeScore` | 把本插件所有节点的原始分归一化到 `[0,100]` | 终止调度周期 |
-| **Reserve** | Scheduling | `ReservePlugin.Reserve` / `Unreserve` | 在选中节点上预留资源（如 PV 绑定占位） | 触发所有插件的 `Unreserve` 回滚 |
-| **Permit** | Scheduling | `PermitPlugin.Permit` | 决定是否放行进入 binding：`approve` / `deny` / `wait(timeout)` | `deny` 触发 Unreserve；`wait` 进入等待 |
-| **PreBind** | Binding | `PreBindPlugin.PreBind` | 绑定前的实际操作，如把 PVC 绑到 PV | 触发 Unreserve，Pod 重新入队 |
-| **Bind** | Binding | `BindPlugin.Bind` | 调用 apiserver 创建 `Binding` 对象；多个 Bind 插件按序尝试，第一个不返回 `Skip` 的生效 | 触发 Unreserve |
-| **PostBind** | Binding | `PostBindPlugin.PostBind` | 绑定成功后的清理/通知，纯 informational | 无（不影响结果） |
+| 扩展点                | 周期         | 接口（interface.go）                      | 职责                                                            | 失败后果                                                   |
+| ------------------ | ---------- | ------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------ |
+| **QueueSort**      | 队列         | `QueueSortPlugin.Less`                | 决定 activeQ 中 Pod 顺序，全局唯一                                      | —                                                      |
+| **PreFilter**      | Scheduling | `PreFilterPlugin.PreFilter`           | 预计算并写入 CycleState；可返回节点子集裁剪 Filter 范围                         | 返回 `Unschedulable`/`UnschedulableAndUnresolvable` 直接终止 |
+| **Filter**         | Scheduling | `FilterPlugin.Filter`                 | 判断单个 Node 是否能放下该 Pod（等价旧 Predicates）                          | 该节点被剔除                                                 |
+| **PostFilter**     | Scheduling | `PostFilterPlugin.PostFilter`         | Filter 后无可用节点时触发，默认实现是 `DefaultPreemption` 抢占                 | 抢占成功则提名节点，否则 Pod Unschedulable                         |
+| **PreScore**       | Scheduling | `PreScorePlugin.PreScore`             | Score 前的共享数据预计算                                               | 终止调度周期                                                 |
+| **Score**          | Scheduling | `ScorePlugin.Score`                   | 给单个 Node 打分（等价旧 Priorities），原始分范围由插件自定                        | 终止调度周期                                                 |
+| **NormalizeScore** | Scheduling | `ScoreExtensions.NormalizeScore`      | 把本插件所有节点的原始分归一化到 `[0,100]`                                    | 终止调度周期                                                 |
+| **Reserve**        | Scheduling | `ReservePlugin.Reserve` / `Unreserve` | 在选中节点上预留资源（如 PV 绑定占位）                                         | 触发所有插件的 `Unreserve` 回滚                                 |
+| **Permit**         | Scheduling | `PermitPlugin.Permit`                 | 决定是否放行进入 binding：`approve` / `deny` / `wait(timeout)`         | `deny` 触发 Unreserve；`wait` 进入等待                        |
+| **PreBind**        | Binding    | `PreBindPlugin.PreBind`               | 绑定前的实际操作，如把 PVC 绑到 PV                                         | 触发 Unreserve，Pod 重新入队                                  |
+| **Bind**           | Binding    | `BindPlugin.Bind`                     | 调用 apiserver 创建 `Binding` 对象；多个 Bind 插件按序尝试，第一个不返回 `Skip` 的生效 | 触发 Unreserve                                           |
+| **PostBind**       | Binding    | `PostBindPlugin.PostBind`             | 绑定成功后的清理/通知，纯 informational                                   | 无（不影响结果）                                               |
 
 `framework.Status` 是贯穿所有扩展点的返回类型，常见 `Code`：`Success`、`Error`、`Unschedulable`（Pod 暂不可调度，集群变化后可重试）、`UnschedulableAndUnresolvable`（重试也无意义，跳过 PostFilter 抢占）、`Wait`、`Skip`。
 
@@ -291,7 +291,98 @@ finalScore(node) = Σ  weight_i × normalizedScore_i(node)
 
 assume 与 bind 的关系：assume 只动本地 cache（不持久化、非阻塞），bind 才真正写 apiserver。若 binding cycle 失败，`forgetPod` 会把 assume 从 cache 撤销，并触发 Unreserve；若 apiserver 最终也没产生该绑定事件，cache 的 `assumedPod` 有 TTL（默认 30s）兜底清理，防止缓存与实际状态长期不一致。
 
-## 八、自定义调度插件开发
+## 八、端到端调度实例走查
+
+前七节把扩展点逐个拆开讲了，这一节用一个具体场景把它们串成一条线，看一个 Pod 从入队到落到某个 Node 上，每个扩展点分别淘汰/产出了什么。
+
+### 场景设定
+
+集群 3 个 Node：
+
+| Node | 总 CPU | 已用 CPU | label | 已有 `app=web` 的 Pod |
+| :--- | :--- | :--- | :--- | :--- |
+| node-a | 4 核 | 3.5 核 | `disktype=ssd` | 2 个 |
+| node-b | 8 核 | 2 核 | `disktype=hdd` | 1 个 |
+| node-c | 8 核 | 1 核 | `disktype=ssd` | 0 个 |
+
+待调度的 Pod `web-4`：引用 `priorityClassName: high-priority`（value=1000），请求 `cpu: 2`，并带一条 **软** 反亲和（`preferredDuringScheduling`，`topologyKey=hostname`，selector `app=web`）——尽量别和其他 web Pod 挤同一台。
+
+```yaml
+spec:
+  priorityClassName: high-priority      # 准入控制器把 pod.Spec.Priority 填成 1000
+  containers:
+  - name: app
+    resources: { requests: { cpu: "2" } }
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector: { matchLabels: { app: web } }
+          topologyKey: kubernetes.io/hostname
+```
+
+### 逐扩展点走查
+
+**第 0 步 · activeQ 排序（QueueSort）**——`web-4` 经 Informer 进 activeQ。此刻队里还有个 `batch-job`（priority=0）。`PrioritySort.Less` 先比 `pod.Spec.Priority`：1000 > 0，`web-4` 排到队首。`ScheduleOne` 循环 `Pop()` 弹出 `web-4`，为它 `new` 一个 `CycleState`，流水线开始。
+
+**第 1 步 · PreFilter（跑 1 次）**——只跟 Pod 自身有关的预计算，结果写进 CycleState：
+
+- `NodeResourcesFit`：把 `web-4` 所有容器 request 加总 = CPU 2 核，写入 CycleState。
+- `InterPodAffinity`：扫全集群，统计带 `app=web` 的 Pod 在各 hostname 的分布（a:2 / b:1 / c:0），写入 CycleState。
+
+没有插件返回 `Unschedulable`，继续。
+
+**第 2 步 · Filter（每个 Node 跑一次，跨 Node 并行）**——`Fit.Filter` 从 CycleState 读出"要 2 核"，做布尔判定：
+
+| Node | 可用 CPU | 够 2 核？ | 结果 |
+| :--- | :--- | :--- | :--- |
+| node-a | 0.5 核 | ❌ | 淘汰 |
+| node-b | 6 核 | ✅ | 通过 |
+| node-c | 7 核 | ✅ | 通过 |
+
+候选 Node 收缩为 `[node-b, node-c]`。软反亲和是 `preferred`，**不在 Filter 淘汰**，留给 Score。
+
+**第 3 步 · PostFilter**——Filter 后候选非空，**抢占不触发**，跳过。（若候选为空，这里才跑 `DefaultPreemption`，去驱逐 priority 比 `web-4` 低的运行中 Pod。）
+
+**第 4 步 · PreScore（跑 1 次）**——输入是已通过 Filter 的 `[node-b, node-c]`。`InterPodAffinity` 的 PreScore 基于这个候选集算反亲和打分要用的拓扑统计（b 上 1 个 web Pod、c 上 0 个），写入 CycleState。
+
+**第 5 步 · Score + NormalizeScore（每个候选 Node 跑一次，并行）**——假设启用两个 Score 插件，归一化到 0-100：
+
+| Node | `NodeResourcesBalancedAllocation`<br/>（越空闲越高分） | `InterPodAffinity`<br/>（web Pod 越少越高分） |
+| :--- | :--- | :--- |
+| node-b | 调度后 50% 使用率 → 50 | 已有 1 个 → 0 |
+| node-c | 调度后 37.5% 使用率 → 80 | 已有 0 个 → 100 |
+
+**第 6 步 · 加权求和**——两插件 weight 均为 1：
+
+```
+node-b = 50×1 + 0×1   = 50
+node-c = 80×1 + 100×1 = 180   ← 胜出
+```
+
+**第 7 步 · Reserve → Assume → Permit → Bind**——
+
+1. `Reserve`：在调度器内存里为 node-c 预留 2 核，防止下一个 Pod 并发误判 node-c 还有 7 核。
+2. `Assume`：`web-4.Spec.NodeName = node-c` 写进 cache（乐观假设），scheduling cycle 结束，立刻去调度 activeQ 里的下一个 Pod。
+3. `Permit`：无 gang scheduling，直接 approve。
+4. binding cycle（异步 goroutine）：`Bind` 向 apiserver 写 `Binding` 对象，kubelet 监听到后拉起容器。若 Bind 失败 → `Unreserve` 回滚那 2 核预留，`web-4` 回 backoffQ 重来。
+
+### 每步在「选什么」一览
+
+| 步骤                  | 这步在选               | 本例结果                                     |
+| :------------------ | :----------------- | :--------------------------------------- |
+| activeQ 排序          | Pod 之间谁先调度         | `web-4`（prio 1000）先于 `batch-job`（prio 0） |
+| PreFilter           | —（预计算存 CycleState） | 算出"要 2 核" + web Pod 拓扑分布                 |
+| Filter              | 哪些 Node 能用（布尔淘汰）   | 淘汰 node-a，剩 b、c                          |
+| PostFilter          | 候选为空才抢占            | 跳过                                       |
+| PreScore            | —（基于候选集预计算）        | 算出反亲和拓扑统计                                |
+| Score + 加权          | 哪个 Node 最好（打分）     | node-c 180 > node-b 50                   |
+| Reserve/Assume/Bind | 锁定并异步绑定            | `web-4` 落在 node-c                        |
+
+一条线读下来能看清三个「选」的分工：**Priority 只在第 0 步决定 Pod 顺序；Filter 做布尔淘汰（能/不能）；Score 才是真正打分，且打给 Node 不是打给 Pod。**
+
+## 九、自定义调度插件开发
 
 ### 实现 Plugin 接口
 
@@ -446,11 +537,11 @@ spec:
 
 注意点：第二调度器必须用独立的 `leaderElection.resourceName`，否则会与 default-scheduler 抢同一把锁；多个调度器各自维护缓存与队列，若它们能调度到相同节点，理论上存在并发误判风险（生产中通常按节点 label / Pod schedulerName 划清边界）。相比之下，若只是新增插件而不需要独立进程，直接在默认调度器里多加一个 profile 更安全。GPU 相关的实际插件实践见 [[gpu-scheduling]]。
 
-## 九、源码片段精读（K8s master @ 2026-03，Go 1.26）
+## 十、源码片段精读（K8s master @ 2026-03，Go 1.26）
 
 下面把前文反复提到的关键函数定位到具体文件与行号，配合源码片段精读。所有路径相对仓库根 `kubernetes/kubernetes`，行号取自当前 master 分支。
 
-### 9.1 调度主循环：`Scheduler.ScheduleOne`
+### 10.1 调度主循环：`Scheduler.ScheduleOne`
 
 ```go
 // 文件: pkg/scheduler/schedule_one.go:67-96
@@ -531,7 +622,7 @@ func (sched *Scheduler) scheduleOnePod(ctx context.Context, podInfo *framework.Q
 
 要点：`scheduleOnePod` 里能清晰看到三段式：先由 `frameworkForPod` 按 `pod.Spec.SchedulerName` 选 framework，再串行跑 `schedulingCycle`，最后用 `go sched.runBindingCycle(...)` 把 binding 异步丢给 goroutine。`state := framework.NewCycleState()` 是每个 Pod 一份的瞬时状态容器；`PodsToActivate` 用来让插件在调度过程中主动激活其他被压住的 Pod。
 
-### 9.2 Scheduling Cycle：`Scheduler.schedulingCycle`
+### 10.2 Scheduling Cycle：`Scheduler.schedulingCycle`
 
 ```go
 // 文件: pkg/scheduler/schedule_one.go:175-198
@@ -596,7 +687,7 @@ func (sched *Scheduler) findNodesThatPassFilters(
 
 `RunFilterPluginsWithNominatedPods` 是包装层，处理"如果该节点有被抢占提名的 Pod，要先把它们加入 NodeInfo 再跑 Filter"的语义。真正的核心是下面的 `RunFilterPlugins`。
 
-### 9.3 Binding Cycle：`Scheduler.bindingCycle`
+### 10.3 Binding Cycle：`Scheduler.bindingCycle`
 
 ```go
 // 文件: pkg/scheduler/schedule_one.go:397-503（节选）
@@ -643,7 +734,7 @@ func (sched *Scheduler) bindingCycle(
 
 要点：binding cycle 的顺序是 **WaitOnPermit → PreBind → Bind → PostBind**。`WaitOnPermit` 阻塞直到 Permit 阶段返回 `wait` 的所有插件都 approve 或 timeout，是 gang scheduling 的关键交汇点。注释里有一句很重要：**"Any failures after this point cannot lead to the Pod being considered unschedulable"**——`Permit` 是调度/绑定流程里最后一次能把 Pod 判定为 Unschedulable 的点，之后任何失败都会回到 backoffQ 而非 unschedulablePods。
 
-### 9.4 Plugin 接口：`framework/interface.go`
+### 10.4 Plugin 接口：`framework/interface.go`
 
 注意：自 1.31 起 framework 的核心接口被搬到 staging 仓 `k8s.io/kube-scheduler/framework`（被 `pkg/scheduler/framework` 通过 `fwk "k8s.io/kube-scheduler/framework"` 重导出）。下面的源码位于 staging 路径，但等价于历史上 `pkg/scheduler/framework/interface.go` 的同名声明：
 
@@ -700,7 +791,7 @@ type ScorePlugin interface {
 
 要点：每个扩展点都是 `Plugin` 的"嵌入 + 一个方法"的组合。一个具体的插件 struct 可以同时实现多个扩展点接口——例如 `NodeResourcesFit` 同时是 `PreFilterPlugin`、`FilterPlugin`、`ScorePlugin`。`ScoreExtensions()` 返回 `nil` 表示该插件不需要 NormalizeScore，常用于 0/1 离散打分插件。
 
-### 9.5 Framework 实现：`RunFilterPlugins` 与 `RunScorePlugins`
+### 10.5 Framework 实现：`RunFilterPlugins` 与 `RunScorePlugins`
 
 ```go
 // 文件: pkg/scheduler/framework/runtime/framework.go:1078-1111
@@ -791,7 +882,7 @@ func (f *frameworkImpl) RunScorePlugins(ctx context.Context, state fwk.CycleStat
 
 要点：Score 阶段有**三轮并行**——(1) 每个节点上跑所有 Score 插件得原始分；(2) 每个 ScorePlugin 跑 `NormalizeScore` 把本插件结果映射到 `[0, 100]`；(3) 每个节点应用 `weight` 加权求和。`f.scorePluginWeight` 来自 `KubeSchedulerConfiguration.profiles[].plugins.score.enabled[].weight`。最终的 `TotalScore` 就是 `selectHost` 选最高分节点的依据。
 
-### 9.6 内置插件实例：`NodeResourcesFit.Filter`
+### 10.6 内置插件实例：`NodeResourcesFit.Filter`
 
 ```go
 // 文件: pkg/scheduler/framework/plugins/noderesources/fit.go:612-645
@@ -830,7 +921,7 @@ func (f *Fit) Filter(ctx context.Context, cycleState fwk.CycleState, pod *v1.Pod
 
 要点：`Fit.Filter` 是教科书式的 Filter 插件实现——(1) `getPreFilterState` 从 `CycleState` 取出 PreFilter 阶段算好的"Pod 总 request"，避免每个节点重算；(2) `fitsRequest` 跑核心比对（CPU/内存/GPU/HugePage/扩展资源）；(3) 任何资源 `Unresolvable=true`（例如 Pod 请求的扩展资源该节点根本不提供）就把状态升级为 `UnschedulableAndUnresolvable`，让上层跳过 PostFilter 抢占。这是 Filter 阶段几乎所有"资源类"插件的模板。
 
-### 9.7 Cache：`AssumePod` 与 `BindPod`
+### 10.7 Cache：`AssumePod` 与 `BindPod`
 
 ```go
 // 文件: pkg/scheduler/backend/cache/cache.go:397-410
@@ -869,7 +960,7 @@ func (cache *cacheImpl) BindPod(binding *v1.Binding) (<-chan error, error) {
 
 要点：BindPod 之所以"什么都不存"是因为 assume 阶段已经把这份状态写进 cache 了，BindPod 只负责把 `Binding` 对象通过 `apiDispatcher` 异步写到 apiserver（1.32+ 引入的 APIDispatcher 抽象，便于把多个 apiserver 调用合批/限流）；`onFinish` channel 让 `bindingCycle` 可以等待 apiserver 确认。绑定失败时上层调 `ForgetPod`，把 assume 时增加的资源回滚出来。
 
-### 9.8 PriorityQueue.Pop 与 activeQ/backoffQ 衔接
+### 10.8 PriorityQueue.Pop 与 activeQ/backoffQ 衔接
 
 ```go
 // 文件: pkg/scheduler/backend/queue/scheduling_queue.go:1005-1012
@@ -942,7 +1033,7 @@ func (p *PriorityQueue) flushBackoffQCompleted(logger klog.Logger) {
 
 要点：`flushBackoffQCompleted` 由 `PriorityQueue.Run` 在后台周期性触发（对齐到 backoff 时间窗口），把所有"退避已到期"的 Pod 批量搬回 activeQ 并广播条件变量，唤醒阻塞在 `Pop` 上的调度循环。`SchedulerPopFromBackoffQ` feature gate 启用后，activeQ 空时还可以直接从 backoffQ 借调一个 Pod（`backoffQPopper.popBackoff()`），进一步提高调度器在 backoff 风暴下的利用率。
 
-## 十、手写简化复现：50 行调度框架
+## 十一、手写简化复现：50 行调度框架
 
 为了把上一节的接口理顺，下面用 ~50 行 Go 代码做一个"教学版 scheduling framework"。它**不**真正调度 K8s Pod，只演示插件接口、Framework 串联、Filter 短路、Score 加权这几条核心机制：
 
