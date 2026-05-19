@@ -293,9 +293,11 @@ assume 与 bind 的关系：assume 只动本地 cache（不持久化、非阻塞
 
 ## 八、端到端调度实例走查
 
-前七节把扩展点逐个拆开讲了，这一节用一个具体场景把它们串成一条线，看一个 Pod 从入队到落到某个 Node 上，每个扩展点分别淘汰/产出了什么。
+前七节把扩展点逐个拆开讲了，这一节用具体场景把它们串成一条线。8.1 走一个普通 Pod 的常规调度，8.2 走一个用了 `WaitForFirstConsumer` 存储卷的 Pod——后者会看到调度器为什么得"管存储的事"。
 
-### 场景设定
+### 8.1 普通 Pod 的端到端走查
+
+#### 场景设定
 
 集群 3 个 Node：
 
@@ -322,7 +324,7 @@ spec:
           topologyKey: kubernetes.io/hostname
 ```
 
-### 逐扩展点走查
+#### 逐扩展点走查
 
 **第 0 步 · activeQ 排序（QueueSort）**——`web-4` 经 Informer 进 activeQ。此刻队里还有个 `batch-job`（priority=0）。`PrioritySort.Less` 先比 `pod.Spec.Priority`：1000 > 0，`web-4` 排到队首。`ScheduleOne` 循环 `Pop()` 弹出 `web-4`，为它 `new` 一个 `CycleState`，流水线开始。
 
@@ -349,10 +351,10 @@ spec:
 
 **第 5 步 · Score + NormalizeScore（每个候选 Node 跑一次，并行）**——假设启用两个 Score 插件，归一化到 0-100：
 
-| Node | `NodeResourcesBalancedAllocation`<br/>（越空闲越高分） | `InterPodAffinity`<br/>（web Pod 越少越高分） |
-| :--- | :--- | :--- |
-| node-b | 调度后 50% 使用率 → 50 | 已有 1 个 → 0 |
-| node-c | 调度后 37.5% 使用率 → 80 | 已有 0 个 → 100 |
+| Node   | `NodeResourcesBalancedAllocation`<br/>（越空闲越高分） | `InterPodAffinity`<br/>（web Pod 越少越高分） |
+| :----- | :--------------------------------------------- | :------------------------------------- |
+| node-b | 调度后 50% 使用率 → 50                               | 已有 1 个 → 0                             |
+| node-c | 调度后 37.5% 使用率 → 80                             | 已有 0 个 → 100                           |
 
 **第 6 步 · 加权求和**——两插件 weight 均为 1：
 
@@ -368,7 +370,7 @@ node-c = 80×1 + 100×1 = 180   ← 胜出
 3. `Permit`：无 gang scheduling，直接 approve。
 4. binding cycle（异步 goroutine）：`Bind` 向 apiserver 写 `Binding` 对象，kubelet 监听到后拉起容器。若 Bind 失败 → `Unreserve` 回滚那 2 核预留，`web-4` 回 backoffQ 重来。
 
-### 每步在「选什么」一览
+#### 每步在「选什么」一览
 
 | 步骤                  | 这步在选               | 本例结果                                     |
 | :------------------ | :----------------- | :--------------------------------------- |
@@ -381,6 +383,55 @@ node-c = 80×1 + 100×1 = 180   ← 胜出
 | Reserve/Assume/Bind | 锁定并异步绑定            | `web-4` 落在 node-c                        |
 
 一条线读下来能看清三个「选」的分工：**Priority 只在第 0 步决定 Pod 顺序；Filter 做布尔淘汰（能/不能）；Score 才是真正打分，且打给 Node 不是打给 Pod。**
+
+### 8.2 用了 WaitForFirstConsumer 存储卷的 Pod
+
+8.1 里 `web-4` 不带存储卷。一旦 Pod 引用了一个 `volumeBindingMode: WaitForFirstConsumer` 的 PVC，调度器还得多管一件事：**决定这块 PV 该在哪里创建**。这就是调度器为什么内置 `VolumeBinding` 插件。
+
+#### 为什么调度器要管存储
+
+存在一个鸡生蛋问题：
+
+- PV 在哪个 AZ/Zone 创建 ← 取决于 Pod 调度到哪个 Node；
+- Pod 调度到哪个 Node ← 取决于它的 PV 在哪个 AZ（得能挂上）。
+
+`volumeBindingMode: Immediate`：PVC 一创建就立刻动态 provision PV（比如落在 AZ-a），调度器之后被迫只能把 Pod 调到 AZ-a；AZ-a 没资源就 Pod pending、死锁。
+
+`volumeBindingMode: WaitForFirstConsumer`：把顺序倒过来——**先让调度器挑 Node，再在该 Node 所在 AZ 造 PV**。代价是挑 Node 时调度器必须把"卷能不能在这个 Node 满足"纳入决策。所以这段逻辑天然属于调度器，由 `VolumeBinding` 插件承担。
+
+#### VolumeBinding 插件在各扩展点做什么
+
+`VolumeBinding` 是个多扩展点插件（`framework.go` 插件注册表里的 `volumebinding.Name`），Pod 引用 `WaitForFirstConsumer` 的 PVC 时：
+
+| 扩展点 | VolumeBinding 的动作 |
+| :--- | :--- |
+| **PreFilter** | 把 Pod 的 PVC 分两类：已绑定的（`pvc.Spec.VolumeName` 非空）当硬约束；未绑定的标记"待定"留给 Filter 逐 Node 试。 |
+| **Filter** | 对每个候选 Node 判断"卷能否满足"：① 集群里有没有现成、未占用、拓扑允许在此 Node 用的 PV；② 没有的话，PVC 的 StorageClass 能不能在**这个 Node 的拓扑域**动态 provision。两条都不满足 → 该 Node 被淘汰。 |
+| **Score**（可选） | `VolumeCapacityPriority` 特性开启时，给"能复用现成 PV / 容量更贴合"的 Node 加分，减少不必要的动态创建。 |
+| **Reserve** | Node 选定后，把决策写进插件自己的 assume cache：复用的 PV 标记"已被预定"，待创建的记"待在某 AZ 造"。**此刻还没写 apiserver**，只内存占坑，让下一个抢同一 PV 的 Pod 在 Filter 阶段就能看到。 |
+| **PreBind** | 真正落库：给待动态创建的 PVC 打上 `volume.kubernetes.io/selected-node: <node>` 注解 → external-provisioner sidecar 监听到，调 CSI `CreateVolume` 在该 Node 的 AZ 造盘、建 PV、完成绑定。`PreBind` **阻塞等待** PVC 变 `Bound` 才放行 `Bind`。 |
+| **Unreserve** | PreBind 卷绑定失败/超时 → 清掉 Reserve 阶段的缓存占位，Pod 回 backoffQ 重来。 |
+
+#### 整条时间线
+
+```
+PVC 创建 ────── 啥也不做，PVC 一直 Pending（这就是 "WaitForFirstConsumer" 的字面意思）
+   │
+Pod 创建并引用该 PVC
+   │
+调度器 ScheduleOne 取出 Pod
+   ├─ PreFilter   VolumeBinding：分类 PVC（已绑 / 未绑）
+   ├─ Filter      VolumeBinding：逐 Node 判断"卷在此 Node 能否满足"，淘汰不行的
+   ├─ Score       （可选）倾向能复用现成 PV 的 Node
+   ├─ Reserve     VolumeBinding：内存里假绑定 PV / 记下待造
+   │              ── scheduling cycle 结束，转入异步 binding cycle ──
+   └─ PreBind     VolumeBinding：给 PVC 打 selected-node 注解，
+                  阻塞等 external-provisioner 在该 AZ 造出 PV、PVC 变 Bound
+   ▼
+Bind           Pod 绑到 Node，kubelet 挂卷、起容器
+```
+
+一句话：`WaitForFirstConsumer` 把"PV 在哪造"的决定权交给调度器——**Filter 让"卷能否满足"参与 Node 淘汰、Reserve 内存假绑定、PreBind 打 `selected-node` 注解触发 external-provisioner 在正确 AZ 真正造盘**。CSI 侧的配套见 [[csi-source]]。
 
 ## 九、自定义调度插件开发
 
@@ -1177,3 +1228,12 @@ func (e *Err) Error() string { return e.msg }
 
 **Q10: Framework Plugin 和 Scheduler Extender 怎么选？**
 > Framework Plugin 是进程内 Go 代码，覆盖全部扩展点、性能好，但要重新编译调度器；Extender 是 HTTP webhook，只能扩展 Filter/Score/Bind，有网络延迟和单点风险，但无需改调度器代码。生产环境深度定制优先 Framework Plugin，Extender 仅用于对接遗留系统或轻量扩展。
+
+**Q11: PreFilter / PreScore 和 Filter / Score 是什么关系？为什么要拆出 Pre 阶段？**
+> Filter / Score 是**逐 Node 跑**的（Filter 跑 N 次、Score 跑 M 次，且跨 Node 并行）；PreFilter / PreScore 每个调度周期只跑 1 次。凡是只跟 Pod 自身有关、与具体 Node 无关的计算，放进 Pre 阶段算一次、`Write` 进 CycleState，Filter / Score 直接 `Read`，把"每 Node 重复"降为"每 Pod 一次"。典型：`NodeResourcesFit` 在 PreFilter 把容器 request 加总成"Pod 总需求"；`InterPodAffinity` 在 PreFilter 算好全集群拓扑统计。PreFilter 还能返回 `Unschedulable` 直接终止周期，或裁剪 Node 子集；PreScore 的输入是"已通过 Filter 的 Node 集"。
+
+**Q12: Reserve 扩展点是干什么的？和 Assume 有什么区别？**
+> Reserve 是 scheduling cycle 倒数第二个扩展点，让插件在选定 Node 后、真正绑定前，把本次调度的副作用登记到调度器内存里，并提供失败时的 `Unreserve` 回滚钩子（Reserve 之后任何一步失败都会回滚所有已成功插件）。最典型的使用者是 `VolumeBinding`，在此预留 PV。Reserve 管的是**插件私有状态**；紧随其后的 **Assume** 是框架层动作，把 Pod 的 `Spec.NodeName` 写进 `Scheduler.Cache` 并立即扣减该 Node 缓存里的剩余资源。两者都属于"绑定前在内存占坑"，但一个由插件做、一个由框架做。
+
+**Q13: `volumeBindingMode: WaitForFirstConsumer` 下调度器做了什么？**
+> 它把"PV 在哪个 AZ 创建"的决定权交给调度器，解决 PV 与 Pod 跨 AZ 的鸡生蛋问题。调度器内置的 `VolumeBinding` 插件在多个扩展点接管：PreFilter 分类 PVC（已绑/未绑）；Filter 逐 Node 判断"现成 PV 能否复用 / StorageClass 能否在该 Node 拓扑域动态 provision"，不满足就淘汰该 Node；Reserve 在内存里假绑定 PV；PreBind 给待创建的 PVC 打 `volume.kubernetes.io/selected-node` 注解，触发 external-provisioner 在选中 Node 的 AZ 真正造盘，并阻塞等 PVC 变 `Bound` 才放行 Bind。对比 `Immediate`——PVC 一创建就造 PV，反过来把 Pod 锁死在某个 AZ。
