@@ -25,7 +25,7 @@
 ### 断链检测命令
 ```bash
 # 检测所有断链 wikilink
-grep -roh '\[\[[a-z0-9_-]*\]\]' --include='*.md' . | \
+grep -roh '\[\[[a-z0-9_-]*\]\]' --include='*.md' --exclude='AGENTS.md' . | \
   sort -u | sed 's/\[\[//;s/\]\]//' | \
   while read link; do
     found=$(fd -t f "^${link}\.md$" 2>/dev/null | head -1)

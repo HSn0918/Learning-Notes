@@ -41,7 +41,7 @@
 ## 目录结构
 ```
 learning-plan/      - Kubernetes 开发学习路线图与源码导读（k8s-development-roadmap 为入口）
-  source/           - 11 篇源码导读：client-go / controller-runtime / scheduler-framework / kubelet-cri / cri / etcd / csi / cni / gpu-scheduling / hami（+ hami-learning-path）
+  source/           - 11 篇源码导读：client-go / controller-runtime / scheduler-framework / volcano / kubelet-cri / cri / etcd / csi / cni / gpu-scheduling / hami（+ hami-learning-path）
   demos/            - 10 个可运行 demo：sample-controller / kubebuilder-operator / scheduler-plugin / device-plugin / fake-cri / csi-hostpath / cni-bridge / fake-gpu / hami-mac / raftexample-walkthrough
 
 cloud-native/

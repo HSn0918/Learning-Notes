@@ -6,6 +6,7 @@
 
 - 每完成一项把 `[ ]` 改成 `[x]`
 - 每周末在「周末复盘」处写一两句话：画了什么图、卡在哪、读了多少行源码
+- 每周必须留下三个可检查产出：一张白板图、一次 demo 改造或验证记录、一次 5 分钟口述答案
 - 卡住的题目记在最底部「待解决问题」，每周回顾一次
 
 ## 关于「6 周」——先读这段，别被节奏绑架
@@ -35,7 +36,7 @@
 
 ### 阅读
 
-- [ ] [[scheduler-framework-source]] 第 1-3 节（整体架构 + 调度循环）
+- [x] [[scheduler-framework-source]] 第 1-3 节（整体架构 + 调度循环）
 - [ ] [[scheduler-framework-source]] 第 4-6 节（CycleState / Snapshot / 队列）
 - [ ] [[scheduler-framework-source]] 第 7-9 节（11 扩展点 + 自定义插件 + extender 对比）
 - [ ] [[scheduler-deep-dive]] [[scheduler-assume]] 横向补
@@ -53,6 +54,12 @@
 - [ ] 默写 11 扩展点顺序：PreFilter → Filter → PostFilter → PreScore → Score → NormalizeScore → Reserve → Permit → PreBind → Bind → PostBind
 - [ ] 画调度队列三态转换：activeQ ↔ backoffQ ↔ unschedulableQ
 - [ ] 一句话解释：为什么 percentageOfNodesToScore 默认 50（节点多时降到更低）
+
+### 完成标准
+
+- [ ] 白板图：`SchedulingQueue -> ScheduleOne -> Framework -> Assume -> Bind`
+- [ ] demo 记录：贴出 scheduler plugin 改造点、部署命令、Pod 落点截图或命令输出
+- [ ] 口述答案：5 分钟讲清 CycleState、Snapshot、percentageOfNodesToScore
 
 **本周复盘笔记**：
 ```
@@ -89,9 +96,23 @@
 - [ ] 答出：为什么 HAMi 选 extender 不选 framework plugin
 - [ ] 答出：Scheduler 和 kubelet 在 GPU 分配中分别负责什么（提示：调到哪台 vs 哪块卡）
 
+### 完成标准
+
+- [ ] 白板图：`Webhook -> Scheduler/Extender -> Device Plugin -> kubelet Allocate -> libvgpu`
+- [ ] demo 记录：贴出 `LD_PRELOAD`、`CUDA_DEVICE_MEMORY_LIMIT_0`、Node capacity 的验证输出
+- [ ] 口述答案：5 分钟讲清 Scheduler 与 kubelet 的 GPU 分工
+
 **本周复盘笔记**：
 ```
 ```
+
+---
+
+## 阶段复盘 A：调度与异构资源
+
+- [ ] 用一张图串起 Scheduler Framework、Device Plugin、HAMi Extender 的边界
+- [ ] 整理 3 个最重要的不变量：调度只选 Node、kubelet 选具体设备、HAMi 的隔离边界在运行时注入
+- [ ] 从高阶自检题里挑 1-8 题，闭卷答一遍
 
 ---
 
@@ -124,6 +145,12 @@
 - [ ] 答出：PLEG 为什么会 not healthy（提示：relist 周期、stop-the-world）
 - [ ] 答出：1.27+ Evented PLEG 解决了什么
 
+### 完成标准
+
+- [ ] 白板图：`kubelet -> CRI -> containerd -> shim -> runc`
+- [ ] demo 记录：贴出 fake-cri 的 `version`、`runp`、`pods` 输出
+- [ ] 口述答案：5 分钟讲清 RunPodSandbox、CreateContainer、StartContainer 的顺序
+
 **本周复盘笔记**：
 ```
 ```
@@ -155,9 +182,23 @@
 - [ ] 答出：CSI 三大 service（Identity / Controller / Node）分别在哪种 Pod 里跑
 - [ ] 答出：WaitForFirstConsumer 改变了什么（提示：延后 PV 创建到 Pod 调度后）
 
+### 完成标准
+
+- [ ] 白板图：`PVC -> PV -> VolumeAttachment -> NodePublishVolume -> Pod mount`
+- [ ] demo 记录：贴出 PVC 绑定、VolumeAttachment、Pod mount 的关键输出
+- [ ] 口述答案：5 分钟讲清 Controller service 与 Node service 的部署位置
+
 **本周复盘笔记**：
 ```
 ```
+
+---
+
+## 阶段复盘 B：节点运行时与存储
+
+- [ ] 用一张图串起 Pod 创建时的 CRI、CNI、CSI 调用边界
+- [ ] 整理 3 个最重要的不变量：sandbox 先于 container、attach 先于 mount、WaitForFirstConsumer 延后绑定
+- [ ] 从高阶自检题里挑 10-15 题，闭卷答一遍
 
 ---
 
@@ -178,13 +219,19 @@
 - [ ] 跑 [[demo-raftexample-walkthrough]]
 - [ ] 用 `etcdctl` 实操：watch / lease / txn / compact / defrag
 - [ ] 用 `etcdctl endpoint status` 看 leader、raft index、DB size
-- [ ] **综合**：拼一个 GPU Operator：CRD + Reconciler + Webhook + 自定义 Scheduler scorer，对接 [[demo-hami-mac]] 的 plugin
+- [ ] **可选挑战**：拼一个 GPU Operator：CRD + Reconciler + Webhook + 自定义 Scheduler scorer，对接 [[demo-hami-mac]] 的 plugin
 
 ### 周末复盘
 
 - [ ] 画一次写请求完整路径（client → apiserver → etcd WAL → raft 同步 → apply → 回 client）
 - [ ] 答出：MVCC 的 revision 是逻辑时钟还是物理时钟（提示：cluster-wide 单调递增）
 - [ ] 答出：compact 和 defrag 的差异（一个清 revision、一个回收磁盘）
+
+### 完成标准
+
+- [ ] 白板图：`client -> apiserver -> etcd raft WAL -> apply -> MVCC`
+- [ ] demo 记录：贴出 raftexample 或 etcdctl 的 watch、txn、compact 输出
+- [ ] 口述答案：5 分钟讲清 Ready 循环、WAL、snapshot、compact 的关系
 
 **本周复盘笔记**：
 ```
@@ -217,6 +264,12 @@
 - [ ] 模拟 30 分钟技术分享：讲清 HAMi 端到端链路
 - [ ] 再过一遍各源码导读笔记的「面试要点」章节
 - [ ] 自检题目（下面那批）能在 5 分钟内答完
+
+### 完成标准
+
+- [ ] 白板图：`containerd -> libcni -> bridge/ipam -> veth -> Service`
+- [ ] demo 记录：贴出 cni-bridge 两个 netns 互 ping 和规则检查输出
+- [ ] 口述答案：5 分钟讲清 CNI ADD/DEL 与 Calico/Cilium 数据面差异
 
 **本周复盘笔记**：
 ```

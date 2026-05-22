@@ -1,6 +1,6 @@
 #kubernetes #gpu #ai-infra
 
-相关笔记：[[kubernetes-basics]] | [[scheduler-assume]] | [[csi]] | [[k8s-interview]]
+相关笔记：[[kubernetes-basics]] | [[scheduler-assume]] | [[volcano-source]] | [[csi]] | [[k8s-interview]]
 
 # Kubernetes GPU Scheduling（GPU 调度与资源管理）
 
@@ -341,6 +341,8 @@ nvidia.com/gpu.count=8
 - Gang scheduling（一组 Pod 要么全部调度，要么全部不调度）
 - GPU 拓扑感知
 - Queue 和 Fair-share 调度
+
+更完整的批任务调度语义见 [[volcano-source]]。
 
 **3. Kubernetes Scheduler Framework Plugin**
 

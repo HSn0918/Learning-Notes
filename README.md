@@ -73,6 +73,7 @@ LLM 推理全流程、Prefill 缓存分析；终端效率速查。
 [client-go](learning-plan/source/client-go-source.md) ·
 [controller-runtime](learning-plan/source/controller-runtime-source.md) ·
 [scheduler-framework](learning-plan/source/scheduler-framework-source.md) ·
+[volcano](learning-plan/source/volcano-source.md) ·
 [kubelet-cri](learning-plan/source/kubelet-cri-source.md) ·
 [cri](learning-plan/source/cri-source.md) ·
 [etcd](learning-plan/source/etcd-source.md) ·

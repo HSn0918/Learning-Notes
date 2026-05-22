@@ -26,6 +26,8 @@ learning-plan/
 - **[[progress]] = 打卡表**：6 周高阶冲刺，决定开学后每天对着它勾选、写复盘。
 - **[[hami-learning-path]] = GPU 专题路径**：走 GPU/AI Infra 方向时的加餐，6 阶段深挖 HAMi。
 
+执行时只以 [[progress]] 为主线：每周留下白板图、demo 验证记录、5 分钟口述答案。本文不承载细节，源码细节看 `source/`，运行细节看 `demos/`。
+
 ## 你该走哪条路？（决策图）
 
 ```mermaid
@@ -269,6 +271,8 @@ mindmap
 
 ## 阶段化学习计划（建议 4-6 个月）
 
+这部分只回答「先学什么、后学什么」。具体每日打卡、完成标准和阶段复盘以 [[progress]] 为准。
+
 ```mermaid
 gantt
     title Kubernetes 开发学习计划
@@ -310,7 +314,7 @@ gantt
 ### Phase 4：综合（7-8 周）
 1. 通读 [[etcd-source]]，跑通 raftexample，理解 raft Ready 循环
 2. 基于 sample-apiserver 实现一个聚合 APIServer
-3. 综合项目：搭一个小型多集群/多租户平台，集成自己写的 Operator + Webhook + 调度插件
+3. 综合项目：搭一个小型多集群/多租户平台，集成自己写的 Operator + Webhook + 调度插件；如果当前目标是面试冲刺，先把综合项目降级为可选挑战
 4. 同步开始刷 [[k8s-interview]]，把上面所有面试要点过 3 遍
 
 ## 源码导读索引
