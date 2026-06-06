@@ -17,3 +17,6 @@ learning-plan/demos/cni-bridge/*.so
 learning-plan/demos/hami-mac/libvgpu-hook-demo/*.dylib
 learning-plan/demos/hami-mac/libvgpu-hook-demo/*.so
 learning-plan/demos/hami-mac/libvgpu-hook-demo/victim
+
+# macOS
+.DS_Store

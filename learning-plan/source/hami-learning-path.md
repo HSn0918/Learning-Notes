@@ -39,7 +39,7 @@ flowchart TB
 
 ## Mac（无 GPU）实操方案
 
-> **TL;DR**：HAMi 4 块组件里有 3 块在 Mac + kind 上能完整跑（webhook / scheduler / device-plugin），只有第 4 块 libvgpu.so 必须真 NVIDIA driver。配套 demo 见 [[demo-hami-mac]]（fake device plugin + LD_PRELOAD env 注入）和 [[../libvgpu-hook-demo/README]]（50 行 C 的 malloc hook 模拟 cuMemAlloc 配额）。把它们都跑一遍 = 80% 的 HAMi 学习量。
+> **TL;DR**：HAMi 4 块组件里有 3 块在 Mac + kind 上能完整跑（webhook / scheduler / device-plugin），只有第 4 块 libvgpu.so 必须真 NVIDIA driver。配套 demo 见 [[demo-hami-mac]]（fake device plugin + LD_PRELOAD env 注入）和 [libvgpu-hook-demo](../demos/hami-mac/libvgpu-hook-demo/README.md)（50 行 C 的 malloc hook 模拟 cuMemAlloc 配额）。把它们都跑一遍 = 80% 的 HAMi 学习量。
 
 ### 为什么 kwok 不合适做主力 demo
 
@@ -69,7 +69,7 @@ HAMi 的核心机制是 **Allocate 时通过 env 注入 LD_PRELOAD + 配额** �
 | 3 webhook 源码 | ✅ 全部（可自己起一个 webhook，APIServer 行为完全一致） | — |
 | 4 scheduler extender 源码 | ✅ 主线（kind）+ 可选大规模（kwok） | — |
 | 5 device plugin 源码 | ✅ 全部（[[demo-hami-mac]] 就是这一阶段的"实物对照"） | — |
-| 6 libvgpu hook | ⚠️ 部分：用 [[../libvgpu-hook-demo/README]] 的 malloc hook 验证 LD_PRELOAD 机制；真 hook CUDA API 必须真 GPU | ✅ 真 hook 必须 |
+| 6 libvgpu hook | ⚠️ 部分：用 [libvgpu-hook-demo](../demos/hami-mac/libvgpu-hook-demo/README.md) 的 malloc hook 验证 LD_PRELOAD 机制；真 hook CUDA API 必须真 GPU | ✅ 真 hook 必须 |
 
 ### Mac 用户的推荐学习节奏
 
@@ -493,7 +493,7 @@ CUresult cuLaunchKernel(...) {
 - 为什么用 LD_PRELOAD 而不是修改 NVIDIA 驱动？（不可行 —— 驱动闭源）
 - 它对应用层是完全透明的吗？（基本透明，但对自己直接调 NVML 的应用会有差异）
 
-**产出**：手写一段 50 行 C 代码，实现一个简化版 `malloc` hook 限制堆内存（不用碰 CUDA，先用 malloc 练 LD_PRELOAD）—— 这就是 [[../libvgpu-hook-demo/README]] 那个 demo，Mac 用户用 `./run-in-docker.sh` 一键跑（Mac 上 libSystem 拦不住 malloc，必须 Linux 容器）。
+**产出**：手写一段 50 行 C 代码，实现一个简化版 `malloc` hook 限制堆内存（不用碰 CUDA，先用 malloc 练 LD_PRELOAD）—— 这就是 [libvgpu-hook-demo](../demos/hami-mac/libvgpu-hook-demo/README.md) 那个 demo，Mac 用户用 `./run-in-docker.sh` 一键跑（Mac 上 libSystem 拦不住 malloc，必须 Linux 容器）。
 
 ---
 

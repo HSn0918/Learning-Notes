@@ -4,7 +4,7 @@
 
 一个最小可运行的 Kubernetes Device Plugin demo，向 kubelet 宣告 8 个名为
 `learning-plan.io/fake-device` 的虚拟设备。配套阅读：
-[[../../kubelet-cri-source]] | [[../../gpu-scheduling]]
+[[kubelet-cri-source]] | [[gpu-scheduling]]
 
 ## 文件结构
 

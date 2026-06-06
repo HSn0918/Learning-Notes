@@ -3,8 +3,8 @@
 50 行 C 代码版的 HAMi libvgpu 简化原型 —— 用 `LD_PRELOAD`（Linux）/ `DYLD_INSERT_LIBRARIES`（Mac）拦截 `malloc`，把 HAMi 在 `libvgpu.so` 里 hook `cuMemAlloc` 的核心思想"按配额拒绝分配"做出来。
 
 配套阅读：
-- [[../../../hami-learning-path]] 「阶段 6」
-- [[../demo-hami-mac]]（外层 device-plugin demo，本子目录是它的"内层"故事）
+- [[hami-learning-path]] 「阶段 6」
+- [[demo-hami-mac]]（外层 device-plugin demo，本子目录是它的"内层"故事）
 
 ## 它能让你看到什么
 
@@ -59,7 +59,7 @@ MEM_LIMIT_MB=5 LD_PRELOAD=./malloc-limit.so ./victim
 ## 关键点
 
 1. **`dlsym(RTLD_NEXT, "malloc")` 拿到 libc 真 malloc**：HAMi 同样的套路从 `libcuda.so` 拿 `cuMemAlloc`。
-2. **构造函数 `__attribute__((constructor))`**：进程加载本 .so 时立即跑一次，提前解析 real symbol 并读 env。HAMi libvgpu 在 constructor 里读 `CUDA_DEVICE_MEMORY_LIMIT_*` 和 `CUDA_DEVICE_SM_LIMIT_*` 这些 env，这就是 [[../demo-hami-mac]] 那个 Allocate 注入 env 的接收端。
+2. **构造函数 `__attribute__((constructor))`**：进程加载本 .so 时立即跑一次，提前解析 real symbol 并读 env。HAMi libvgpu 在 constructor 里读 `CUDA_DEVICE_MEMORY_LIMIT_*` 和 `CUDA_DEVICE_SM_LIMIT_*` 这些 env，这就是 [[demo-hami-mac]] 那个 Allocate 注入 env 的接收端。
 3. **`atomic_size_t` 累计 used**：单进程多线程下避免 race。真实 HAMi 多容器共享一卡，统计放在 `/dev/shm/` 共享内存里跨进程协商。
 4. **不 hook free**：本 demo 故意省掉，让你看到"配额单调增长"的纯净效果。真实场景必须 hook `cuMemFree` 才能正确减账。
 

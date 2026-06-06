@@ -6,7 +6,7 @@
 
 学 Kubernetes 最容易踩的坑：**对着官方文档背概念，看完一脸"原来如此"，过两周全忘**。原因是 K8s 的每个机制（APIServer / Informer / Scheduler / kubelet / Device Plugin / Webhook / CRI / containerd）单独看都很抽象，没东西把它们串起来。
 
-**HAMi 是一个天然的串联线索**：用户写一行 `nvidia.com/gpu: 1` 的 Pod，背后 9 个 K8s 核心组件依次工作，少一个都跑不通。把这条链路自己跑一遍 + 自己造一个 fake 版的 HAMi（[[demo-hami-mac]]）+ 自己写 hook（[[../libvgpu-hook-demo/README]]），等于把 K8s 控制面 + kubelet + 容器运行时 + Linux 动态链接 一口气过了一遍。
+**HAMi 是一个天然的串联线索**：用户写一行 `nvidia.com/gpu: 1` 的 Pod，背后 9 个 K8s 核心组件依次工作，少一个都跑不通。把这条链路自己跑一遍 + 自己造一个 fake 版的 HAMi（[[demo-hami-mac]]）+ 自己写 hook（[libvgpu-hook-demo](libvgpu-hook-demo/README.md)），等于把 K8s 控制面 + kubelet + 容器运行时 + Linux 动态链接 一口气过了一遍。
 
 > **本文用法**：把它当**学习清单 + 路线**用。每个章节有"动手"和"读源码"两段；动手段是必做（不动手永远学不会），读源码段是要面试 / 进 K8s 团队的人深入。
 
@@ -66,7 +66,7 @@ flowchart TB
 | 9 | Device Plugin | HAMi 上报 vGPU + Allocate 注入 env | 跑 [[demo-hami-mac]] | [[gpu-scheduling-source]] [[kubelet-cri-source]] |
 | 10 | kubelet + DeviceManager | 调 Allocate, 把 env 合并进 CRI | 看 kubelet 日志 | [[kubelet-cri-source]] |
 | 11 | CRI + containerd + runc | 真正起容器, 注入 env | docker 跑一遍 | [[oci-runtime]] |
-| 12 | LD_PRELOAD + libvgpu.so | 容器内 hook CUDA API | 跑 malloc-limit demo | [[../libvgpu-hook-demo/README]] |
+| 12 | LD_PRELOAD + libvgpu.so | 容器内 hook CUDA API | 跑 malloc-limit demo | [libvgpu-hook-demo](libvgpu-hook-demo/README.md) |
 
 ---
 
@@ -322,7 +322,7 @@ docker exec hami-mac-control-plane crictl inspect <container-id>
 
 **HAMi 里的位置**：HAMi 真正的护城河 —— 软件层 GPU 隔离。
 
-**动手**：跑 [[../libvgpu-hook-demo/README]] 那个 50 行 C 的 malloc hook。看到 `[hook] DENY malloc(...) (simulated cuMemAlloc OOM)` 那行，你就理解了 HAMi 是怎么"骗"应用看到 3GB 显存的。
+**动手**：跑 [libvgpu-hook-demo](libvgpu-hook-demo/README.md) 那个 50 行 C 的 malloc hook。看到 `[hook] DENY malloc(...) (simulated cuMemAlloc OOM)` 那行，你就理解了 HAMi 是怎么"骗"应用看到 3GB 显存的。
 
 **关键链条**：
 ```

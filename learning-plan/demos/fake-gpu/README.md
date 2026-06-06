@@ -5,8 +5,8 @@
 一个最小可运行的 GPU 风格 Kubernetes Device Plugin demo。它在不需要真实 GPU 硬件的前提下，模仿 NVIDIA k8s-device-plugin 的关键 SHAPE：4 块 fake GPU、UUID 风格 ID、`Allocate` 返回 NVIDIA 风格的 envs。让你在 Mac 上用 kind 就能跑通整条链路。
 
 配套阅读：
-- [[../../gpu-scheduling-source]]（源码导读）
-- [[../../../cloud-native/kubernetes/control-plane/gpu-scheduling]]（概念层）
+- [[gpu-scheduling-source]]（源码导读）
+- [[gpu-scheduling]]（概念层）
 - [[demo-fake-gpu]]（本目录的笔记入口）
 
 ## 文件结构
@@ -26,7 +26,7 @@
 
 1. **资源名** `learning-plan.io/fake-device` → `fake-gpu.k8s.io/gpu`，对齐 NVIDIA `nvidia.com/gpu` 的形态。
 2. **设备 ID** 用 UUID 字符串 `GPU-00000000-0000-0000-0000-00000000000{0..3}`，让链路日志看起来像真的 NVIDIA 卡。
-3. **Allocate 不返回 Mounts / Devices**，只返回 `NVIDIA_VISIBLE_DEVICES` env，演示「环境变量注入 → container runtime 据此动态挂载设备」这条 NVIDIA 模式——而不是把 `/dev/nvidiaX` 写死在插件里。这是真实 NVIDIA plugin 的默认行为，详见 [[../../gpu-scheduling-source]] 的「为什么 Allocate 不直接 mount /dev/nvidiaX」一节。
+3. **Allocate 不返回 Mounts / Devices**，只返回 `NVIDIA_VISIBLE_DEVICES` env，演示「环境变量注入 → container runtime 据此动态挂载设备」这条 NVIDIA 模式——而不是把 `/dev/nvidiaX` 写死在插件里。这是真实 NVIDIA plugin 的默认行为，详见 [[gpu-scheduling-source]] 的「为什么 Allocate 不直接 mount /dev/nvidiaX」一节。
 
 ## 本地构建
 

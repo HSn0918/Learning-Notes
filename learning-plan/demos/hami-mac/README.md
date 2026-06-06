@@ -5,8 +5,8 @@
 在 Mac（无 NVIDIA GPU）+ kind 集群上，复现 HAMi 关键链路的可运行 fake device plugin。一句话定位：[[demo-fake-gpu]] 上报的是 1:1 物理卡 + 仅 `NVIDIA_VISIBLE_DEVICES` env，这个 demo 升级为 **1 卡切 N 份 vGPU + 注入 `LD_PRELOAD` + `CUDA_DEVICE_MEMORY_LIMIT_*` + `CUDA_DEVICE_SM_LIMIT_*`**，对应 HAMi device-plugin 的两件最关键的事。
 
 配套阅读：
-- [[../../hami-learning-path]] 「Mac 无 GPU 实操方案」节
-- [[../fake-gpu/demo-fake-gpu]] 前置 demo
+- [[hami-learning-path]] 「Mac 无 GPU 实操方案」节
+- [[demo-fake-gpu]] 前置 demo
 
 ## 它做了什么
 
@@ -123,7 +123,7 @@ NVIDIA_VISIBLE_DEVICES=GPU-00000000-0000-0000-0000-000000000000
 ## 进阶玩法
 
 1. **跑真 HAMi-scheduler + 本 demo**：把真实 HAMi 的 scheduler/webhook chart 装到 kind 集群上，让它以为后端是 NVIDIA GPU。`webhook` 改写后的 Pod resources 走到 kubelet，kubelet 调本 demo 的 `Allocate`，env 链路完整。需要把 plugin 上报的资源名改成 HAMi-scheduler 认识的 `nvidia.com/vgpu`（视 HAMi 版本）。
-2. **加 webhook 模拟**：自己写一个简化的 mutating webhook（[[../../controller-runtime-source]] 第 8 节做过），在 Pod 创建时把 `nvidia.com/gpumem` 解析成 annotation。
+2. **加 webhook 模拟**：自己写一个简化的 mutating webhook（[[controller-runtime-source]] 第 8 节做过），在 Pod 创建时把 `nvidia.com/gpumem` 解析成 annotation。
 3. **kwok 大规模测试**：用 kwok 起 100 个虚拟节点，每个节点贴 `nvidia.com/gpu: 40` capacity label，让真 HAMi-scheduler 跑 Filter/Bind 看 spread vs binpack 策略效果（不能跑 Allocate，因为 kwok 没真 kubelet）。
 
 ## 清理
