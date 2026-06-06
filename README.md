@@ -1,75 +1,113 @@
-# Learning Notes
+# Learning Notes · 云原生求职知识库
 
-技术学习笔记，基于 Obsidian 构建的个人知识库。
+> 面向 **Kubernetes / 云原生 / 后端** 岗位求职的系统化技术笔记。基于 Obsidian 构建，同时兼容 GitHub 浏览。
 
----
-
-## Learning Plan
-
-> 新手从 [[k8s-development-roadmap]] 开始 —— 它用一张决策图告诉你该走哪条路径，不要直接乱点下面的链接。
-
-- [[k8s-development-roadmap]] - **learning-plan 入口**：12 主题地图 + 阶段计划 + 你该走哪条路的决策图
-- [[hami-learning-path]] - HAMi（GPU 虚拟化中间件）由浅入深学习路径
-- [[learn-k8s-via-hami]] - 以 HAMi 为线索一步步学透 K8s 的 12 个核心机制（Mac 友好）
-- [[progress]] - 6 周高阶学习打卡表（Scheduler → Device Plugin → CRI → CSI → etcd → CNI）
-- **源码导读**（含真实源码片段 + 手写简化复现；8 篇带文件路径+行号，cni/hami 两篇带目录+函数名定位）：[[client-go-source]] | [[controller-runtime-source]] | [[scheduler-framework-source]] | [[kubelet-cri-source]] | [[cri-source]] | [[etcd-source]] | [[csi-source]] | [[cni-source]] | [[gpu-scheduling-source]] | [[hami-source]]
-- **可运行 demo**：[[demo-sample-controller]] | [[demo-kubebuilder-operator]] | [[demo-scheduler-plugin]] | [[demo-device-plugin]] | [[demo-fake-cri]] | [[demo-raftexample-walkthrough]] | [[demo-csi-hostpath]] | [[demo-cni-bridge]] | [[demo-fake-gpu]] | [[demo-hami-mac]]（Mac 无 GPU 跑 HAMi 关键链路 + 50 行 C 的 libvgpu 简化 hook）
+**116 篇技术笔记** · **10 个可运行 demo** · **11 篇源码导读**，覆盖 8 大板块。
+每篇知识笔记都配有 **mermaid 图解** + **面试要点 Q&A**，可直接当作复习卡片。
 
 ---
 
-## Cloud Native
+## 🚀 学习路线（求职导向）
 
-- **Docker**
-  - [[docker-basics]] - Docker 容器技术基础
-  - [[dockerfile]] | [[docker-commands]] | [[buildah-large-image]]
-  - 底层技术：[[cgroup]] | [[namespace]] | [[union-fs]]
-  - 网络：[[network-bridge]] | [[network-underlay]] | [[network-null]]
+不知道从哪开始？按下面这条主线走，每一步都点进对应领域的「学习索引」，里面有由浅入深的细化顺序。
 
-- **Kubernetes**
-  - Infrastructure：[[kubernetes-basics]] | [[etcd]] | [[google-borg]] | [[oci-runtime]]
-  - Control Plane：[[api-resource]] | [[informer]] | [[restful-api-design]] | [[rbac]] | [[scheduler-assume]] | [[scheduler-deep-dive]] | [[gpu-scheduling]]
-  - Networking：[[cni]] | [[calico]] | [[cilium]] | [[flannel]] | [[weave]] | [[multus]] | [[service]] | [[headless-service]] | [[network-model]]
-  - Storage：[[csi]] | [[ceph-csi]] | [[longhorn]] | [[openebs]] | [[nfs-csi]] | [[cloud-provider-csi]]
-  - Extension：[[kubebuilder]] | [[velero]] | [[operator-pattern]]
-  - Interview：[[k8s-interview]]
+```mermaid
+flowchart LR
+    A["① 打基础<br/>Go + Docker"] --> B["② K8s 核心<br/>控制面/网络/存储"]
+    B --> C["③ 源码 + 动手<br/>learning-plan"]
+    C --> D["④ 后端功底<br/>数据库 / 中间件 / 算法"]
+    B -.加分.-> E["AI Infra<br/>LLM 推理 / GPU 调度"]
+    C -.加分.-> E
+```
 
-## Database
+| 阶段 | 学什么 | 入口 |
+|------|--------|------|
+| ① 打基础 | 岗位语言 Go + 容器基础 Docker | [Go 索引](go/README.md) · [云原生索引（Docker 部分）](cloud-native/README.md) |
+| ② K8s 核心 | 基础设施 → 控制面 → 网络 → 存储 → 扩展 | [云原生索引](cloud-native/README.md) |
+| ③ 源码 + 动手 | 读源码 + 跑 demo，把机制吃透 | [learning-plan 专区](#-learning-plan--kubernetes-开发深挖专区) |
+| ④ 后端功底 | MySQL/Redis 必考、Kafka、手撕算法 | [数据库](database/README.md) · [中间件](middleware/README.md) · [算法](algorithm/README.md) |
+| ⭐ 加分方向 | AI Infra：LLM 推理、GPU 调度/HAMi | [AI](#-ai) · [GPU 调度](cloud-native/kubernetes/control-plane/gpu-scheduling.md) |
 
-- **MySQL**：[[mysql-index]] | [[mysql-engine]]
-- **Redis**：[[redis-data-types]]
-- **Elasticsearch**：[[elasticsearch-basics]] | [[es-field-types]] | [[es-kibana-docker]]
+---
 
-## Middleware
+## 🗺️ 知识地图
 
-- **Kafka**
-  - [[kafka-basics]] - 架构设计与核心概念
-  - [[kafka-interview]] | [[producer-partition]] | [[producer-compression]]
-  - [[zero-message-loss]] | [[cluster-config]]
-- **NATS**：[[nats-basics]] | [[nats-jetstream]]
-- **Canal**：[[canal]] - MySQL Binlog 增量同步
-- **Distributed Transaction**：[[distributed-transaction]] - 2PC、DTM 框架
+每个领域都有一份 **学习索引**（推荐顺序 + 难度 + 一句话简介），点标题进入。
 
-## Go
+### ☁️ [云原生 Cloud Native](cloud-native/README.md) · 41 篇
+容器与 Kubernetes 全栈，岗位核心主战场。
+`Docker 底层` `Cgroup/Namespace/UnionFS` `etcd` `Informer` `Scheduler` `RBAC` `CNI` `CSI` `Operator` `GPU 调度`
 
-- [[gmp-model]] - GMP 调度模型
-- [[gc]] - 垃圾回收与三色标记法
-- [[context]] - Context 上下文管理
-- [[map-internals]] - Map 哈希表底层实现
-- [[p-runnext]] - P.runnext 机制
+### 🐹 [Go 语言](go/README.md) · 9 篇
+runtime 底层是面试区分度所在。
+`GMP 调度` `三色标记 GC` `Channel` `Map/Slice 内存模型` `Context` `泛型/版本特性`
 
-## Algorithm
+### 🗄️ [数据库 Database](database/README.md) · 13 篇
+MySQL 索引/事务/锁几乎必考，Redis 考工程实战。
+`B+Tree 索引` `MVCC` `Next-Key Lock` `RDB/AOF` `缓存穿透/击穿/雪崩` `Sentinel/Cluster` `Elasticsearch` `PostgreSQL`
 
-- **Search**：[[bfs]] | [[dfs]] | [[backtracking]] | [[binary-search]] | [[lca]]
-- **Sorting**：[[sorting-overview]] | [[heap-sort]] | [[quick-sort]] | [[radix-sort]] | [[merge-sort]]
-- **Techniques**：[[prefix-sum]] | [[diff-array]] | [[sliding-window]] | [[monotonic-stack]] | [[xor]] | [[bitwise-and]]
-- **DP**：[[house-robber]] | [[unbounded-knapsack]]
-- **Data Structures**：[[lru]] | [[lfu]] | [[linked-list]]
+### 🔗 [中间件 Middleware](middleware/README.md) · 10 篇
+消息队列高频，分布式事务考一致性权衡。
+`Kafka 架构` `零消息丢失` `ISR/acks` `NATS JetStream` `Canal Binlog 同步` `2PC/TCC/Saga`
 
-## AI
+### 🧮 [算法 Algorithm](algorithm/README.md) · 27 篇
+笔试硬门槛，覆盖手撕高频方向。
+`BFS/DFS/回溯` `二分` `拓扑/Dijkstra/并查集` `快排/归并/堆排` `前缀和/差分/滑窗/单调栈` `DP` `LRU/LFU` `KMP/Trie`
 
-- [[llm-inference-pipeline]] - 大模型推理全流程
-- [[prefill-cache-miss]] - Prefill 缓存未命中分析
+### 🤖 [AI](#-ai) · 2 篇 ＆ 🧰 [Misc](#-misc) · 1 篇
+LLM 推理全流程、Prefill 缓存分析；终端效率速查。
 
-## Misc
+---
 
-- [[zsh]] - 终端快捷键
+## 🧭 learning-plan · Kubernetes 开发深挖专区
+
+> 新手先读 **[k8s-development-roadmap](learning-plan/k8s-development-roadmap.md)** —— 一张决策图告诉你该走哪条路径，别直接乱点下面的链接。
+
+**路线图与打卡**
+- [k8s-development-roadmap](learning-plan/k8s-development-roadmap.md) —— 12 主题地图 + 阶段计划 + 决策图（learning-plan 入口）
+- [hami-learning-path](learning-plan/source/hami-learning-path.md) —— HAMi（GPU 虚拟化中间件）由浅入深学习路径
+- [learn-k8s-via-hami](learning-plan/demos/hami-mac/learn-k8s-via-hami.md) —— 以 HAMi 为线索串透 K8s 12 个核心机制（Mac 友好）
+- [progress](learning-plan/progress.md) —— 6 周高阶打卡表（Scheduler → Device Plugin → CRI → CSI → etcd → CNI）
+
+**源码导读**（真实源码片段 + 手写简化复现，多数带文件路径 + 行号定位）
+[client-go](learning-plan/source/client-go-source.md) ·
+[controller-runtime](learning-plan/source/controller-runtime-source.md) ·
+[scheduler-framework](learning-plan/source/scheduler-framework-source.md) ·
+[kubelet-cri](learning-plan/source/kubelet-cri-source.md) ·
+[cri](learning-plan/source/cri-source.md) ·
+[etcd](learning-plan/source/etcd-source.md) ·
+[csi](learning-plan/source/csi-source.md) ·
+[cni](learning-plan/source/cni-source.md) ·
+[gpu-scheduling](learning-plan/source/gpu-scheduling-source.md) ·
+[hami](learning-plan/source/hami-source.md)
+
+**可运行 demo**（每个目录含可编译代码 + README 跑测步骤）
+[sample-controller](learning-plan/demos/sample-controller/demo-sample-controller.md) ·
+[kubebuilder-operator](learning-plan/demos/kubebuilder-operator/demo-kubebuilder-operator.md) ·
+[scheduler-plugin](learning-plan/demos/scheduler-plugin/demo-scheduler-plugin.md) ·
+[device-plugin](learning-plan/demos/device-plugin/demo-device-plugin.md) ·
+[fake-cri](learning-plan/demos/fake-cri/demo-fake-cri.md) ·
+[csi-hostpath](learning-plan/demos/csi-hostpath/demo-csi-hostpath.md) ·
+[cni-bridge](learning-plan/demos/cni-bridge/demo-cni-bridge.md) ·
+[fake-gpu](learning-plan/demos/fake-gpu/demo-fake-gpu.md) ·
+[hami-mac](learning-plan/demos/hami-mac/demo-hami-mac.md) ·
+[raftexample-walkthrough](learning-plan/demos/raftexample-walkthrough/demo-raftexample-walkthrough.md)（配套 [raftexample 源码笔记](learning-plan/demos/raftexample-walkthrough/raftexample-notes.md)）
+
+---
+
+## 🤖 AI
+
+- [LLM 推理全流程](ai/llm-inference-pipeline.md) —— Prefill / Decode 两阶段、KV Cache、Prefix Cache
+- [Prefill 缓存未命中分析](ai/prefill-cache-miss.md) —— 序列化不确定性如何拖垮 Prefix Cache 命中率
+
+## 🧰 Misc
+
+- [Zsh / iTerm2 快捷键](misc/zsh.md) —— 终端效率速查
+
+---
+
+## 📐 关于本库
+
+- **结构**：每个领域目录下都有 `README.md` 学习索引；`learning-plan/` 是 K8s 开发深挖路线（源码导读 + 可运行 demo）。
+- **笔记规范**：中英混合（术语用英文，解释用中文）；每篇含 `#标签`、`相关笔记：[[...]]` 双向链接、mermaid 图解、`## 面试要点` Q&A。
+- **阅读方式**：Obsidian 中可用图谱/反向链接漫游；GitHub 上可顺着本页与各领域索引逐层下钻。

@@ -34,13 +34,15 @@
 - 不删除有实质内容的笔记（超过 5 行有意义内容即视为有实质内容）
 - 修改笔记后检查 wikilink 是否仍然有效
 - 合并笔记时保留两篇笔记中不重复的内容
-- README.md 作为 MOC（Map of Content），新增笔记后需同步更新
+- README.md 作为根 MOC（知识地图 + 求职学习路线）；每个领域目录下另有 `README.md` 学习索引（推荐顺序 + 难度 + 一句话简介）
+- 新增笔记后需同步更新：① 所在领域的 `领域/README.md` 索引，② 根 README.md（涉及新领域或重点笔记时）
 - CLAUDE.md 目录结构部分需与实际目录保持同步
 
 ## 目录结构
 ```
-learning-plan/      - Kubernetes 开发学习路线图与源码导读
-  demos/            - 7 个可运行 demo：sample-controller / kubebuilder-operator / scheduler-plugin / device-plugin / csi-hostpath / fake-gpu / raftexample-walkthrough
+learning-plan/      - Kubernetes 开发学习路线图与源码导读（k8s-development-roadmap 为入口）
+  source/           - 11 篇源码导读：client-go / controller-runtime / scheduler-framework / kubelet-cri / cri / etcd / csi / cni / gpu-scheduling / hami（+ hami-learning-path）
+  demos/            - 10 个可运行 demo：sample-controller / kubebuilder-operator / scheduler-plugin / device-plugin / fake-cri / csi-hostpath / cni-bridge / fake-gpu / hami-mac / raftexample-walkthrough
 
 cloud-native/
   docker/           - 容器基础、Dockerfile、网络模式、底层技术（Cgroup/Namespace/UnionFS）
