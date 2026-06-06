@@ -291,3 +291,37 @@ import _ "net/http/pprof"
 ```
 
 关键原则：**每个 goroutine 都必须有明确的退出机制**，推荐使用 `context.Context` 管理生命周期。
+
+## 面试要点
+
+### 高频问题
+
+**Q: GMP 模型中 G、M、P 各代表什么，为什么需要引入 P？**
+A: G 是用户态 goroutine，M 是 OS 线程，P 是逻辑处理器，持有本地运行队列（runq）和 mcache。Go 1.1 之前只有 GM 模型，所有 M 共享一个全局队列，需要全局锁，竞争严重且缺乏局部性。引入 P 后每个 P 拥有独立的本地队列，大幅减少锁竞争，并让 M 通过 P 携带 mcache 实现无锁小对象分配，同时 P 的数量（GOMAXPROCS）天然限制了并行度。
+
+**Q: GOMAXPROCS 控制的是什么？设置后 M 的数量也被限制了吗？**
+A: GOMAXPROCS 控制 P 的数量，即同时执行 Go 代码的最大并行度，Go 1.5 起默认值等于 CPU 核心数。它不限制 M 的数量——M 默认上限是 10000（可用 `runtime/debug.SetMaxThreads` 调整）。即使 `GOMAXPROCS=1`，当 G 进入阻塞系统调用时仍会创建新的 M 接管 P，所以 M 数量通常多于 P。
+
+**Q: 调度器 schedule() 查找下一个可运行 G 的优先级顺序是什么？**
+A: 优先级从高到低为：先检查 `P.runnext`（刚创建/唤醒的 G，优先级最高），再取 P 本地队列（FIFO），然后是全局队列，接着 netpoll 就绪的 G，最后通过 work stealing 从其他 P 偷取约一半 G。此外为防止全局队列饥饿，调度器每 61 次调度（`schedtick%61==0` 且全局队列非空）会强制从全局队列取一个 G。
+
+**Q: 什么是 work stealing？偷取多少个 G？**
+A: 当某个 P 的本地队列和全局队列都为空时，对应的 M 会进入 spinning 状态，随机选择其他 P，从其本地队列偷取约一半的 G 到自己的队列（必要时也会抢走对方的 `runnext`）。这样既保证了各 P 之间的负载均衡，又避免了 M 频繁陷入休眠，提升了 CPU 利用率。
+
+**Q: goroutine 发起系统调用时，调度器如何处理？**
+A: 区分阻塞与否。进入 syscall 时 P 的状态置为 `_Psyscall`，M 携带 G 一起陷入内核；如果是阻塞型系统调用，sysmon 监控线程检测到 P 长时间停留在 `_Psyscall` 后会将 P 与 M 解绑（handoffp），让空闲或新建的 M 接管这个 P 继续执行其他 G，从而不浪费 P。系统调用返回后，原 M 尝试重新获取一个 P，获取不到则把 G 放回全局队列并让自己休眠。
+
+**Q: goroutine 抢占机制是怎样的？协作式和异步抢占的区别？**
+A: Go 1.14 之前是协作式抢占，依赖函数调用入口的栈扩容检查点（morestack）检测抢占标记，缺点是纯计算的紧密循环（无函数调用）无法被抢占，可能导致 GC STW 长时间等待。Go 1.14 引入基于信号的异步抢占：sysmon 检测到 G 连续运行超过 10ms 后，向其所在 M 发送 SIGURG 信号，在信号处理中安全地中断并切换，解决了死循环无法抢占的问题。
+
+**Q: 如何排查和避免 goroutine 泄漏？**
+A: 泄漏通常源于 channel/锁永久阻塞、死循环、或 goroutine 等待一个永不到来的事件。排查可用 pprof 访问 `/debug/pprof/goroutine?debug=1` 查看所有 goroutine 栈，定位卡在哪一行。核心原则是每个 goroutine 都要有明确的退出路径，推荐用 `context.Context` 的 Done channel 统一控制生命周期，并给 channel 操作配合 select 加超时或取消分支。
+
+### 面试加分点
+
+- 能说清 GMP 的演进史：Go 1.1 之前是 GM 模型（全局队列 + 全局锁），Dmitry Vyukov 设计的 GMP 在 Go 1.1 引入 P 解决了锁竞争和局部性问题，Go 1.14 又补齐了基于信号的异步抢占。
+- 理解 `g0` 的特殊作用：每个 M 都有一个 g0，使用 OS 线程栈而非可增长的用户栈，调度逻辑、栈扩容、GC 等运行时代码都切换到 g0 栈上执行，而用户 goroutine 运行在 `curg` 上。
+- 知道新建 goroutine 默认放入 `P.runnext` 而非队列尾部，这是为了优化「父 goroutine 立即唤醒子 goroutine」的常见模式（如生产者-消费者），提升缓存局部性和延迟。
+- 能解释 spinning M 的意义：保留少量自旋的 M 主动寻找可运行的 G，避免「有新 G 就绪却要从头唤醒/创建线程」的延迟，是吞吐与延迟的权衡。
+- 了解本地队列容量固定为 256（环形队列），放满时 `runqput` 会走 `runqputslow`，把本地队列的前一半连同新 G 一起批量转移到全局队列，避免单个 P 囤积过多 G。
+- 知道 netpoller 的作用：网络 IO 通过 epoll/kqueue 实现非阻塞，G 等待 IO 时不会占用 M，IO 就绪后由调度器的 netpoll 环节重新唤醒，这让 Go 能用少量线程支撑海量网络连接。

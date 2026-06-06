@@ -113,3 +113,36 @@ Borglet 是部署在所有服务器上的 Agent，负责接收 Borgmaster 进程
 - Borg 将资源类型分成两类:
 	- **可压榨的（compressible）**: CPU 是可压资源，资源耗尽不会终止进程
 	- **不可压榨的（non-compressible）**: 内存是不可压资源，资源耗尽进程会被终止
+
+## 面试要点
+
+### 高频问题
+
+**Q: Borg 和 Kubernetes 是什么关系？核心概念如何对应？**
+A: Borg 是 Google 内部的大规模集群管理系统，Kubernetes 是其开源继承者，由原 Borg 团队主导设计。概念上 Borg 的 Borgmaster 对应 K8s 的 control plane（API Server + Scheduler + Controller），Borglet 对应 kubelet，Cell 对应 cluster，Job/Task 对应 Deployment/Pod，alloc（机器上预留的一组资源集合）则类似 Pod 把多个容器放进同一资源单元的思想。
+
+**Q: Borgmaster 如何实现高可用？为什么 K8s 改用 etcd/Raft？**
+A: Borgmaster 逻辑上是单进程但有 5 个副本，每个副本在内存维护一份 cell 状态，同时通过基于 Paxos 的分布式存储做本地磁盘持久化；通过 Paxos 选举出单一 master，它既是 Paxos leader 又是状态管理者。K8s 没有沿用 Paxos，而是选了 etcd，etcd 底层用 Raft——Raft 比 Paxos 更简单、更易理解和工程实现，本质上都是解决一致性问题。
+
+**Q: Borg 调度器的调度流程是怎样的？有哪两个阶段？**
+A: 作业提交后 Borgmaster 先把它写入 Paxos store 并放入等待队列，调度器异步扫描队列分配机器。调度分两步：先做可行性检查（Feasibility Checking），筛出满足任务约束且资源充足的机器集合；再做打分（Scoring），按用户偏好对可行机器排序（如优先有软件包缓存的机器、把任务分散到不同失败域）。这与 K8s Scheduler 的 Predicates（Filter）+ Priorities（Score）两阶段如出一辙。
+
+**Q: Borg 调度器用了哪些性能优化手段？**
+A: 主要三种。Score caching：服务器或任务状态没变或变化很小时直接复用缓存分数，避免重复计算；Equivalence classes：同一 Job 下的多个相同 Task 只需计算一次评分；Relaxed randomization：引入随机性，每轮随机抽样一批机器，只要符合条件的机器数量够了就停止，不必给所有机器打分。这些都是为了在数万台规模下控制调度延迟。
+
+**Q: Borg 如何提高集群资源利用率？资源回收机制是怎么工作的？**
+A: 核心是 prod 与 non-prod 负载混部，比独立部署利用率更高；并辅以 cell sharing、large cell、细粒度资源请求和资源回收。资源回收针对用户出于"心理安全"超额申请的问题：对可容忍低质量资源的批处理作业，Borg 通过 task reservation 评估真实用量，初始预留值等于资源请求，约 300 秒后逐渐降到实际使用率加一个安全边缘，把空出来的资源回收给别的任务用。
+
+**Q: Borg 怎么做性能隔离？可压榨与不可压榨资源有什么区别？**
+A: 性能隔离基于 cgroup 容器技术，通过优先级抢占保障在线任务（prod，延时敏感）的性能，必要时牺牲离线任务（non-prod/Batch）。资源分两类：可压榨资源（compressible，如 CPU）耗尽时只会被节流（throttle），不会终止进程；不可压榨资源（non-compressible，如内存）耗尽时进程会被直接 kill。K8s 中内存 OOMKill 与 CPU throttling 正是这一思想的延续。
+
+**Q: Borg 在可用性（Availability）上做了哪些设计？**
+A: 主要包括：自动重新调度被驱逐的任务；把任务分散到不同失败域以降低相关性失败；限制单个作业的任务个数与中断率；限制任务重调度速率（因为无法区分大规模机器故障与网络分区，盲目重调度会引发雪崩）；避免错误的任务-机器匹配；关键数据持久化到磁盘。这些防护思想在 K8s 的 PodDisruptionBudget、反亲和、failure domain 等机制中都有体现。
+
+### 面试加分点
+
+- Borgmaster 与 Borglet 间是 pull 模型：Borgmaster 周期性向每个 Borglet 拉取状态，而非 Borglet 主动 push，这样能精确控制通信速率、避免组件重启后的"恢复风暴"（recovery storm）；Borglet 连续多轮无响应才会被标记 down 并重调度其任务，避免网络抖动误判。
+- 为可扩展性，每个 Borgmaster 副本运行无状态的 link shard 分摊与部分 Borglet 的通信，状态做差量传输——这是 watch 增量同步思想的早期形态。
+- Borgmaster 用 checkpoint 机制持久化状态：在 Paxos store 中周期性存全量 snapshot 加增量更改日志，对应 etcd 的 snapshot + WAL，可类比讲清楚一致性存储的恢复原理。
+- 调度策略 Worst Fit（分散）、Best Fit（紧凑省碎片）、Hybrid（减少受困资源 stranded resources）的取舍，可与 K8s 的 spread/binpack 调度打分插件对照说明。
+- 安全隔离的演进很能体现容器技术脉络：早期用 chroot jail，后期基于 Linux namespace，性能隔离基于 cgroup——namespace + cgroup 正是后来 Docker/容器的两大基石。

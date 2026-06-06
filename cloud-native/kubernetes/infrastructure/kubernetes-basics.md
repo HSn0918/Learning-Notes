@@ -1,6 +1,6 @@
 #kubernetes
 
-相关笔记：[[docker-basics]] | [[etcd]] | [[informer]] | [[kubebuilder]] | [[cni]] | [[csi]] | [[k8s-interview]] | [[service]] | [[rbac]] | [[scheduler-assume]]
+相关笔记：[[docker-basics]] | [[etcd]] | [[informer]] | [[kubebuilder]] | [[cni]] | [[csi]] | [[k8s-interview]] | [[service]] | [[rbac]] | [[scheduler-assume]] | [[probes]]
 
 ## [[google-borg]]
 
@@ -184,3 +184,37 @@ kubectl exec -it <pod-name> -- bash
 kubectl logs <pod-name> -f       # -f 实时跟踪日志
 kubectl logs <pod-name> -c <container>  # 指定容器
 ```
+
+## 面试要点
+
+### 高频问题
+
+**Q: Kubernetes 的核心组件有哪些？分别部署在哪里？**
+A: Master（control plane）组件包括 kube-apiserver、etcd、kube-controller-manager、kube-scheduler；每个 Worker Node 上运行 kubelet 和 kube-proxy。其中只有 APIServer 直接读写 etcd，其余组件都通过 APIServer 间接访问数据，APIServer 是整个集群的通信枢纽。
+
+**Q: 一次 `kubectl create` 请求经过 APIServer 时会经历哪些处理阶段？**
+A: 依次是 Authentication（认证身份）、Authorization（鉴权，判断是否有权限，典型用 RBAC）、Mutating Admission（变更准入，可注入默认值/sidecar）、Object Schema Validation（schema 校验）、Validating Admission（验证准入），最后才写入 etcd。Mutating 在 Validating 之前，因为要先修改对象再做最终校验。
+
+**Q: 什么是声明式系统（Declarative）？Controller 如何保证最终一致性？**
+A: 用户只描述期望状态（Desired State），不关心如何达成。Controller Manager 由多个 Controller 组成，每个 Controller 是一个 control loop，持续 watch 对象，对比 Desired State 与 Actual State，不一致就采取动作（reconcile）。配置失败会自动重试，因此集群在不断重试中达到 Eventual Consistency，而非强一致。
+
+**Q: Scheduler 的调度流程分哪几个阶段？**
+A: 分三步：Predicate（预选）过滤掉不满足需求的节点，如资源不足、端口冲突、节点亲和性不匹配；Priority（优选）对剩余节点打分排序，选出最优节点；Bind（绑定）把 Pod 与目标节点绑定写回 APIServer。Scheduler 本质也是一个特殊的 Controller，它 watch 所有未调度（spec.nodeName 为空）的 Pod。
+
+**Q: etcd 在 Kubernetes 中扮演什么角色？为什么选 etcd？**
+A: etcd 是 CoreOS 基于 Raft 开发的分布式 key-value 存储，保存集群所有对象的状态，是唯一的持久化数据源（source of truth）。它提供 watch 监听机制（Informer 的底层基础）、key 的过期及续约（lease）、原子 CAS/CAD（支持分布式锁与 leader 选举），强一致性保证了集群状态的可靠性。
+
+**Q: kube-proxy 有哪几种代理模式？它们有什么区别？**
+A: 主要有 userspace、iptables、ipvs 三种（新版本另有 nftables 模式，1.31 起 beta、1.33 GA，目标是替代 iptables）。userspace 性能最差已基本废弃；iptables 用 Netfilter 规则做 NAT，规则数随 Service 数线性增长、匹配是 O(n)；ipvs 基于内核 LVS，用哈希表查找，大规模 Service 场景下性能和延迟明显优于 iptables。每个节点的 kube-proxy 配置相同策略，构成分布式负载均衡，服务调用无需额外 network hop。
+
+**Q: Kubelet 的主要职责是什么？CRI/CNI/CSI 是什么？**
+A: Kubelet 是节点上的"init system"，从 APIServer、本地静态文件目录或 HTTP server 获取 Pod 清单，按需启停 Pod，并上报节点资源与 Pod 健康状态（执行 liveness/readiness/startup probe）。它把运行时、网络、存储抽象成三个标准接口：CRI（Container Runtime Interface，如 containerd）、CNI（网络）、CSI（存储），实现可插拔。
+
+### 面试加分点
+
+- 能点出 Kubernetes 源自 Google 的 Borg：Borg 中的 Cell 对应集群、Job 对应一组相同副本的 Task，这种"用户只提交期望、平台负责调度与故障恢复"的思想直接演化为 K8s 的声明式 API 与 Pod 副本模型。
+- 理解 APIServer 的缓存层：APIServer 对 etcd 数据做缓存（watch cache），各组件通过 Informer 的 List-Watch 从 APIServer 获取增量事件，大幅降低对 etcd 的直接压力；Informer 内部由 Reflector、DeltaFIFO、Indexer/Local Store 组成。
+- 区分 Mutating 与 Validating Admission 的顺序和用途：Mutating 可以改对象（注入默认值、sidecar 注入用的就是 MutatingWebhook），Validating 只能拒绝不能改；放在 schema validation 两侧保证既能改又能在改后做最终校验。
+- 能解释为什么 Controller 用 control loop + 重试而不是事务：分布式环境下外部系统不可靠，level-triggered（基于当前状态对账）比 edge-triggered（基于事件）更健壮，即使丢事件也能在下一轮 reconcile 中纠正，这是 K8s 容错的核心设计哲学。
+- 了解控制器靠对比对象的实际内容（如配置 hash）判断是否变更，避免无意义的重复 reconcile，体现幂等设计。
+- 知道大规模集群的优化方向：kube-proxy 用 ipvs/nftables 替代 iptables、Scheduler 用调度框架（Scheduling Framework）扩展插件、APIServer 开启 watch cache 与 APF（API Priority and Fairness）限流。

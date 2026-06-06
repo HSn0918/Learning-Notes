@@ -2635,3 +2635,40 @@ axios.request(config)
     }
 }
 ```
+
+## 面试要点
+
+### 高频问题
+
+**Q: 什么是 GVK 和 GVR，二者有什么区别？**
+A: GVK 是 Group-Version-Kind 三元组，用于唯一标识一种 API 对象的类型（如 `apps/v1/Deployment`），其中 Kind 是首字母大写的单数驼峰名。GVR 是 Group-Version-Resource，Resource 是 REST 路径中使用的复数小写名（如 `deployments`）。client-go 内部通过 RESTMapper 在 GVK 和 GVR 之间做映射：Kind 面向代码/对象，Resource 面向 HTTP 路径。
+
+**Q: core 核心组和非核心组在 API 路径上有什么区别？**
+A: 核心组（legacy group，group 为空字符串）走 `/api/{version}/...`，例如 `/api/v1/namespaces/default`；非核心组走 `/apis/{group}/{version}/...`，例如 `/apis/apps/v1/.../deployments`、`/apis/storage.k8s.io/v1/storageclasses`。core 组包含 Pod、Service、Node、Namespace、ConfigMap 等最基础资源，出于历史原因没有 group 前缀。
+
+**Q: 如何判断一个资源是 Cluster 级还是 Namespaced 级？**
+A: 通过 Discovery 接口拿到的 `APIResource` 结构体里有 `Namespaced` 布尔字段。`Namespaced=true` 的资源（Pod、Service、Deployment、ConfigMap）必须归属某个命名空间，URL 中含 `/namespaces/{ns}/`；`Namespaced=false` 的是集群级资源（Node、Namespace、StorageClass、ClusterRole/ClusterRoleBinding、PV），URL 中不带命名空间段。本平台在自定义返回结构里用 `namespace.isNamespace` 字段透出这一信息。
+
+**Q: 前端只有一个 YAML 编辑框，后端如何对任意 GVK 资源做通用的增删改查？**
+A: 前端把 YAML 转成 JSON 传给后端，后端用 `unstructured.Unstructured` + dynamic client（结合 RESTMapper 从 apiVersion/kind 解析出 GVR）来操作，而不是为每种类型写强类型客户端。这样新增 CRD 也无需改代码，是云原生管理平台做"资源中心"的标准做法。
+
+**Q: 集群里有哪些 API 资源、各自是不是命名空间级，是怎么发现的？**
+A: 通过 APIServer 的 Discovery API（`/api`、`/apis`、`/apis/{group}/{version}`）获取，client-go 用 `ServerPreferredResources` / `ServerGroupsAndResources` 拉取所有 `APIResourceList`。每个 `APIResource` 含 name、kind、namespaced、verbs 等元数据，平台据此按 GV 分类构建 GVK 列表并存入 map。
+
+**Q: 这套通用接口是怎么做鉴权的？为什么 token 不加 Bearer 前缀？**
+A: 鉴权直接复用 Kubernetes 的 RBAC 机制：前端请求头带 `Authorization: {{token}}`，token 是集群下发的 ServiceAccount JWT。后端把该 token 透传给 APIServer，由 APIServer 完成认证（验证 JWT 签名）和 RBAC 鉴权（对 GVR + verb + namespace 做权限校验）。文档约定前端无需自己加 `Bearer`，通常是因为后端在向 APIServer 转发时会补上标准的 `Bearer <token>` 头（APIServer 只认 `Bearer` 这种 scheme）。
+
+**Q: 为什么更新 Namespace 会返回"object namespace could not be change"？更新资源用 PUT 要注意什么？**
+A: 注意这里是平台层面的限制——文档明确"命名空间无法被修改"，返回 code 10006 的自定义"参数错误"，并不是 Kubernetes 本身禁止改 Namespace（真实 k8s 中 Namespace 的 labels/annotations 是可改的，只有 `metadata.name` 不可变）。更广义地说 PUT 是整体替换（replace）语义：需要带上正确的 `resourceVersion` 做乐观并发控制，否则与他人修改冲突会报 Conflict；像 `metadata.name`、Pod 的大部分 spec、PVC 容量缩小等不可变字段也会被 APIServer 拒绝。
+
+**Q: 响应里的 managedFields 是什么？有什么作用？**
+A: managedFields 记录了每个字段是由哪个 manager（如 kubectl、controller、本平台，示例里是 `___run_server`）、用什么 operation（Apply/Update）管理的，是 Server-Side Apply（SSA）的核心元数据。它让多个客户端各自管理同一对象的不同字段而不互相覆盖，冲突时能精确报出是哪个 manager 的哪个字段冲突。
+
+### 面试加分点
+
+- 能说清 RESTMapper 的作用：它维护 GVK ↔ GVR 的双向映射以及资源的 scope（Namespaced/Cluster），dynamic client 正是依赖它把 `unstructured` 对象路由到正确的 REST 路径，遇到 CRD 时还需用 `DeferredDiscoveryRESTMapper` 并在 NoMatch 时刷新 Discovery 缓存。
+- 理解 dynamic client 与 typed client 的取舍：typed client（clientset）类型安全、有代码补全但每种资源都要生成代码；dynamic client 配合 unstructured 能操作任意 GVR（含 CRD），适合做平台型通用 CRUD，代价是失去编译期类型检查。
+- 区分 PUT（replace，整体覆盖）、PATCH（strategic/merge/json patch，局部更新）和 Server-Side Apply（`Apply` verb + fieldManager，声明式、带字段所有权）：平台做"编辑 YAML"用 PUT 时若不回填完整对象容易丢字段，用 SSA 则能避免覆盖他人字段。
+- 能补充 GV 版本稳定性阶梯 alpha → beta → stable（如 `v1alpha1`/`v1beta1`/`v1`），同一资源可有多个 version 并存，APIServer 内部通过 conversion 在 storage version 与外部 version 间转换，etcd 中只存一个 storage version。
+- 注意 token 泄露风险：文档中的 axios 示例把完整 ServiceAccount JWT 硬编码在请求里，真实场景应避免明文存储、设置合理过期时间，并通过最小权限的 RBAC Role 限制该 SA 只能访问必要的 GVR。
+- 了解 verbs 字段的意义：Discovery 返回的每个 APIResource 带有 `verbs`（get/list/watch/create/update/patch/delete 等），前端可据此决定按钮（编辑/删除）是否可用，避免对只读资源（如部分 subresource）发起不支持的操作。

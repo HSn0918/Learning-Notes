@@ -15,6 +15,18 @@ Weave Net 由 Weaveworks 开发，特点是部署极简且内置加密通信能�
 
 Weave 会自动检测环境，优先使用 fastdp，只有在内核不支持时才回退到 sleeve 模式。
 
+```mermaid
+flowchart LR
+    subgraph NodeA["Node A"]
+        PA["Pod A"] --> WA["weave bridge"]
+    end
+    subgraph NodeB["Node B"]
+        WB["weave bridge"] --> PB["Pod B"]
+    end
+    WA -->|"fastdp：内核 OVS datapath（默认，高性能）"| WB
+    WA -.->|"sleeve：用户态封装转发（回退，低性能）"| WB
+```
+
 ## 加密通信
 
 Weave Net 内置 IPsec 加密（使用 NaCl 库），只需在安装时加一个环境变量即可启用：

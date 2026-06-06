@@ -10,6 +10,22 @@ Multus 不是传统意义的 CNI 插件，而是一个 **meta-plugin**（元插�
 
 标准 Kubernetes 只允许每个 Pod 有一个 CNI 插件提供一个网络接口（eth0）。Multus 作为主 CNI 被调用后，会依次调用其他 CNI 插件来创建额外的网络接口。
 
+```mermaid
+flowchart TB
+    Kubelet["kubelet"] -->|"只调用唯一主 CNI"| Multus
+    subgraph Multus["Multus（meta-plugin / 主 CNI）"]
+        M["读 Pod annotation<br/>k8s.v1.cni.cncf.io/networks<br/>依次委派 delegate 插件"]
+    end
+    Multus --> Default["默认 CNI<br/>(Calico/Flannel)"]
+    Multus --> SRIOV["SR-IOV CNI"]
+    Multus --> MACVLAN["macvlan CNI"]
+    Default -->|eth0| Pod["Pod（多网卡）"]
+    SRIOV -->|net1| Pod
+    MACVLAN -->|net2| Pod
+```
+
+kubelet 仍然只认一个主 CNI；Multus 把自己伪装成主 CNI，再按 annotation 把请求分发给各个 delegate 插件，每个插件给 Pod 加一块网卡。
+
 ## NetworkAttachmentDefinition 示例
 
 ```yaml

@@ -1,5 +1,7 @@
 #terminal #zsh #快捷键
 
+相关笔记：[[docker-commands]]
+
 ## Zsh / iTerm2 常用快捷键
 
 ### 行编辑（Ctrl 系列）

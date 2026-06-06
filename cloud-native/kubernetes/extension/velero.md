@@ -143,3 +143,36 @@ velero restore get
 # 删除备份
 velero backup delete my-backup
 ```
+
+## 面试要点
+
+### 高频问题
+
+**Q: Velero 备份的核心组成有哪两部分？分别存到哪里？**
+A: Velero 备份包含两部分：一是 Kubernetes 资源对象，会被打包成 tarball 上传到对象存储（S3 / MinIO 等）；二是持久卷（PV）数据，默认通过调用云厂商的快照 API 做磁盘快照。可以用 `--snapshot-volumes=false` 关闭卷快照，或改用 File System Backup（基于 Restic/Kopia）按文件级别备份 PV 数据。
+
+**Q: Velero 的备份是原子操作吗？**
+A: 不是。集群备份并非严格原子化，BackupController 通过遍历 API Server 查询资源，如果在备份过程中有对象被创建或修改，这些变更可能不会被完整包含进备份。这与基于 etcd 快照的全量一致性备份不同，因此对一致性要求高的有状态应用建议配合 backup hook（如让数据库先 flush 内存缓冲到磁盘）。
+
+**Q: Velero 恢复（Restore）的默认行为是什么？资源冲突时怎么处理？**
+A: 默认执行**非破坏性恢复**，不会删除目标集群已有数据。当备份中的资源在目标集群已存在时，Velero 默认跳过该资源；可通过 `--existing-resource-policy=update` 改为更新已有资源。恢复由 RestoreController 驱动，逐个恢复符合条件的资源，并在恢复前做预处理（如校验 API 版本兼容性）。
+
+**Q: 备份和恢复对 API group/version 有什么要求？**
+A: 备份时 Velero 使用每个 group/resource 在源集群 API Server 上的**首选版本（preferred version）**来序列化资源。恢复时，目标集群必须存在相同的 API group/version 端点（不必是首选版本，但必须存在），否则恢复失败。这在跨版本集群迁移时是常见踩坑点。
+
+**Q: Velero 的 TTL 机制是怎样的？过期后会清理哪些东西？**
+A: 创建备份时可用 `--ttl <DURATION>`（如 `24h0m0s`）指定生存时间，默认 30 天。过期后 gc-controller 在每小时的 reconcile 循环中删除备份资源对象、对象存储中的备份文件、所有 PV 快照以及所有相关的 restore。若删除失败，会在 Backup CR 上打 `velero.io/gc-failure=<Reason>` 标签，原因如 `BSLNotFound` / `BSLCannotGet` / `BSLReadOnly`。
+
+**Q: 为什么说 Velero 把对象存储当作 Source of Truth？这在集群迁移中起什么作用？**
+A: Velero 持续做对象存储同步：以 bucket 中的备份文件为事实来源——存储里有合法备份文件但 Kubernetes 中没有对应 Backup 资源时，会把信息同步回 K8s；K8s 中已完成的 Backup 在存储中不存在时则从 K8s 删除（失败/部分失败的备份不会被同步删除）。正因如此，在新集群只需指向同一个 BSL，就能自动发现旧集群的备份并执行 restore，从而实现集群迁移。
+
+**Q: 定时备份是如何配置的？生成的备份如何命名？**
+A: 用 `velero schedule create <name> --schedule="0 2 * * *"` 通过 Cron 表达式定义间隔。由定时任务产生的备份命名格式为 `<SCHEDULE NAME>-<TIMESTAMP>`，其中 `<TIMESTAMP>` 为 `YYYYMMDDhhmmss`，便于按时间区分和检索。
+
+### 面试加分点
+
+- 能区分 Velero 备份与 **etcd 快照备份**：etcd 快照是整个集群状态的强一致全量备份但粒度粗、不含 PV 数据、跨集群迁移困难；Velero 以资源粒度备份、可按 namespace/label 过滤、支持 PV 快照和命名空间重映射（`--namespace-mappings old:new`），更适合应用级备份和迁移。
+- 了解 PV 数据的两种备份路径：云厂商 **Volume Snapshot**（依赖云盘快照 API，跨可用区/跨云迁移受限）与 **File System Backup（FSB）**（早期叫 Restic，现支持 Kopia uploader，按文件级别上传到对象存储，跨存储后端通用），能根据迁移场景选型。
+- 熟悉 **backup hook / restore hook** 机制：通过 pre/post hook 在备份前后执行命令（如数据库 flush、quiesce I/O）来弥补备份非原子性，保证有状态应用数据一致性。
+- 清楚 **BSL（BackupStorageLocation）与 VSL（VolumeSnapshotLocation）** 两类 CRD：前者描述对象存储位置（可设为 read-only 触发 `BSLReadOnly`），后者描述卷快照位置；理解控制面通过这些 CR 解耦存储后端。
+- 能从 GitOps/DR 视角讨论：恢复仅保证 API group/version 端点存在还不够，CRD、Webhook、StorageClass 名称等也需在目标集群对齐；跨云迁移时尤其要注意 StorageClass 映射和 PV 数据搬运方式。
