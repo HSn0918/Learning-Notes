@@ -2,7 +2,7 @@
 
 > 面向 **Kubernetes / 云原生 / 后端** 岗位求职的系统化技术笔记。基于 Obsidian 构建，同时兼容 GitHub 浏览。
 
-**118 篇技术笔记** · **10 个可运行 demo** · **11 篇源码导读**，覆盖 8 大板块。
+**119 篇技术笔记** · **10 个可运行 demo** · **12 篇源码导读**，覆盖 8 大板块。
 每篇知识笔记都配有 **mermaid 图解** + **面试要点 Q&A**，可直接当作复习卡片。
 
 ---
@@ -73,6 +73,7 @@ LLM 推理学习路径、Prefill/Decode、Prefix Cache、KV Cache；终端效率
 [client-go](learning-plan/source/client-go-source.md) ·
 [controller-runtime](learning-plan/source/controller-runtime-source.md) ·
 [scheduler-framework](learning-plan/source/scheduler-framework-source.md) ·
+[scheduler-podgroup](learning-plan/source/scheduler-podgroup-source.md) ·
 [volcano](learning-plan/source/volcano-source.md) ·
 [kubelet-cri](learning-plan/source/kubelet-cri-source.md) ·
 [cri](learning-plan/source/cri-source.md) ·

@@ -1,6 +1,6 @@
 #kubernetes #scheduler #源码导读
 
-相关笔记：[[scheduler-deep-dive]] | [[scheduler-assume]] | [[gpu-scheduling]] | [[client-go-source]] | [[k8s-interview]] | [[k8s-development-roadmap]] | [[demo-scheduler-plugin]]
+相关笔记：[[scheduler-deep-dive]] | [[scheduler-assume]] | [[scheduler-podgroup-source]] | [[gpu-scheduling]] | [[client-go-source]] | [[k8s-interview]] | [[k8s-development-roadmap]] | [[demo-scheduler-plugin]]
 
 ## 概述
 

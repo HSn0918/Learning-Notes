@@ -1,6 +1,6 @@
 #kubernetes #学习计划 #源码导读 #导航
 
-相关笔记：[[progress]] | [[hami-learning-path]] | [[client-go-source]] | [[controller-runtime-source]] | [[scheduler-framework-source]] | [[kubelet-cri-source]] | [[cri-source]] | [[etcd-source]] | [[kubebuilder]] | [[operator-pattern]] | [[k8s-interview]]
+相关笔记：[[progress]] | [[hami-learning-path]] | [[client-go-source]] | [[controller-runtime-source]] | [[scheduler-framework-source]] | [[scheduler-podgroup-source]] | [[kubelet-cri-source]] | [[cri-source]] | [[etcd-source]] | [[kubebuilder]] | [[operator-pattern]] | [[k8s-interview]]
 
 > **这是 `learning-plan/` 的入口。** 先看下面的「你该走哪条路」决策图确定路线，再按路线推进，不要一上来就乱点。
 
@@ -12,9 +12,10 @@ learning-plan/
 ├── progress.md                  6 周高阶冲刺打卡表（逐项可勾选）
 ├── llm-inference-learning-path.md  LLM 推理（Router/KV Cache/PD 分离）8 阶段路径
 ├── llm-inference-progress.md       LLM 推理 8 周打卡表
-├── source/                      源码导读 ×10 + HAMi 专题路径
+├── source/                      源码导读 ×12 + HAMi 专题路径
 │   ├── client-go-source.md          controller-runtime-source.md
-│   ├── scheduler-framework-source.md kubelet-cri-source.md
+│   ├── scheduler-framework-source.md scheduler-podgroup-source.md
+│   ├── kubelet-cri-source.md
 │   ├── cri-source.md                csi-source.md
 │   ├── cni-source.md                gpu-scheduling-source.md
 │   ├── hami-source.md               etcd-source.md
@@ -60,7 +61,7 @@ flowchart TD
 
 ## 概述
 
-本笔记基于「Kubernetes 开发」学习路线图，把通往 Kubernetes 开发岗（控制器/调度器/平台/CSI/CNI/CRI/Device Plugin）所需的能力拆成 12 个主题，给出每个主题的子目标、推荐顺序、关键源码切入点、配套笔记，以及一份可执行的阶段化学习计划。配合 `learning-plan/source/` 下 10 篇源码导读笔记（client-go、controller-runtime、kube-scheduler、kubelet、CRI、CSI、CNI、GPU 调度、HAMi GPU 虚拟化、etcd），形成「路线图 → 源码 → 面试」的闭环。
+本笔记基于「Kubernetes 开发」学习路线图，把通往 Kubernetes 开发岗（控制器/调度器/平台/CSI/CNI/CRI/Device Plugin）所需的能力拆成 12 个主题，给出每个主题的子目标、推荐顺序、关键源码切入点、配套笔记，以及一份可执行的阶段化学习计划。配合 `learning-plan/source/` 下 12 篇源码导读笔记（client-go、controller-runtime、kube-scheduler、PodGroup/gang 调度、Volcano、kubelet、CRI、CSI、CNI、GPU 调度、HAMi GPU 虚拟化、etcd），形成「路线图 → 源码 → 面试」的闭环。
 
 ## 学习路线图
 
@@ -201,6 +202,7 @@ mindmap
 | 11 个扩展点 | `pkg/scheduler/framework/interface.go` | [[scheduler-framework-source]] |
 | 调度队列 | activeQ / backoffQ / unschedulableQ | [[scheduler-framework-source]] |
 | assume 机制 | `pkg/scheduler/internal/cache` | [[scheduler-assume]] |
+| PodGroup / gang 调度 | `pkg/scheduler/schedule_one_podgroup.go` | [[scheduler-podgroup-source]]、[[volcano-source]] |
 | 自定义插件 | `app.WithPlugin` | [[scheduler-framework-source]] |
 
 **衡量标准**：能默写完整扩展点顺序（PreFilter → Filter → PreScore → Score → Reserve → Permit → PreBind → Bind → PostBind），能解释 `CycleState` 与 `Snapshot` 的设计、`percentageOfNodesToScore` 的取舍。
@@ -322,13 +324,15 @@ gantt
 
 ## 源码导读索引
 
-10 篇导读集中放在 `learning-plan/source/`，每篇都包含三层：① 概念与架构；② 真实源码片段；③ 手写简化复现，配套有可直接 `go run` 的 demo。其中第 ② 层的源码定位精度分两档：**8 篇**（client-go / controller-runtime / kube-scheduler / kubelet / CRI / CSI / GPU 调度 / etcd）基于本地 `~/github/kubernetes`、`~/github/etcd` 源码，带**文件路径 + 行号**；**2 篇**（[[cni-source]] / [[hami-source]]）因对应仓库（containernetworking、Project-HAMi）不在本地，只给**目录 + 函数名**定位，clone 后可补行号。
+12 篇导读集中放在 `learning-plan/source/`，每篇都包含三层：① 概念与架构；② 真实源码片段；③ 手写简化复现或阅读练习。其中多数基于本地 `~/github/kubernetes`、`~/github/etcd` 源码，带**文件路径 + 行号**；[[cni-source]] / [[hami-source]] 因对应仓库（containernetworking、Project-HAMi）不在本地，只给**目录 + 函数名**定位，clone 后可补行号。
 
 | 源码                 | 笔记                             | 配套 demo                          | 关键模块                                                                | demo 在 Mac 上能跑吗                             |
 | ------------------ | ------------------------------ | -------------------------------- | ------------------------------------------------------------------- | ------------------------------------------- |
 | client-go          | [[client-go-source]]           | [[demo-sample-controller]]       | Reflector / DeltaFIFO / Indexer / SharedInformer / Workqueue        | ✅ 先 `go mod tidy`                           |
 | controller-runtime | [[controller-runtime-source]]  | [[demo-kubebuilder-operator]]    | Manager / Controller / Reconciler / Cache / Builder / Webhook       | ✅ 先 `go mod tidy`                           |
 | kube-scheduler     | [[scheduler-framework-source]] | [[demo-scheduler-plugin]]        | Scheduler / Framework / SchedulingQueue / CycleState                | ⚠️ 需手填 go.mod replace（见其 README）            |
+| kube-scheduler PodGroup | [[scheduler-podgroup-source]] | [[demo-scheduler-plugin]]        | GenericWorkload / PodGroup / GangScheduling / Placement / Preemption | ⚠️ 1.36 Alpha 特性，需按 feature gate 阅读      |
+| Volcano batch scheduler | [[volcano-source]]            | —                                | PodGroup / Session / Action / Plugin / Statement                    | —                                           |
 | kubelet            | [[kubelet-cri-source]]         | [[demo-device-plugin]]           | SyncLoop / PLEG / Device Plugin                                     | ✅ 先 `go mod tidy`                           |
 | CRI                | [[cri-source]]                 | [[demo-fake-cri]]                | CRI proto / cri-client / sandbox+container / Exec streaming         | ✅ 先 `go mod tidy`                           |
 | CSI                | [[csi-source]]                 | [[demo-csi-hostpath]]            | pkg/volume/csi / sidecars / Identity-Controller-Node                | ⚠️ 需 `GOOS=linux go build`（Linux-only 系统调用） |
