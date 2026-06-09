@@ -2,7 +2,7 @@
 
 > 面向 **Kubernetes / 云原生 / 后端** 岗位求职的系统化技术笔记。基于 Obsidian 构建，同时兼容 GitHub 浏览。
 
-**116 篇技术笔记** · **10 个可运行 demo** · **11 篇源码导读**，覆盖 8 大板块。
+**118 篇技术笔记** · **10 个可运行 demo** · **11 篇源码导读**，覆盖 8 大板块。
 每篇知识笔记都配有 **mermaid 图解** + **面试要点 Q&A**，可直接当作复习卡片。
 
 ---
@@ -54,8 +54,8 @@ MySQL 索引/事务/锁几乎必考，Redis 考工程实战。
 笔试硬门槛，覆盖手撕高频方向。
 `BFS/DFS/回溯` `二分` `拓扑/Dijkstra/并查集` `快排/归并/堆排` `前缀和/差分/滑窗/单调栈` `DP` `LRU/LFU` `KMP/Trie`
 
-### 🤖 [AI](#-ai) · 2 篇 ＆ 🧰 [Misc](#-misc) · 1 篇
-LLM 推理全流程、Prefill 缓存分析；终端效率速查。
+### 🤖 [AI](#-ai) · 4 篇 ＆ 🧰 [Misc](#-misc) · 1 篇
+LLM 推理学习路径、Prefill/Decode、Prefix Cache、KV Cache；终端效率速查。
 
 ---
 
@@ -98,6 +98,8 @@ LLM 推理全流程、Prefill 缓存分析；终端效率速查。
 
 ## 🤖 AI
 
+- [LLM 推理学习路径](learning-plan/llm-inference-learning-path.md) —— Router / KV Cache / PD 分离，8 阶段路线
+- [LLM 推理 8 周打卡表](learning-plan/llm-inference-progress.md) —— vLLM → PagedAttention → KV Store → PD → Router
 - [LLM 推理全流程](ai/llm-inference-pipeline.md) —— Prefill / Decode 两阶段、KV Cache、Prefix Cache
 - [Prefill 缓存未命中分析](ai/prefill-cache-miss.md) —— 序列化不确定性如何拖垮 Prefix Cache 命中率
 

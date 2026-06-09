@@ -1,6 +1,6 @@
 #ai #prefill #decode
 
-相关笔记：[[prefill-cache-miss]]
+相关笔记：[[prefill-cache-miss]] | [[llm-inference-learning-path]] | [[llm-inference-progress]]
 
 ## LLM 推理全流程：从核心机制到服务层优化
 

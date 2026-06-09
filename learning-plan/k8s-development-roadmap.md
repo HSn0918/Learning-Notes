@@ -10,6 +10,8 @@
 learning-plan/
 ├── k8s-development-roadmap.md   ← 你在这里：入口 + 12 主题地图 + 阶段计划
 ├── progress.md                  6 周高阶冲刺打卡表（逐项可勾选）
+├── llm-inference-learning-path.md  LLM 推理（Router/KV Cache/PD 分离）8 阶段路径
+├── llm-inference-progress.md       LLM 推理 8 周打卡表
 ├── source/                      源码导读 ×10 + HAMi 专题路径
 │   ├── client-go-source.md          controller-runtime-source.md
 │   ├── scheduler-framework-source.md kubelet-cri-source.md
@@ -25,6 +27,7 @@ learning-plan/
 - **本文（roadmap）= 地图**：12 主题全景 + 4 阶段计划，想知道「K8s 开发岗要学什么」时通读，之后当字典查。
 - **[[progress]] = 打卡表**：6 周高阶冲刺，决定开学后每天对着它勾选、写复盘。
 - **[[hami-learning-path]] = GPU 专题路径**：走 GPU/AI Infra 方向时的加餐，6 阶段深挖 HAMi。
+- **[[llm-inference-learning-path]] = LLM 推理专题**：走 AI Infra / 推理平台方向时的延伸，8 阶段串起 vLLM 引擎 → 分布式 KV → PD 分离 → K8s Router 平台。配套 [[llm-inference-progress]] 8 周打卡表。
 
 执行时只以 [[progress]] 为主线：每周留下白板图、demo 验证记录、5 分钟口述答案。本文不承载细节，源码细节看 `source/`，运行细节看 `demos/`。
 
@@ -321,18 +324,18 @@ gantt
 
 10 篇导读集中放在 `learning-plan/source/`，每篇都包含三层：① 概念与架构；② 真实源码片段；③ 手写简化复现，配套有可直接 `go run` 的 demo。其中第 ② 层的源码定位精度分两档：**8 篇**（client-go / controller-runtime / kube-scheduler / kubelet / CRI / CSI / GPU 调度 / etcd）基于本地 `~/github/kubernetes`、`~/github/etcd` 源码，带**文件路径 + 行号**；**2 篇**（[[cni-source]] / [[hami-source]]）因对应仓库（containernetworking、Project-HAMi）不在本地，只给**目录 + 函数名**定位，clone 后可补行号。
 
-| 源码 | 笔记 | 配套 demo | 关键模块 | demo 在 Mac 上能跑吗 |
-| --- | --- | --- | --- | --- |
-| client-go | [[client-go-source]] | [[demo-sample-controller]] | Reflector / DeltaFIFO / Indexer / SharedInformer / Workqueue | ✅ 先 `go mod tidy` |
-| controller-runtime | [[controller-runtime-source]] | [[demo-kubebuilder-operator]] | Manager / Controller / Reconciler / Cache / Builder / Webhook | ✅ 先 `go mod tidy` |
-| kube-scheduler | [[scheduler-framework-source]] | [[demo-scheduler-plugin]] | Scheduler / Framework / SchedulingQueue / CycleState | ⚠️ 需手填 go.mod replace（见其 README） |
-| kubelet | [[kubelet-cri-source]] | [[demo-device-plugin]] | SyncLoop / PLEG / Device Plugin | ✅ 先 `go mod tidy` |
-| CRI | [[cri-source]] | [[demo-fake-cri]] | CRI proto / cri-client / sandbox+container / Exec streaming | ✅ 先 `go mod tidy` |
-| CSI | [[csi-source]] | [[demo-csi-hostpath]] | pkg/volume/csi / sidecars / Identity-Controller-Node | ⚠️ 需 `GOOS=linux go build`（Linux-only 系统调用） |
-| CNI | [[cni-source]] | [[demo-cni-bridge]] | CNI 协议 / libcni / bridge·host-local / Calico·Cilium·Flannel 数据面 | ✅ bash 实现，`./run-in-docker.sh` 需 docker |
-| GPU 调度 | [[gpu-scheduling-source]] | [[demo-fake-gpu]] | Scheduler ↔ DeviceManager ↔ Device Plugin / DRA | ✅ 先 `go mod tidy` |
-| HAMi GPU 虚拟化 | [[hami-source]] | [[demo-hami-mac]] | webhook / scheduler-extender / device-plugin / libvgpu.so CUDA hook | ✅ 直接编过；libvgpu hook 部分需 docker |
-| etcd | [[etcd-source]] | [[demo-raftexample-walkthrough]] | raft / WAL / MVCC / Watch / Lease | ✅ etcd-client-demo 先 `go mod tidy` |
+| 源码                 | 笔记                             | 配套 demo                          | 关键模块                                                                | demo 在 Mac 上能跑吗                             |
+| ------------------ | ------------------------------ | -------------------------------- | ------------------------------------------------------------------- | ------------------------------------------- |
+| client-go          | [[client-go-source]]           | [[demo-sample-controller]]       | Reflector / DeltaFIFO / Indexer / SharedInformer / Workqueue        | ✅ 先 `go mod tidy`                           |
+| controller-runtime | [[controller-runtime-source]]  | [[demo-kubebuilder-operator]]    | Manager / Controller / Reconciler / Cache / Builder / Webhook       | ✅ 先 `go mod tidy`                           |
+| kube-scheduler     | [[scheduler-framework-source]] | [[demo-scheduler-plugin]]        | Scheduler / Framework / SchedulingQueue / CycleState                | ⚠️ 需手填 go.mod replace（见其 README）            |
+| kubelet            | [[kubelet-cri-source]]         | [[demo-device-plugin]]           | SyncLoop / PLEG / Device Plugin                                     | ✅ 先 `go mod tidy`                           |
+| CRI                | [[cri-source]]                 | [[demo-fake-cri]]                | CRI proto / cri-client / sandbox+container / Exec streaming         | ✅ 先 `go mod tidy`                           |
+| CSI                | [[csi-source]]                 | [[demo-csi-hostpath]]            | pkg/volume/csi / sidecars / Identity-Controller-Node                | ⚠️ 需 `GOOS=linux go build`（Linux-only 系统调用） |
+| CNI                | [[cni-source]]                 | [[demo-cni-bridge]]              | CNI 协议 / libcni / bridge·host-local / Calico·Cilium·Flannel 数据面     | ✅ bash 实现，`./run-in-docker.sh` 需 docker     |
+| GPU 调度             | [[gpu-scheduling-source]]      | [[demo-fake-gpu]]                | Scheduler ↔ DeviceManager ↔ Device Plugin / DRA                     | ✅ 先 `go mod tidy`                           |
+| HAMi GPU 虚拟化       | [[hami-source]]                | [[demo-hami-mac]]                | webhook / scheduler-extender / device-plugin / libvgpu.so CUDA hook | ✅ 直接编过；libvgpu hook 部分需 docker              |
+| etcd               | [[etcd-source]]                | [[demo-raftexample-walkthrough]] | raft / WAL / MVCC / Watch / Lease                                   | ✅ etcd-client-demo 先 `go mod tidy`          |
 
 > **demo 通用前置**：除 hami-mac 外，多数 demo 首次构建要先 `cd <demo> && go mod tidy` 补全 go.sum。每个 demo 的 README 有具体步骤，验证状态见 `demos/README.md`。
 
