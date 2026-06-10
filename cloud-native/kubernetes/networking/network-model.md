@@ -1,6 +1,6 @@
 #kubernetes #networking
 
-相关笔记：[[cni]] | [[service]] | [[headless-service]] | [[k8s-interview]]
+相关笔记：[[cni]] | [[service]] | [[kube-proxy]] | [[headless-service]] | [[cni-troubleshooting]] | [[k8s-interview]]
 
 ## Kubernetes 网络模型概述
 

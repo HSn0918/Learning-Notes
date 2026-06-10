@@ -166,6 +166,9 @@
 
 - [ ] [[csi-source]] 全篇
 - [ ] [[csi]]（概念）
+- [ ] [[volume-lifecycle]]（PVC → PV → VolumeAttachment → mount）
+- [ ] [[csi-sidecars]]（6 个 sidecar 与 CSI RPC 对照）
+- [ ] [[csi-troubleshooting]]（PVC Pending / Attach / Mount / Resize / Snapshot 分层排障）
 - [ ] [[openebs]] [[longhorn]] [[ceph-csi]] [[nfs-csi]] 横向对比
 - [ ] [[cloud-provider-csi]]
 
@@ -179,6 +182,7 @@
 ### 周末复盘
 
 - [ ] 画 4 个 sidecar 的职责（provisioner / attacher / resizer / snapshotter）
+- [ ] 画 PVC Pending、Attach 失败、Mount 失败分别该看哪些对象和日志
 - [ ] 答出：CSI 三大 service（Identity / Controller / Node）分别在哪种 Pod 里跑
 - [ ] 答出：WaitForFirstConsumer 改变了什么（提示：延后 PV 创建到 Pod 调度后）
 
@@ -248,8 +252,9 @@
 
 - [ ] [[cni-source]] § 1-4（CNI 协议 / libcni / bridge·host-local / containerd 调用时序）
 - [ ] [[cni-source]] § 6（Calico / Cilium / Flannel 数据面入口对照）
-- [ ] [[cni]] [[calico]] [[cilium]] [[flannel]] [[weave]] [[multus]]
-- [ ] [[service]] [[network-model]] [[headless-service]]
+- [ ] [[cni]] [[calico]] [[cilium]] [[cilium-deep-dive]] [[flannel]] [[weave]] [[multus]]
+- [ ] [[service]] [[kube-proxy]] [[network-model]] [[headless-service]]
+- [ ] [[cni-troubleshooting]]（Pod IP / 跨节点 / ClusterIP / DNS / NetworkPolicy 分层定位）
 - [ ] [[k8s-interview]] 全部题
 
 ### 动手
@@ -262,6 +267,7 @@
 ### 周末复盘 + 模拟面试
 
 - [ ] 模拟 30 分钟技术分享：讲清 HAMi 端到端链路
+- [ ] 模拟 15 分钟排障：Pod IP 通但 ClusterIP 不通、DNS 不通、NetworkPolicy 误封三题
 - [ ] 再过一遍各源码导读笔记的「面试要点」章节
 - [ ] 自检题目（下面那批）能在 5 分钟内答完
 
@@ -269,7 +275,7 @@
 
 - [ ] 白板图：`containerd -> libcni -> bridge/ipam -> veth -> Service`
 - [ ] demo 记录：贴出 cni-bridge 两个 netns 互 ping 和规则检查输出
-- [ ] 口述答案：5 分钟讲清 CNI ADD/DEL 与 Calico/Cilium 数据面差异
+- [ ] 口述答案：5 分钟讲清 CNI ADD/DEL、kube-proxy Service 转发与 Calico/Cilium 数据面差异
 
 **本周复盘笔记**：
 ```

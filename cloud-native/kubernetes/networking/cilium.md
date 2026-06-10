@@ -1,6 +1,6 @@
 #kubernetes #cni #cilium #ebpf
 
-相关笔记：[[cni]] | [[network-model]] | [[calico]]
+相关笔记：[[cni]] | [[network-model]] | [[kube-proxy]] | [[calico]] | [[cilium-deep-dive]] | [[cni-troubleshooting]]
 
 ## Cilium 概述
 

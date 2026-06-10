@@ -1,6 +1,6 @@
 #kubernetes #cni #calico
 
-相关笔记：[[cni]] | [[network-model]] | [[cilium]]
+相关笔记：[[cni]] | [[network-model]] | [[cilium]] | [[cni-troubleshooting]]
 
 ## Calico 概述
 

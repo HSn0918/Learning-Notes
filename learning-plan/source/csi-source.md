@@ -1,6 +1,6 @@
 #kubernetes #csi #源码导读
 
-相关笔记：[[csi]] | [[ceph-csi]] | [[longhorn]] | [[openebs]] | [[k8s-development-roadmap]] | [[demo-csi-hostpath]] | [[k8s-interview]]
+相关笔记：[[csi]] | [[volume-lifecycle]] | [[csi-sidecars]] | [[csi-troubleshooting]] | [[ceph-csi]] | [[longhorn]] | [[openebs]] | [[k8s-development-roadmap]] | [[demo-csi-hostpath]] | [[k8s-interview]]
 
 ## 概述
 

@@ -49,8 +49,8 @@ cloud-native/
   docker/           - 容器基础、Dockerfile、网络模式、底层技术（Cgroup/Namespace/UnionFS）
   kubernetes/
     control-plane/  - APIServer、Informer、调度器、RBAC、GPU 调度
-    networking/     - CNI 概览、Calico、Cilium、Flannel、Weave、Multus、Service、网络模型
-    storage/        - CSI 概览、Ceph、Longhorn、OpenEBS、NFS、云厂商 CSI
+    networking/     - CNI 概览、kube-proxy、CNI 排障、Calico、Cilium、Flannel、Weave、Multus、Service、网络模型
+    storage/        - CSI 概览、Volume 生命周期、CSI sidecar、CSI 排障、Ceph、Longhorn、OpenEBS、NFS、云厂商 CSI
     infrastructure/ - K8s 基础、etcd、Google Borg、OCI Runtime
     extension/      - Kubebuilder、Velero、Operator 模式
     interview/      - K8s 面试题汇总

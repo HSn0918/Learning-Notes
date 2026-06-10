@@ -1,6 +1,6 @@
 #kubernetes #cni
 
-相关笔记：[[kubernetes-basics]] | [[csi]] | [[service]] | [[k8s-interview]] | [[calico]] | [[cilium]] | [[flannel]] | [[weave]] | [[multus]] | [[cni-source]] | [[demo-cni-bridge]]
+相关笔记：[[kubernetes-basics]] | [[csi]] | [[service]] | [[kube-proxy]] | [[network-model]] | [[k8s-interview]] | [[calico]] | [[cilium]] | [[cilium-deep-dive]] | [[flannel]] | [[weave]] | [[multus]] | [[cni-source]] | [[cni-troubleshooting]] | [[demo-cni-bridge]]
 
 ## CNI 概述
 

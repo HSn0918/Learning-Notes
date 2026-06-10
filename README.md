@@ -2,7 +2,7 @@
 
 > 面向 **Kubernetes / 云原生 / 后端** 岗位求职的系统化技术笔记。基于 Obsidian 构建，同时兼容 GitHub 浏览。
 
-**119 篇技术笔记** · **10 个可运行 demo** · **12 篇源码导读**，覆盖 8 大板块。
+**125 篇技术笔记** · **10 个可运行 demo** · **12 篇源码导读**，覆盖 8 大板块。
 每篇知识笔记都配有 **mermaid 图解** + **面试要点 Q&A**，可直接当作复习卡片。
 
 ---
@@ -34,9 +34,9 @@ flowchart LR
 
 每个领域都有一份 **学习索引**（推荐顺序 + 难度 + 一句话简介），点标题进入。
 
-### ☁️ [云原生 Cloud Native](cloud-native/README.md) · 41 篇
+### ☁️ [云原生 Cloud Native](cloud-native/README.md) · 47 篇
 容器与 Kubernetes 全栈，岗位核心主战场。
-`Docker 底层` `Cgroup/Namespace/UnionFS` `etcd` `Informer` `Scheduler` `RBAC` `CNI` `CSI` `Operator` `GPU 调度`
+`Docker 底层` `Cgroup/Namespace/UnionFS` `etcd` `Informer` `Scheduler` `RBAC` `CNI` `kube-proxy` `Cilium` `CSI` `CSI sidecar` `Operator` `GPU 调度`
 
 ### 🐹 [Go 语言](go/README.md) · 9 篇
 runtime 底层是面试区分度所在。

@@ -10,10 +10,10 @@
 Docker 概述与架构 → Docker 常用命令 → Dockerfile 最佳实践 → Cgroup 资源限制 → Namespace 资源隔离 → Union FS 联合文件系统 → Bridge 网络模式 → Kubernetes 基础架构 → Service 服务抽象 → Pod 探针 Probe
 
 ### 进阶（理解控制面与网络存储原理）
-etcd 分布式存储 → OCI 容器运行时规范 → Kubernetes API Resource 设计 → RESTful API 路由设计 → RBAC 权限控制 → Informer List-Watch 机制 → K8s 网络模型 → CNI 接口规范 → Flannel / Calico → Service / Headless Service → CSI 存储接口 → NFS-CSI / 云厂商 CSI → Kubebuilder 自定义控制器 → Operator 模式
+etcd 分布式存储 → OCI 容器运行时规范 → Kubernetes API Resource 设计 → RESTful API 路由设计 → RBAC 权限控制 → Informer List-Watch 机制 → K8s 网络模型 → CNI 接口规范 → kube-proxy → Flannel / Calico → Service / Headless Service → Volume 生命周期 → CSI 存储接口 → NFS-CSI / 云厂商 CSI → Kubebuilder 自定义控制器 → Operator 模式
 
 ### 深入（高频深挖与生产实战）
-Scheduler 调度流程（Assume/Bind）→ Kube-Scheduler 深度解析 → GPU 调度与 Device Plugin → Cilium eBPF → Multus 多网卡 → Ceph-CSI / Longhorn / OpenEBS → Velero 备份恢复 → Buildah 大镜像上传 → Google Borg → K8s 面试题汇总（查漏补缺）
+Scheduler 调度流程（Assume/Bind）→ Kube-Scheduler 深度解析 → GPU 调度与 Device Plugin → Cilium eBPF 深挖 → CNI 排障 → Multus 多网卡 → CSI sidecar → CSI 排障 → Ceph-CSI / Longhorn / OpenEBS → Velero 备份恢复 → Buildah 大镜像上传 → Google Borg → K8s 面试题汇总（查漏补缺）
 
 ## 📚 笔记清单
 
@@ -60,8 +60,11 @@ Scheduler 调度流程（Assume/Bind）→ Kube-Scheduler 深度解析 → GPU �
 |------|------|------|
 | [K8s 网络模型](kubernetes/networking/network-model.md) | 讲解 K8s 网络三大原则（Pod-to-Pod/Service/External）与 IP-per-Pod 约束 | 进阶 |
 | [CNI 接口规范](kubernetes/networking/cni.md) | 讲解 CNI 标准接口（ADD/DEL/CHECK）、工作流程与主流插件对比 | 进阶 |
+| [kube-proxy 服务转发](kubernetes/networking/kube-proxy.md) | 讲解 kube-proxy watch Service/EndpointSlice 并维护 iptables/IPVS Service 数据面的职责边界 | 进阶 |
 | [Calico CNI](kubernetes/networking/calico.md) | 讲解 Calico 的 Felix/BIRD 组件与 BGP/IPIP/VXLAN 三种跨节点通信及 NetworkPolicy | 进阶 |
 | [Cilium eBPF CNI](kubernetes/networking/cilium.md) | 讲解 Cilium 基于 eBPF 绕过 iptables、BPF map O(1) 查找与 L7 策略的高性能网络 | 深入 |
+| [Cilium 深度解析](kubernetes/networking/cilium-deep-dive.md) | 讲解 Cilium endpoint、identity、BPF map、kube-proxy replacement 与 L7 策略协作模型 | 深入 |
+| [CNI 排障路径](kubernetes/networking/cni-troubleshooting.md) | 按 Pod IP、跨节点、ClusterIP、DNS、NetworkPolicy 五层定位 Kubernetes 网络问题 | 深入 |
 | [Flannel CNI](kubernetes/networking/flannel.md) | 讲解 Flannel 的 VXLAN 与 host-gw 后端原理、封装开销与适用环境对比 | 入门 |
 | [Weave Net CNI](kubernetes/networking/weave.md) | 讲解 Weave Net 的 fastdp/sleeve 双通道与内置 IPsec 加密通信 | 进阶 |
 | [Multus 多网卡 CNI](kubernetes/networking/multus.md) | 讲解 Multus meta-plugin 委派机制实现 Pod 多网卡，用于电信/边缘场景 | 深入 |
@@ -73,6 +76,9 @@ Scheduler 调度流程（Assume/Bind）→ Kube-Scheduler 深度解析 → GPU �
 | 笔记 | 简介 | 难度 |
 |------|------|------|
 | [CSI 存储接口](kubernetes/storage/csi.md) | 讲解 CSI 标准化存储插件接口、out-of-tree 机制及 provisioner/attacher 等组件 | 进阶 |
+| [Volume 生命周期](kubernetes/storage/volume-lifecycle.md) | 串联 PVC、PV、StorageClass、VolumeAttachment、Attach、Stage、Publish 与回收流程 | 进阶 |
+| [CSI Sidecar 体系](kubernetes/storage/csi-sidecars.md) | 讲解 external-provisioner、attacher、resizer、snapshotter、registrar 等 sidecar 如何把 K8s 对象转成 CSI RPC | 深入 |
+| [CSI 排障路径](kubernetes/storage/csi-troubleshooting.md) | 按 PVC Pending、Attach、Mount、Resize、Snapshot 分层定位存储插件问题 | 深入 |
 | [Ceph-CSI 分布式存储](kubernetes/storage/ceph-csi.md) | 讲解 Ceph 的 MON/OSD/MDS 架构与 ceph-csi 提供 RBD/CephFS 存储驱动 | 深入 |
 | [Longhorn 轻量分布式存储](kubernetes/storage/longhorn.md) | 讲解 Rancher Longhorn 的 Manager/Engine/Replica 架构与中小集群块存储方案 | 进阶 |
 | [OpenEBS 容器化存储](kubernetes/storage/openebs.md) | 讲解 OpenEBS CAS 理念与 Mayastor/cStor/Jiva/Local PV 多引擎选型 | 深入 |
@@ -94,4 +100,4 @@ Scheduler 调度流程（Assume/Bind）→ Kube-Scheduler 深度解析 → GPU �
 | [K8s 面试题汇总](kubernetes/interview/k8s-interview.md) | 汇总 K8s 架构、核心概念等高频面试问答，用于系统查漏补缺 | 进阶 |
 
 ---
-共 **41** 篇 · 入门 10 / 进阶 21 / 深入 10
+共 **47** 篇 · 入门 10 / 进阶 23 / 深入 14

@@ -1,6 +1,6 @@
 #kubernetes #interview
 
-相关笔记：[[kubernetes-basics]] | [[etcd]] | [[informer]] | [[service]] | [[headless-service]] | [[cni]] | [[csi]] | [[rbac]] | [[scheduler-assume]]
+相关笔记：[[kubernetes-basics]] | [[etcd]] | [[informer]] | [[service]] | [[kube-proxy]] | [[headless-service]] | [[cni]] | [[cni-troubleshooting]] | [[cilium-deep-dive]] | [[csi]] | [[volume-lifecycle]] | [[csi-sidecars]] | [[csi-troubleshooting]] | [[rbac]] | [[scheduler-assume]]
 
 # Kubernetes 面试题汇总
 

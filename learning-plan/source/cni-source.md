@@ -1,6 +1,6 @@
 #kubernetes #cni #源码导读
 
-相关笔记：[[cni]] | [[calico]] | [[cilium]] | [[flannel]] | [[weave]] | [[multus]] | [[network-model]] | [[service]] | [[k8s-development-roadmap]] | [[demo-cni-bridge]] | [[kubelet-cri-source]] | [[k8s-interview]]
+相关笔记：[[cni]] | [[calico]] | [[cilium]] | [[cilium-deep-dive]] | [[flannel]] | [[weave]] | [[multus]] | [[network-model]] | [[service]] | [[kube-proxy]] | [[cni-troubleshooting]] | [[k8s-development-roadmap]] | [[demo-cni-bridge]] | [[kubelet-cri-source]] | [[k8s-interview]]
 
 ## 概述
 

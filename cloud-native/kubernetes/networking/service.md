@@ -1,6 +1,6 @@
 #service
 
-相关笔记：[[kubernetes-basics]] | [[headless-service]] | [[cni]] | [[k8s-interview]]
+相关笔记：[[kubernetes-basics]] | [[headless-service]] | [[cni]] | [[kube-proxy]] | [[network-model]] | [[k8s-interview]]
 
 ## Service 概述
 

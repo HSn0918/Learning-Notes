@@ -1,6 +1,6 @@
 #kubernetes #学习计划 #源码导读 #导航
 
-相关笔记：[[progress]] | [[hami-learning-path]] | [[client-go-source]] | [[controller-runtime-source]] | [[scheduler-framework-source]] | [[scheduler-podgroup-source]] | [[kubelet-cri-source]] | [[cri-source]] | [[etcd-source]] | [[kubebuilder]] | [[operator-pattern]] | [[k8s-interview]]
+相关笔记：[[progress]] | [[hami-learning-path]] | [[client-go-source]] | [[controller-runtime-source]] | [[scheduler-framework-source]] | [[scheduler-podgroup-source]] | [[kubelet-cri-source]] | [[cri-source]] | [[csi-source]] | [[cni-source]] | [[volume-lifecycle]] | [[csi-sidecars]] | [[csi-troubleshooting]] | [[kube-proxy]] | [[cni-troubleshooting]] | [[cilium-deep-dive]] | [[etcd-source]] | [[kubebuilder]] | [[operator-pattern]] | [[k8s-interview]]
 
 > **这是 `learning-plan/` 的入口。** 先看下面的「你该走哪条路」决策图确定路线，再按路线推进，不要一上来就乱点。
 
@@ -215,15 +215,17 @@ mindmap
 | --- | --- | --- |
 | CNI 标准 | `ADD/DEL/CHECK`、二进制 + JSON 协议 | [[cni]]、[[cni-source]] |
 | libcni / conflist | 插件链、prevResult chain、fork+exec | [[cni-source]] |
+| Service 数据面 | kube-proxy、iptables/IPVS、eBPF replacement | [[kube-proxy]]、[[service]] |
 | Calico | BGP / IPIP / VXLAN、Felix、IPAM | [[calico]] |
 | Flannel | overlay 简单实现 | [[flannel]] |
-| Cilium | eBPF 数据面 | [[cilium]] |
+| Cilium | eBPF 数据面、identity、BPF map、kube-proxy replacement | [[cilium]]、[[cilium-deep-dive]] |
 | 其他 | Weave、Multus（多网卡） | [[weave]]、[[multus]] |
 | Service / 网络模型 | iptables/ipvs、Pod-Pod 通信 | [[service]]、[[network-model]] |
+| 排障 | Pod IP、跨节点、ClusterIP、DNS、NetworkPolicy 分层定位 | [[cni-troubleshooting]] |
 
-**衡量标准**：能在一台机器上手写一个最简 CNI 插件实现 `ADD/DEL`，能解释 Calico BGP 路由与 Flannel VXLAN 转发的差异。
+**衡量标准**：能在一台机器上手写一个最简 CNI 插件实现 `ADD/DEL`，能解释 Calico BGP 路由、Flannel VXLAN、Cilium eBPF Service 转发的差异，并能按 Pod IP → Service → DNS → NetworkPolicy 分层排障。
 
-**配套**：源码导读 [[cni-source]]（CNI 协议 / libcni / bridge 插件 / Calico·Cilium·Flannel 数据面入口）+ 可运行 demo [[demo-cni-bridge]]（100 行 bash 实现 bridge 插件，Mac 上 `./run-in-docker.sh` 一键跑）。
+**配套**：源码导读 [[cni-source]]（CNI 协议 / libcni / bridge 插件 / Calico·Cilium·Flannel 数据面入口）+ [[kube-proxy]] / [[cilium-deep-dive]] / [[cni-troubleshooting]] 三篇工程深挖 + 可运行 demo [[demo-cni-bridge]]（100 行 bash 实现 bridge 插件，Mac 上 `./run-in-docker.sh` 一键跑）。
 
 ### 9. CSI — 容器存储
 
@@ -232,11 +234,13 @@ mindmap
 | 子目标 | 关键点 | 配套笔记 |
 | --- | --- | --- |
 | CSI 架构 | Identity / Controller / Node service | [[csi]] |
-| Sidecar 体系 | external-provisioner、external-attacher、node-driver-registrar | [[csi]] |
+| Volume 生命周期 | PVC / PV / StorageClass / VolumeAttachment / mount | [[volume-lifecycle]] |
+| Sidecar 体系 | external-provisioner、external-attacher、node-driver-registrar | [[csi]]、[[csi-sidecars]] |
 | 主流实现 | Ceph-CSI、Longhorn、OpenEBS、NFS | [[ceph-csi]]、[[longhorn]]、[[openebs]]、[[nfs-csi]] |
 | 云厂商 | AWS EBS、GCE PD、阿里云盘 | [[cloud-provider-csi]] |
+| 排障 | PVC Pending、Attach、Mount、Resize、Snapshot 分层定位 | [[csi-troubleshooting]] |
 
-**衡量标准**：能画出 PVC → Provision → Attach → Mount 的完整时序图，知道每个步骤由哪个 sidecar 调哪个 CSI RPC。
+**衡量标准**：能画出 PVC → Provision → Attach → Mount 的完整时序图，知道每个步骤由哪个 sidecar 调哪个 CSI RPC；遇到 PVC Pending、VolumeAttachment 未 attached、Pod mount 失败时能定位到对应组件。
 
 ### 10. CRI — 容器运行时接口
 
@@ -312,8 +316,8 @@ gantt
 
 ### Phase 3：进阶模块（7-8 周）
 1. 通读 [[scheduler-framework-source]]，开发一个自定义 Score 插件并部署为 secondary scheduler
-2. CNI：跑 [[demo-cni-bridge]] 手写最简 bridge 插件；读 [[cni-source]]、[[cni]]、[[calico]]、[[cilium]]
-3. CSI：基于 csi-driver-host-path 改造一个本地 CSI 插件；读 [[csi-source]]、[[csi]]、[[openebs]]
+2. CNI：跑 [[demo-cni-bridge]] 手写最简 bridge 插件；读 [[cni-source]]、[[cni]]、[[kube-proxy]]、[[cni-troubleshooting]]、[[calico]]、[[cilium-deep-dive]]
+3. CSI：基于 csi-driver-host-path 改造一个本地 CSI 插件；读 [[csi-source]]、[[csi]]、[[volume-lifecycle]]、[[csi-sidecars]]、[[csi-troubleshooting]]、[[openebs]]
 4. CRI / Device Plugin：跑 [[demo-fake-cri]] 用最小 fake CRI server 骗过 crictl；实现一个 fake-device-plugin 注册到 kubelet；读 [[cri-source]]、[[kubelet-cri-source]]、[[gpu-scheduling]]
 
 ### Phase 4：综合（7-8 周）
