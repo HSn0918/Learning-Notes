@@ -2,7 +2,7 @@
 
 > 面向 **Kubernetes / 云原生 / 后端** 岗位求职的系统化技术笔记。基于 Obsidian 构建，同时兼容 GitHub 浏览。
 
-**125 篇技术笔记** · **10 个可运行 demo** · **12 篇源码导读**，覆盖 8 大板块。
+**126 篇技术笔记** · **10 个可运行 demo** · **12 篇源码导读**，覆盖 8 大板块。
 每篇知识笔记都配有 **mermaid 图解** + **面试要点 Q&A**，可直接当作复习卡片。
 
 ---
@@ -90,6 +90,9 @@ LLM 推理学习路径、Prefill/Decode、Prefix Cache、KV Cache；终端效率
 [Volume lifecycle](learning-plan/topics/storage/volume-lifecycle.md) ·
 [CSI sidecars](learning-plan/topics/storage/csi-sidecars.md) ·
 [CSI troubleshooting](learning-plan/topics/storage/csi-troubleshooting.md)
+
+**面试题库**
+[K8s/GPU/AI Infra 面试模块题库](learning-plan/interviews/k8s-gpu-ai-infra-interview-modules.md) —— 按模块沉淀 Operator、调度、GPU、容错、K8s 基础链路和岗位追问
 
 **可运行 demo**（每个目录含可编译代码 + README 跑测步骤）
 [sample-controller](learning-plan/demos/sample-controller/demo-sample-controller.md) ·

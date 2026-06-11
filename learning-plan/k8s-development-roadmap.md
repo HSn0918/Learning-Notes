@@ -23,6 +23,7 @@ learning-plan/
 ├── topics/                      研发深挖专题：CNI/CSI 端到端链路与排障
 │   ├── networking/              kube-proxy / Cilium deep dive / CNI troubleshooting
 │   └── storage/                 Volume lifecycle / CSI sidecars / CSI troubleshooting
+├── interviews/                  面试纪要模块化沉淀：K8s Operator / GPU 调度 / AI Infra
 └── demos/                       可运行 demo ×10（见 demos/README.md）
 ```
 
