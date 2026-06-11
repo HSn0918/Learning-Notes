@@ -116,6 +116,8 @@ A: 回答...
 | K8s 控制平面 | `cloud-native/kubernetes/control-plane/` | `scheduler-deep-dive.md` |
 | K8s 网络插件 | `cloud-native/kubernetes/networking/` | `cilium.md` |
 | K8s 存储插件 | `cloud-native/kubernetes/storage/` | `ceph-csi.md` |
+| K8s 网络深挖/排障 | `learning-plan/topics/networking/` | `cni-troubleshooting.md` |
+| K8s 存储深挖/排障 | `learning-plan/topics/storage/` | `csi-troubleshooting.md` |
 | K8s 基础设施 | `cloud-native/kubernetes/infrastructure/` | `etcd.md` |
 | K8s 扩展开发 | `cloud-native/kubernetes/extension/` | `operator-pattern.md` |
 | MySQL | `database/mysql/` | `mysql-transaction.md` |

@@ -34,9 +34,9 @@ flowchart LR
 
 每个领域都有一份 **学习索引**（推荐顺序 + 难度 + 一句话简介），点标题进入。
 
-### ☁️ [云原生 Cloud Native](cloud-native/README.md) · 47 篇
+### ☁️ [云原生 Cloud Native](cloud-native/README.md) · 41 篇
 容器与 Kubernetes 全栈，岗位核心主战场。
-`Docker 底层` `Cgroup/Namespace/UnionFS` `etcd` `Informer` `Scheduler` `RBAC` `CNI` `kube-proxy` `Cilium` `CSI` `CSI sidecar` `Operator` `GPU 调度`
+`Docker 底层` `Cgroup/Namespace/UnionFS` `etcd` `Informer` `Scheduler` `RBAC` `CNI` `Cilium` `CSI` `Operator` `GPU 调度`
 
 ### 🐹 [Go 语言](go/README.md) · 9 篇
 runtime 底层是面试区分度所在。
@@ -83,6 +83,14 @@ LLM 推理学习路径、Prefill/Decode、Prefix Cache、KV Cache；终端效率
 [gpu-scheduling](learning-plan/source/gpu-scheduling-source.md) ·
 [hami](learning-plan/source/hami-source.md)
 
+**专题深挖**（研发排障、白板训练、端到端机制）
+[kube-proxy](learning-plan/topics/networking/kube-proxy.md) ·
+[Cilium deep dive](learning-plan/topics/networking/cilium-deep-dive.md) ·
+[CNI troubleshooting](learning-plan/topics/networking/cni-troubleshooting.md) ·
+[Volume lifecycle](learning-plan/topics/storage/volume-lifecycle.md) ·
+[CSI sidecars](learning-plan/topics/storage/csi-sidecars.md) ·
+[CSI troubleshooting](learning-plan/topics/storage/csi-troubleshooting.md)
+
 **可运行 demo**（每个目录含可编译代码 + README 跑测步骤）
 [sample-controller](learning-plan/demos/sample-controller/demo-sample-controller.md) ·
 [kubebuilder-operator](learning-plan/demos/kubebuilder-operator/demo-kubebuilder-operator.md) ·
@@ -112,6 +120,6 @@ LLM 推理学习路径、Prefill/Decode、Prefix Cache、KV Cache；终端效率
 
 ## 📐 关于本库
 
-- **结构**：每个领域目录下都有 `README.md` 学习索引；`learning-plan/` 是 K8s 开发深挖路线（源码导读 + 可运行 demo）。
+- **结构**：每个领域目录下都有 `README.md` 学习索引；`learning-plan/` 是 K8s 开发深挖路线（源码导读 + 专题深挖 + 可运行 demo）。
 - **笔记规范**：中英混合（术语用英文，解释用中文）；每篇含 `#标签`、`相关笔记：[[...]]` 双向链接、mermaid 图解、`## 面试要点` Q&A。
 - **阅读方式**：Obsidian 中可用图谱/反向链接漫游；GitHub 上可顺着本页与各领域索引逐层下钻。

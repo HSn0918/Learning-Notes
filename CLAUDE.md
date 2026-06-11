@@ -42,6 +42,7 @@
 ```
 learning-plan/      - Kubernetes 开发学习路线图与源码导读（k8s-development-roadmap 为入口）
   source/           - 12 篇源码导读：client-go / controller-runtime / scheduler-framework / scheduler-podgroup / volcano / kubelet-cri / cri / etcd / csi / cni / gpu-scheduling / hami（+ hami-learning-path）
+  topics/           - 6 篇研发深挖专题：kube-proxy / Cilium / CNI 排障 / Volume 生命周期 / CSI sidecar / CSI 排障
   demos/            - 10 个可运行 demo：sample-controller / kubebuilder-operator / scheduler-plugin / device-plugin / fake-cri / csi-hostpath / cni-bridge / fake-gpu / hami-mac / raftexample-walkthrough
   llm-inference-learning-path.md / llm-inference-progress.md - LLM 推理（Router/KV Cache/PD 分离）8 阶段路径与打卡表
 
@@ -49,8 +50,8 @@ cloud-native/
   docker/           - 容器基础、Dockerfile、网络模式、底层技术（Cgroup/Namespace/UnionFS）
   kubernetes/
     control-plane/  - APIServer、Informer、调度器、RBAC、GPU 调度
-    networking/     - CNI 概览、kube-proxy、CNI 排障、Calico、Cilium、Flannel、Weave、Multus、Service、网络模型
-    storage/        - CSI 概览、Volume 生命周期、CSI sidecar、CSI 排障、Ceph、Longhorn、OpenEBS、NFS、云厂商 CSI
+    networking/     - CNI 概览、Calico、Cilium、Flannel、Weave、Multus、Service、网络模型
+    storage/        - CSI 概览、Ceph、Longhorn、OpenEBS、NFS、云厂商 CSI
     infrastructure/ - K8s 基础、etcd、Google Borg、OCI Runtime
     extension/      - Kubebuilder、Velero、Operator 模式
     interview/      - K8s 面试题汇总

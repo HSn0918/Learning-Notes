@@ -20,6 +20,9 @@ learning-plan/
 │   ├── cni-source.md                gpu-scheduling-source.md
 │   ├── hami-source.md               etcd-source.md
 │   └── hami-learning-path.md     HAMi GPU 虚拟化 6 阶段专题路径
+├── topics/                      研发深挖专题：CNI/CSI 端到端链路与排障
+│   ├── networking/              kube-proxy / Cilium deep dive / CNI troubleshooting
+│   └── storage/                 Volume lifecycle / CSI sidecars / CSI troubleshooting
 └── demos/                       可运行 demo ×10（见 demos/README.md）
 ```
 
@@ -61,7 +64,7 @@ flowchart TD
 
 ## 概述
 
-本笔记基于「Kubernetes 开发」学习路线图，把通往 Kubernetes 开发岗（控制器/调度器/平台/CSI/CNI/CRI/Device Plugin）所需的能力拆成 12 个主题，给出每个主题的子目标、推荐顺序、关键源码切入点、配套笔记，以及一份可执行的阶段化学习计划。配合 `learning-plan/source/` 下 12 篇源码导读笔记（client-go、controller-runtime、kube-scheduler、PodGroup/gang 调度、Volcano、kubelet、CRI、CSI、CNI、GPU 调度、HAMi GPU 虚拟化、etcd），形成「路线图 → 源码 → 面试」的闭环。
+本笔记基于「Kubernetes 开发」学习路线图，把通往 Kubernetes 开发岗（控制器/调度器/平台/CSI/CNI/CRI/Device Plugin）所需的能力拆成 12 个主题，给出每个主题的子目标、推荐顺序、关键源码切入点、配套笔记，以及一份可执行的阶段化学习计划。配合 `learning-plan/source/` 下 12 篇源码导读笔记（client-go、controller-runtime、kube-scheduler、PodGroup/gang 调度、Volcano、kubelet、CRI、CSI、CNI、GPU 调度、HAMi GPU 虚拟化、etcd）和 `learning-plan/topics/` 下的研发深挖专题，形成「路线图 → 源码 → 专题 → demo → 面试」的闭环。
 
 ## 学习路线图
 
@@ -326,7 +329,7 @@ gantt
 3. 综合项目：搭一个小型多集群/多租户平台，集成自己写的 Operator + Webhook + 调度插件；如果当前目标是面试冲刺，先把综合项目降级为可选挑战
 4. 同步开始刷 [[k8s-interview]]，把上面所有面试要点过 3 遍
 
-## 源码导读索引
+## 源码导读与专题索引
 
 12 篇导读集中放在 `learning-plan/source/`，每篇都包含三层：① 概念与架构；② 真实源码片段；③ 手写简化复现或阅读练习。其中多数基于本地 `~/github/kubernetes`、`~/github/etcd` 源码，带**文件路径 + 行号**；[[cni-source]] / [[hami-source]] 因对应仓库（containernetworking、Project-HAMi）不在本地，只给**目录 + 函数名**定位，clone 后可补行号。
 
@@ -346,6 +349,17 @@ gantt
 | etcd               | [[etcd-source]]                | [[demo-raftexample-walkthrough]] | raft / WAL / MVCC / Watch / Lease                                   | ✅ etcd-client-demo 先 `go mod tidy`          |
 
 > **demo 通用前置**：除 hami-mac 外，多数 demo 首次构建要先 `cd <demo> && go mod tidy` 补全 go.sum。每个 demo 的 README 有具体步骤，验证状态见 `demos/README.md`。
+
+### 研发深挖专题
+
+| 方向 | 专题 | 目标 |
+| --- | --- | --- |
+| CNI | [[kube-proxy]] | 讲清 Service VIP 到后端 Pod 的 iptables/IPVS/eBPF 转发边界 |
+| CNI | [[cilium-deep-dive]] | 讲清 Cilium endpoint、identity、BPF map、kube-proxy replacement |
+| CNI | [[cni-troubleshooting]] | 按 Pod IP、跨节点、ClusterIP、DNS、NetworkPolicy 分层排障 |
+| CSI | [[volume-lifecycle]] | 串起 PVC、PV、StorageClass、VolumeAttachment、Stage、Publish |
+| CSI | [[csi-sidecars]] | 对齐 6 个 sidecar 与 CSI RPC 的触发关系 |
+| CSI | [[csi-troubleshooting]] | 按 PVC Pending、Attach、Mount、Resize、Snapshot 分层排障 |
 
 ## 这套路线的边界（先知道它「不教什么」）
 
