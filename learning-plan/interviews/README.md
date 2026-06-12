@@ -9,7 +9,7 @@
 处理一份新面试材料时，按下面顺序整理：
 
 1. 提取面试中真实出现的问题。
-2. 归入已有模块：项目架构、Operator、调度、GPU、K8s 基础、容错、岗位判断。
+2. 归入已有模块：项目架构、Operator、调度、GPU、K8s 基础、容错、业务场景、操作系统、网络基础、岗位判断。
 3. 对每个问题补上：考察点、推荐回答、设计延伸、常见误区。
 4. 如果出现新方向，再新增模块，不按公司或单次会议拆散。
 
@@ -17,7 +17,7 @@
 
 | 模块文档 | 覆盖方向 |
 | --- | --- |
-| [[k8s-gpu-ai-infra-interview-modules]] | K8s Operator、GPU 分时调度、Device Plugin、资源池视图、容错设计、AI Infra 岗位判断 |
+| [[k8s-gpu-ai-infra-interview-modules]] | K8s Operator、GPU 分时调度、Device Plugin、资源池视图、容错设计、业务场景、操作系统、网络数据面、AI Infra 岗位判断 |
 
 ## 模块化沉淀格式
 

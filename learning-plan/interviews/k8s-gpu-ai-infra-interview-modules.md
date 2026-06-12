@@ -1,6 +1,6 @@
 #kubernetes #gpu #ai-infra #面试 #系统设计
 
-相关笔记：[[k8s-development-roadmap]] | [[progress]] | [[controller-runtime-source]] | [[scheduler-framework-source]] | [[gpu-scheduling]] | [[gpu-scheduling-source]] | [[kubelet-cri-source]] | [[hami-source]] | [[hami-learning-path]] | [[kube-proxy]] | [[cni]] | [[csi]]
+相关笔记：[[k8s-development-roadmap]] | [[progress]] | [[controller-runtime-source]] | [[scheduler-framework-source]] | [[gpu-scheduling]] | [[gpu-scheduling-source]] | [[kubelet-cri-source]] | [[hami-source]] | [[hami-learning-path]] | [[kube-proxy]] | [[cni]] | [[csi]] | [[network-model]] | [[service]] | [[namespace]] | [[cgroup]] | [[oci-runtime]] | [[probes]]
 
 ## 概述
 
@@ -51,6 +51,24 @@ mindmap
       CNI
       CSI
       kube-proxy
+    Business Modeling
+      SLO
+      Peak Valley
+      Degradation
+      Priority
+      Rollback
+    OS Foundation
+      Namespace
+      Cgroup
+      OverlayFS
+      Device Cgroup
+      Signal
+    Networking
+      Pod to Pod
+      Service Datapath
+      DNS
+      NetworkPolicy
+      Conntrack
     AI Infra
       Image Cache
       Model Serving
@@ -476,16 +494,218 @@ CRI 是 kubelet 和容器运行时的接口，负责创建 sandbox、拉镜像�
 5. 是否涉及推理服务调度、embedding pipeline、KV cache 或 batch inference？
 6. 新人前 3 个月主要修 bug，还是参与底层组件设计？
 
-## 模块七：常见薄弱点与补强方向
+## 模块七：业务场景与系统边界
+
+### 知识点地图
+
+| 知识点 | 必须掌握的问题 |
+| --- | --- |
+| 业务目标 | 系统到底优化利用率、成本、稳定性还是交付效率 |
+| SLO / SLA | 在线业务能接受多大延迟、错误率和恢复时间 |
+| 峰谷识别 | 只看 QPS 是否足够，是否还要看延迟、队列和 GPU 利用率 |
+| 混部风险 | 离线任务如何避免影响在线推理 |
+| 优先级 | 在线、准实时、离线任务如何分级 |
+| 回滚策略 | 资源腾挪后发现业务抖动如何快速恢复 |
+
+### Q1：如果让你设计 GPU 峰谷复用，业务指标怎么选？
+
+**参考答案**：
+
+不能只看 QPS。QPS 只能说明请求量，不能说明服务是否还有余量。更合理的判断要结合 P95/P99 延迟、错误率、排队长度、GPU 利用率、显存占用、模型实例数、冷启动时间和业务优先级。只有当在线业务满足 SLO，并且连续一段时间低于回收阈值，才允许把资源借给离线任务。
+
+**设计延伸**：
+
+- 阈值要有滞回区间，避免资源频繁抢占和归还。
+- 回收资源前要确认离线任务可中断或可检查点恢复。
+- 高优先级业务要支持立即抢占离线任务。
+- 资源归还要考虑模型加载、预热和流量切回时间。
+
+### Q2：在线推理和离线刷库混部，最核心的业务风险是什么？
+
+**参考答案**：
+
+核心风险是离线任务抢占了在线业务的资源余量，导致延迟抖动、错误率升高或扩容来不及。GPU 场景还要关注显存碎片、模型预热、PCIe/NVLink 拓扑、磁盘和网络 IO 抢占。混部系统不能只做调度成功，还要保证在线业务能快速拿回资源。
+
+**设计延伸**：
+
+| 风险 | 防护方式 |
+| --- | --- |
+| 在线延迟升高 | SLO 触发回收，优先级抢占 |
+| 离线任务不可中断 | checkpoint、分片任务、幂等提交 |
+| 模型冷启动慢 | 镜像缓存、模型预热、保留 buffer |
+| IO 抢占 | 限速、分池、按业务隔离节点 |
+
+### Q3：如果面试官问“这个项目的业务价值是什么”，怎么回答？
+
+**参考答案**：
+
+可以从资源、成本和稳定性三个角度回答。资源上，提高低峰时段 GPU 利用率；成本上，把原本闲置的在线资源复用于离线任务，减少额外采购或排队等待；稳定性上，通过优先级、抢占、状态机和回滚机制保证在线业务优先。不要只说“提高利用率”，还要说明不影响在线 SLO 是系统边界。
+
+**设计延伸**：
+
+- 量化指标：GPU 利用率、离线任务完成时长、在线 P99、抢占次数、资源归还耗时。
+- 业务边界：哪些任务允许混部，哪些任务必须独占。
+- 组织边界：平台负责资源编排，业务方负责任务幂等和可中断能力。
+
+### Q4：业务方说“晚上 QPS 低，把 GPU 都拿走”，你会怎么反问？
+
+**参考答案**：
+
+要先确认业务低峰是否稳定、是否有突发流量、是否有定时任务、告警回滚标准是什么、资源归还需要多久、离线任务能否被中断。QPS 低不等于资源一定可回收，因为模型加载、缓存命中、突发流量和下游依赖也会影响在线稳定性。
+
+**设计延伸：可反问问题**
+
+1. 在线服务的 P99 和错误率 SLO 是多少？
+2. 低峰窗口是否固定，是否存在突发活动或批量请求？
+3. 抢占离线任务后，GPU 多久能归还给在线业务？
+4. 模型重新加载和预热需要多久？
+5. 离线任务是否支持 checkpoint 和幂等重试？
+
+## 模块八：操作系统与容器底层
+
+### 知识点地图
+
+| 知识点 | 必须掌握的问题 |
+| --- | --- |
+| Namespace | 容器隔离了哪些视图，Pod 共享哪些 namespace |
+| Cgroup | CPU、内存、设备访问如何限制和统计 |
+| OverlayFS | 镜像层和容器可写层如何工作 |
+| OCI runtime | containerd、runc、shim 的边界 |
+| Device cgroup | GPU 设备文件如何暴露给容器 |
+| Signal / PID 1 | 容器进程退出、僵尸进程和优雅终止 |
+
+### Q1：容器和虚拟机的本质区别是什么？
+
+**参考答案**：
+
+容器不是模拟一台完整机器，而是在同一个宿主机内核上用 namespace 隔离进程看到的视图，用 cgroup 限制资源，再通过 rootfs 和 union filesystem 提供文件系统环境。虚拟机通常有独立 guest kernel，隔离更强但启动和资源开销更大。
+
+**设计延伸**：
+
+- namespace 解决“看见什么”：pid、net、mnt、uts、ipc、user。
+- cgroup 解决“能用多少”：CPU、memory、pids、devices。
+- rootfs / OverlayFS 解决“文件系统长什么样”。
+- seccomp、AppArmor、SELinux 负责限制系统调用和访问权限。
+
+### Q2：Pod 里的 pause 容器有什么作用？
+
+**参考答案**：
+
+pause 容器是 Pod sandbox 的承载进程。运行时先创建 sandbox，再把业务容器加入同一个 network namespace。这样 Pod 内多个容器共享同一个 IP、端口空间和 localhost。pause 还提供一个稳定的 namespace 锚点，避免业务容器重启时 Pod 网络命名空间被销毁。
+
+**设计延伸**：
+
+- Pod 内容器端口会冲突，因为共享 netns。
+- CNI 是给 sandbox 配网，不是给每个业务容器单独配网。
+- Pod 重启单个容器时，Pod IP 通常保持不变。
+
+### Q3：GPU 是怎么被放进容器里的？
+
+**参考答案**：
+
+GPU 最终是宿主机上的设备文件和驱动能力。K8s 通过 Device Plugin 把 GPU 作为扩展资源上报；Pod 被调度后，kubelet 调用 `Allocate` 获取设备分配结果；运行时再把 `/dev/nvidia*`、驱动库、环境变量或 CDI 设备注入容器，同时通过 device cgroup 控制容器能访问哪些设备。
+
+**设计延伸**：
+
+- 只挂载设备文件不等于资源隔离，显存和算力限制还需要运行时或虚拟化方案。
+- device cgroup 控制设备访问权限，不负责调度公平性。
+- NVIDIA Container Runtime / CDI 负责把设备和依赖注入到 OCI spec。
+
+### Q4：容器内进程收到 SIGTERM 后，K8s 是怎么终止 Pod 的？
+
+**参考答案**：
+
+删除 Pod 时，kubelet 先执行 `preStop`，然后向容器主进程发送 SIGTERM，并等待 `terminationGracePeriodSeconds`。如果超时还没退出，再发送 SIGKILL。应用要正确处理 SIGTERM，停止接收新请求、等待 in-flight 请求完成、释放资源后退出。
+
+**设计延伸**：
+
+- readiness probe 应该先摘流量，再做优雅退出。
+- PID 1 进程要正确转发信号和回收子进程。
+- GPU 任务要在退出时释放锁、checkpoint 或更新任务状态。
+
+## 模块九：网络基础与 K8s 数据面
+
+### 知识点地图
+
+| 知识点 | 必须掌握的问题 |
+| --- | --- |
+| Pod 网络模型 | 每个 Pod 一个 IP，Pod 间原则上直接互通 |
+| CNI | veth、IPAM、route、overlay/underlay |
+| Service | ClusterIP 如何转发到 Endpoint |
+| kube-proxy / eBPF | iptables、IPVS、eBPF 数据面差异 |
+| DNS | Service name 如何解析 |
+| NetworkPolicy | 隔离规则由谁真正执行 |
+| conntrack / MTU | 网络疑难问题常见根因 |
+
+### Q1：Pod 访问另一个节点上的 Pod，网络路径是什么？
+
+**参考答案**：
+
+容器流量先从 Pod netns 的 eth0 出来，经过 veth pair 到宿主机侧，再由 CNI 配置的路由或隧道转发到目标节点。目标节点解封装或路由后，把包送进目标 Pod 的 veth。不同 CNI 数据面不同：Flannel VXLAN 走 overlay 封装，Calico 常见模式走三层路由或 BGP，Cilium 可以用 eBPF 接管转发和策略。
+
+**设计延伸**：
+
+- 同节点 Pod 通常通过本机 bridge、veth 或 eBPF 转发。
+- 跨节点要关注路由、封装、MTU 和安全组。
+- overlay 简化网络要求，但有封装开销和 MTU 问题。
+
+### Q2：Pod 访问 Service 的完整路径是什么？
+
+**参考答案**：
+
+Pod 先通过 DNS 把 Service name 解析成 ClusterIP，然后访问 ClusterIP。节点上的 kube-proxy 使用 iptables 或 IPVS 把 ClusterIP 转发到某个 Endpoint Pod；如果是 Cilium 等 eBPF 数据面，Service 转发可以由 eBPF 程序完成。Service 解决的是稳定入口和负载均衡，不是给 Pod 配 IP。
+
+**设计延伸**：
+
+| 层次 | 作用 |
+| --- | --- |
+| CoreDNS | Service name 到 ClusterIP |
+| Service | 稳定虚拟 IP 和端口 |
+| EndpointSlice | 后端 Pod 地址集合 |
+| kube-proxy / eBPF | ClusterIP 到 Pod IP 的转发 |
+
+### Q3：NetworkPolicy 为什么创建了不一定生效？
+
+**参考答案**：
+
+NetworkPolicy 只是 Kubernetes API 对象，真正执行要依赖支持策略的 CNI。比如 Calico、Cilium 支持网络策略，而 Flannel 默认不支持完整 NetworkPolicy。如果 CNI 不实现策略控制，创建 policy 也不会产生预期隔离效果。
+
+**设计延伸**：
+
+- 默认情况下 Pod 之间通常是互通的。
+- 一旦某个 Pod 被 ingress policy 选中，未显式允许的入方向流量会被拒绝。
+- 策略排查要看 selector 是否匹配、namespaceSelector 是否正确、CNI 是否支持。
+
+### Q4：线上 Pod 访问 Service 偶发超时，你会怎么排查？
+
+**参考答案**：
+
+先确定是 DNS、Service 转发、Pod 网络还是应用问题。按链路排查：确认 CoreDNS 解析是否稳定；检查 Service selector 和 EndpointSlice 是否正确；看 kube-proxy/IPVS/eBPF 状态；进入 Pod netns 测试目标 Pod IP 是否可达；检查 CNI 日志、节点路由、conntrack 是否打满、MTU 是否异常；最后结合应用日志和延迟指标判断是否是服务端处理慢。
+
+**设计延伸**：
+
+```text
+DNS -> Service -> EndpointSlice -> node datapath -> Pod IP -> application
+```
+
+- `nslookup` / `dig` 判断解析问题。
+- 直连 Pod IP 可以绕过 Service，定位数据面层级。
+- `tcpdump` 能判断包是否到达目标节点或目标 Pod。
+- conntrack 表满会导致看似随机的连接失败。
+
+## 模块十：常见薄弱点与补强方向
 
 | 薄弱点 | 面试风险 | 补强方向 |
 | --- | --- | --- |
 | 只会描述项目流程 | 缺少系统设计深度 | 补 CRD、状态机、异常流程 |
+| 只讲技术不讲业务价值 | 被认为不理解平台目标 | 补 SLO、成本、利用率、业务边界 |
 | 全量 list 讲不清 | 被质疑扩展性 | 补 informer/cache/indexer |
 | 失败不重试 | 被质疑健壮性 | 补幂等、retry、backoff、compensation |
 | GPU 分时和 vGPU 混淆 | 概念边界不清 | 区分整卡复用、单卡切分、API 拦截 |
 | Device Plugin 只知道上报 | 不了解 kubelet 交互 | 补 Register、ListAndWatch、Allocate |
 | Pod 网络讲成 kube-proxy | K8s 基础扣分 | 补 pause/netns/CNI/Service 边界 |
+| OS 只知道名词 | 底层深度不足 | 补 namespace、cgroup、OCI runtime、device cgroup |
+| 网络排障没有链路 | 排查能力显弱 | 按 DNS、Service、Endpoint、CNI、路由、conntrack 分层 |
 | 岗位理解只看 JD | 匹配度表达弱 | 反问真实组件、规模、职责边界 |
 
 ## 后续追加规则
