@@ -2,7 +2,7 @@
 
 > 面向 **Kubernetes / 云原生 / 后端** 岗位求职的系统化技术笔记。基于 Obsidian 构建，同时兼容 GitHub 浏览。
 
-**126 篇技术笔记** · **10 个可运行 demo** · **12 篇源码导读**，覆盖 8 大板块。
+**130 篇技术笔记** · **10 个可运行 demo** · **13 篇源码导读**，覆盖 8 大板块。
 每篇知识笔记都配有 **mermaid 图解** + **面试要点 Q&A**，可直接当作复习卡片。
 
 ---
@@ -26,7 +26,7 @@ flowchart LR
 | ② K8s 核心 | 基础设施 → 控制面 → 网络 → 存储 → 扩展 | [云原生索引](cloud-native/README.md) |
 | ③ 源码 + 动手 | 读源码 + 跑 demo，把机制吃透 | [learning-plan 专区](#-learning-plan--kubernetes-开发深挖专区) |
 | ④ 后端功底 | MySQL/Redis 必考、Kafka、手撕算法 | [数据库](database/README.md) · [中间件](middleware/README.md) · [算法](algorithm/README.md) |
-| ⭐ 加分方向 | AI Infra：LLM 推理、GPU 调度/HAMi | [AI](#-ai) · [GPU 调度](cloud-native/kubernetes/control-plane/gpu-scheduling.md) |
+| ⭐ 加分方向 | AI Infra：LLM 推理、Agent 开发、GPU 调度/HAMi | [AI](ai/README.md) · [GPU 调度](cloud-native/kubernetes/control-plane/gpu-scheduling.md) |
 
 ---
 
@@ -54,8 +54,8 @@ MySQL 索引/事务/锁几乎必考，Redis 考工程实战。
 笔试硬门槛，覆盖手撕高频方向。
 `BFS/DFS/回溯` `二分` `拓扑/Dijkstra/并查集` `快排/归并/堆排` `前缀和/差分/滑窗/单调栈` `DP` `LRU/LFU` `KMP/Trie`
 
-### 🤖 [AI](#-ai) · 4 篇 ＆ 🧰 [Misc](#-misc) · 1 篇
-LLM 推理学习路径、Prefill/Decode、Prefix Cache、KV Cache；终端效率速查。
+### 🤖 [AI](ai/README.md) · 7 篇 ＆ 🧰 [Misc](#-misc) · 1 篇
+LLM 推理学习路径、Prefill/Decode、Prefix Cache、KV Cache、Agent 开发、Agent 源码导读、生产级 Agent；终端效率速查。
 
 ---
 
@@ -81,7 +81,8 @@ LLM 推理学习路径、Prefill/Decode、Prefix Cache、KV Cache；终端效率
 [csi](learning-plan/source/csi-source.md) ·
 [cni](learning-plan/source/cni-source.md) ·
 [gpu-scheduling](learning-plan/source/gpu-scheduling-source.md) ·
-[hami](learning-plan/source/hami-source.md)
+[hami](learning-plan/source/hami-source.md) ·
+[agent-development](learning-plan/source/agent-development-source.md)
 
 **专题深挖**（研发排障、白板训练、端到端机制）
 [kube-proxy](learning-plan/topics/networking/kube-proxy.md) ·
@@ -89,7 +90,8 @@ LLM 推理学习路径、Prefill/Decode、Prefix Cache、KV Cache；终端效率
 [CNI troubleshooting](learning-plan/topics/networking/cni-troubleshooting.md) ·
 [Volume lifecycle](learning-plan/topics/storage/volume-lifecycle.md) ·
 [CSI sidecars](learning-plan/topics/storage/csi-sidecars.md) ·
-[CSI troubleshooting](learning-plan/topics/storage/csi-troubleshooting.md)
+[CSI troubleshooting](learning-plan/topics/storage/csi-troubleshooting.md) ·
+[Production Agent](learning-plan/topics/agent/production-agent-development.md)
 
 **面试题库**
 [K8s/GPU/AI Infra 面试模块题库](learning-plan/interviews/k8s-gpu-ai-infra-interview-modules.md) —— 按模块沉淀 Operator、调度、GPU、容错、K8s 基础链路和岗位追问
@@ -110,8 +112,12 @@ LLM 推理学习路径、Prefill/Decode、Prefix Cache、KV Cache；终端效率
 
 ## 🤖 AI
 
+- [AI 学习索引](ai/README.md) —— LLM 推理、Prefix Cache、Agent 开发学习路径
 - [LLM 推理学习路径](learning-plan/llm-inference-learning-path.md) —— Router / KV Cache / PD 分离，8 阶段路线
 - [LLM 推理 8 周打卡表](learning-plan/llm-inference-progress.md) —— vLLM → PagedAttention → KV Store → PD → Router
+- [Agent 开发学习路径](learning-plan/agent-development-learning-path.md) —— RAG、ReAct loop、Planning、LangGraph、OpenTelemetry 与工具链选型
+- [Agent 开发源码导读](learning-plan/source/agent-development-source.md) —— LangGraph、OpenAI Agents SDK、LlamaIndex、OpenTelemetry GenAI 源码阅读路径
+- [生产级 Agent 开发](learning-plan/topics/agent/production-agent-development.md) —— 上线架构、工具权限、幂等、人审、Eval、OTel、灰度回滚
 - [LLM 推理全流程](ai/llm-inference-pipeline.md) —— Prefill / Decode 两阶段、KV Cache、Prefix Cache
 - [Prefill 缓存未命中分析](ai/prefill-cache-miss.md) —— 序列化不确定性如何拖垮 Prefix Cache 命中率
 

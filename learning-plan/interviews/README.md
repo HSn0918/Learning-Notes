@@ -1,6 +1,6 @@
 #面试 #学习计划 #kubernetes
 
-相关笔记：[[k8s-development-roadmap]] | [[progress]] | [[k8s-gpu-ai-infra-interview-modules]]
+相关笔记：[[k8s-development-roadmap]] | [[progress]] | [[k8s-gpu-ai-infra-interview-modules]] | [[agent-development-learning-path]] | [[agent-development-source]] | [[production-agent-development]]
 
 ## 概述
 
@@ -18,6 +18,8 @@
 | 模块文档 | 覆盖方向 |
 | --- | --- |
 | [[k8s-gpu-ai-infra-interview-modules]] | K8s Operator、GPU 分时调度、Device Plugin、资源池视图、容错设计、业务场景、操作系统、网络数据面、AI Infra 岗位判断 |
+| [[agent-development-learning-path]] | Agent 开发学习路径：RAG、ReAct loop、Planning、LangGraph、OpenTelemetry 与工具链选型 |
+| [[production-agent-development]] | 生产级 Agent 开发：上线架构、工具权限、幂等、人审、Eval、OTel、灰度回滚 |
 
 ## 模块化沉淀格式
 

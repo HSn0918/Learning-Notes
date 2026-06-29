@@ -41,11 +41,12 @@
 ## 目录结构
 ```
 learning-plan/      - Kubernetes 开发学习路线图与源码导读（k8s-development-roadmap 为入口）
-  source/           - 12 篇源码导读：client-go / controller-runtime / scheduler-framework / scheduler-podgroup / volcano / kubelet-cri / cri / etcd / csi / cni / gpu-scheduling / hami（+ hami-learning-path）
-  topics/           - 6 篇研发深挖专题：kube-proxy / Cilium / CNI 排障 / Volume 生命周期 / CSI sidecar / CSI 排障
+  source/           - 13 篇源码导读：client-go / controller-runtime / scheduler-framework / scheduler-podgroup / volcano / kubelet-cri / cri / etcd / csi / cni / gpu-scheduling / hami / agent-development（+ hami-learning-path）
+  topics/           - 7 篇研发深挖专题：kube-proxy / Cilium / CNI 排障 / Volume 生命周期 / CSI sidecar / CSI 排障 / 生产级 Agent 开发
   interviews/       - 面试纪要模块化沉淀：K8s Operator、GPU 调度、Device Plugin、系统设计追问
   demos/            - 10 个可运行 demo：sample-controller / kubebuilder-operator / scheduler-plugin / device-plugin / fake-cri / csi-hostpath / cni-bridge / fake-gpu / hami-mac / raftexample-walkthrough
   llm-inference-learning-path.md / llm-inference-progress.md - LLM 推理（Router/KV Cache/PD 分离）8 阶段路径与打卡表
+  agent-development-learning-path.md - Agent 开发学习路径：RAG / ReAct / Planning / Graph Workflow / OpenTelemetry / 工具链选型
 
 cloud-native/
   docker/           - 容器基础、Dockerfile、网络模式、底层技术（Cgroup/Namespace/UnionFS）

@@ -1,6 +1,6 @@
 #prefill #ai #go
 
-相关笔记：[[llm-inference-pipeline]] | [[llm-inference-learning-path]] | [[llm-inference-progress]]
+相关笔记：[[llm-inference-pipeline]] | [[agent-development-learning-path]] | [[llm-inference-learning-path]] | [[llm-inference-progress]]
 
 ## Go Map 序列化导致 Prefill Cache Miss 问题分析
 

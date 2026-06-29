@@ -1,6 +1,6 @@
 #kubernetes #学习计划 #源码导读 #导航
 
-相关笔记：[[progress]] | [[hami-learning-path]] | [[client-go-source]] | [[controller-runtime-source]] | [[scheduler-framework-source]] | [[scheduler-podgroup-source]] | [[kubelet-cri-source]] | [[cri-source]] | [[csi-source]] | [[cni-source]] | [[volume-lifecycle]] | [[csi-sidecars]] | [[csi-troubleshooting]] | [[kube-proxy]] | [[cni-troubleshooting]] | [[cilium-deep-dive]] | [[etcd-source]] | [[kubebuilder]] | [[operator-pattern]] | [[k8s-interview]]
+相关笔记：[[progress]] | [[hami-learning-path]] | [[agent-development-learning-path]] | [[agent-development-source]] | [[production-agent-development]] | [[client-go-source]] | [[controller-runtime-source]] | [[scheduler-framework-source]] | [[scheduler-podgroup-source]] | [[kubelet-cri-source]] | [[cri-source]] | [[csi-source]] | [[cni-source]] | [[volume-lifecycle]] | [[csi-sidecars]] | [[csi-troubleshooting]] | [[kube-proxy]] | [[cni-troubleshooting]] | [[cilium-deep-dive]] | [[etcd-source]] | [[kubebuilder]] | [[operator-pattern]] | [[k8s-interview]]
 
 > **这是 `learning-plan/` 的入口。** 先看下面的「你该走哪条路」决策图确定路线，再按路线推进，不要一上来就乱点。
 
@@ -12,17 +12,20 @@ learning-plan/
 ├── progress.md                  6 周高阶冲刺打卡表（逐项可勾选）
 ├── llm-inference-learning-path.md  LLM 推理（Router/KV Cache/PD 分离）8 阶段路径
 ├── llm-inference-progress.md       LLM 推理 8 周打卡表
-├── source/                      源码导读 ×12 + HAMi 专题路径
+├── agent-development-learning-path.md  Agent 开发（RAG/ReAct/Planning/Graph Workflow/OpenTelemetry）学习路径
+├── source/                      源码导读 ×13 + HAMi 专题路径
 │   ├── client-go-source.md          controller-runtime-source.md
 │   ├── scheduler-framework-source.md scheduler-podgroup-source.md
 │   ├── kubelet-cri-source.md
 │   ├── cri-source.md                csi-source.md
 │   ├── cni-source.md                gpu-scheduling-source.md
 │   ├── hami-source.md               etcd-source.md
+│   ├── agent-development-source.md
 │   └── hami-learning-path.md     HAMi GPU 虚拟化 6 阶段专题路径
-├── topics/                      研发深挖专题：CNI/CSI 端到端链路与排障
+├── topics/                      研发深挖专题：CNI/CSI/Agent 生产化
 │   ├── networking/              kube-proxy / Cilium deep dive / CNI troubleshooting
-│   └── storage/                 Volume lifecycle / CSI sidecars / CSI troubleshooting
+│   ├── storage/                 Volume lifecycle / CSI sidecars / CSI troubleshooting
+│   └── agent/                   production-agent-development
 ├── interviews/                  面试纪要模块化沉淀：K8s Operator / GPU 调度 / AI Infra
 └── demos/                       可运行 demo ×10（见 demos/README.md）
 ```
@@ -33,6 +36,7 @@ learning-plan/
 - **[[progress]] = 打卡表**：6 周高阶冲刺，决定开学后每天对着它勾选、写复盘。
 - **[[hami-learning-path]] = GPU 专题路径**：走 GPU/AI Infra 方向时的加餐，6 阶段深挖 HAMi。
 - **[[llm-inference-learning-path]] = LLM 推理专题**：走 AI Infra / 推理平台方向时的延伸，8 阶段串起 vLLM 引擎 → 分布式 KV → PD 分离 → K8s Router 平台。配套 [[llm-inference-progress]] 8 周打卡表。
+- **[[agent-development-learning-path]] = Agent 开发专题**：走 AI 应用 / Agent 平台方向时的延伸，串起 RAG → ReAct loop → Planning → Graph Workflow → Eval / Safety / OpenTelemetry。源码导读见 [[agent-development-source]]，生产化专题见 [[production-agent-development]]。
 
 执行时只以 [[progress]] 为主线：每周留下白板图、demo 验证记录、5 分钟口述答案。本文不承载细节，源码细节看 `source/`，运行细节看 `demos/`。
 
@@ -65,7 +69,7 @@ flowchart TD
 
 ## 概述
 
-本笔记基于「Kubernetes 开发」学习路线图，把通往 Kubernetes 开发岗（控制器/调度器/平台/CSI/CNI/CRI/Device Plugin）所需的能力拆成 12 个主题，给出每个主题的子目标、推荐顺序、关键源码切入点、配套笔记，以及一份可执行的阶段化学习计划。配合 `learning-plan/source/` 下 12 篇源码导读笔记（client-go、controller-runtime、kube-scheduler、PodGroup/gang 调度、Volcano、kubelet、CRI、CSI、CNI、GPU 调度、HAMi GPU 虚拟化、etcd）和 `learning-plan/topics/` 下的研发深挖专题，形成「路线图 → 源码 → 专题 → demo → 面试」的闭环。
+本笔记基于「Kubernetes 开发」学习路线图，把通往 Kubernetes 开发岗（控制器/调度器/平台/CSI/CNI/CRI/Device Plugin）所需的能力拆成 12 个主题，给出每个主题的子目标、推荐顺序、关键源码切入点、配套笔记，以及一份可执行的阶段化学习计划。配合 `learning-plan/source/` 下 13 篇源码导读笔记（client-go、controller-runtime、kube-scheduler、PodGroup/gang 调度、Volcano、kubelet、CRI、CSI、CNI、GPU 调度、HAMi GPU 虚拟化、etcd、Agent 开发框架）和 `learning-plan/topics/` 下的研发深挖专题，形成「路线图 → 源码 → 专题 → demo → 面试」的闭环。
 
 ## 学习路线图
 
@@ -332,7 +336,7 @@ gantt
 
 ## 源码导读与专题索引
 
-12 篇导读集中放在 `learning-plan/source/`，每篇都包含三层：① 概念与架构；② 真实源码片段；③ 手写简化复现或阅读练习。其中多数基于本地 `~/github/kubernetes`、`~/github/etcd` 源码，带**文件路径 + 行号**；[[cni-source]] / [[hami-source]] 因对应仓库（containernetworking、Project-HAMi）不在本地，只给**目录 + 函数名**定位，clone 后可补行号。
+13 篇导读集中放在 `learning-plan/source/`，每篇都包含三层：① 概念与架构；② 真实源码片段或源码目录定位；③ 手写简化复现或阅读练习。其中多数基于本地 `~/github/kubernetes`、`~/github/etcd` 源码，带**文件路径 + 行号**；[[cni-source]] / [[hami-source]] / [[agent-development-source]] 因对应仓库不在本地，只给**目录 + 函数名 / 抽象**定位，clone 后可补行号。
 
 | 源码                 | 笔记                             | 配套 demo                          | 关键模块                                                                | demo 在 Mac 上能跑吗                             |
 | ------------------ | ------------------------------ | -------------------------------- | ------------------------------------------------------------------- | ------------------------------------------- |
