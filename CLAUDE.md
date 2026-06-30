@@ -42,7 +42,7 @@
 ```
 learning-plan/      - Kubernetes 开发学习路线图与源码导读（k8s-development-roadmap 为入口）
   source/           - 13 篇源码导读：client-go / controller-runtime / scheduler-framework / scheduler-podgroup / volcano / kubelet-cri / cri / etcd / csi / cni / gpu-scheduling / hami / agent-development（+ hami-learning-path）
-  topics/           - 7 篇研发深挖专题：kube-proxy / Cilium / CNI 排障 / Volume 生命周期 / CSI sidecar / CSI 排障 / 生产级 Agent 开发
+  topics/           - 组件拆解 + 研发深挖专题：components/ 下按组件拆分 kube-apiserver / etcd / scheduler / controller-manager / kubelet / kube-proxy / CNI / CSI / addon；networking/storage/agent 下保留排障与专题深挖
   interviews/       - 面试纪要模块化沉淀：K8s Operator、GPU 调度、Device Plugin、系统设计追问
   demos/            - 10 个可运行 demo：sample-controller / kubebuilder-operator / scheduler-plugin / device-plugin / fake-cri / csi-hostpath / cni-bridge / fake-gpu / hami-mac / raftexample-walkthrough
   llm-inference-learning-path.md / llm-inference-progress.md - LLM 推理（Router/KV Cache/PD 分离）8 阶段路径与打卡表

@@ -1,6 +1,6 @@
 #kubernetes #学习计划 #源码导读 #导航
 
-相关笔记：[[progress]] | [[hami-learning-path]] | [[agent-development-learning-path]] | [[agent-development-source]] | [[production-agent-development]] | [[client-go-source]] | [[controller-runtime-source]] | [[scheduler-framework-source]] | [[scheduler-podgroup-source]] | [[kubelet-cri-source]] | [[cri-source]] | [[csi-source]] | [[cni-source]] | [[volume-lifecycle]] | [[csi-sidecars]] | [[csi-troubleshooting]] | [[kube-proxy]] | [[cni-troubleshooting]] | [[cilium-deep-dive]] | [[etcd-source]] | [[kubebuilder]] | [[operator-pattern]] | [[k8s-interview]]
+相关笔记：[[progress]] | [[hami-learning-path]] | [[agent-development-learning-path]] | [[agent-development-source]] | [[production-agent-development]] | [[kube-apiserver-component]] | [[etcd-component]] | [[kube-scheduler-component]] | [[kube-controller-manager-component]] | [[kubelet-component]] | [[kube-proxy-component]] | [[client-go-source]] | [[controller-runtime-source]] | [[scheduler-framework-source]] | [[scheduler-podgroup-source]] | [[kubelet-cri-source]] | [[cri-source]] | [[csi-source]] | [[cni-source]] | [[volume-lifecycle]] | [[csi-sidecars]] | [[csi-troubleshooting]] | [[kube-proxy]] | [[cni-troubleshooting]] | [[cilium-deep-dive]] | [[etcd-source]] | [[kubebuilder]] | [[operator-pattern]] | [[k8s-interview]]
 
 > **这是 `learning-plan/` 的入口。** 先看下面的「你该走哪条路」决策图确定路线，再按路线推进，不要一上来就乱点。
 
@@ -22,7 +22,8 @@ learning-plan/
 │   ├── hami-source.md               etcd-source.md
 │   ├── agent-development-source.md
 │   └── hami-learning-path.md     HAMi GPU 虚拟化 6 阶段专题路径
-├── topics/                      研发深挖专题：CNI/CSI/Agent 生产化
+├── topics/                      组件拆解 + 研发深挖专题
+│   ├── components/              kube-apiserver / etcd / scheduler / controller-manager / kubelet / kube-proxy / CNI / CSI / addon
 │   ├── networking/              kube-proxy / Cilium deep dive / CNI troubleshooting
 │   ├── storage/                 Volume lifecycle / CSI sidecars / CSI troubleshooting
 │   └── agent/                   production-agent-development
@@ -359,6 +360,12 @@ gantt
 
 | 方向 | 专题 | 目标 |
 | --- | --- | --- |
+| 组件 | [[kube-apiserver-component]] | 讲清 apiserver 的认证、鉴权、准入、storage、watch 路径 |
+| 组件 | [[etcd-component]] | 讲清 Kubernetes 对象持久化、revision、watch、raft 边界 |
+| 组件 | [[kube-scheduler-component]] | 讲清 Pending Pod 到 Node binding 的完整调度链路 |
+| 组件 | [[kube-controller-manager-component]] | 讲清内置控制器如何用 Informer + Workqueue reconcile |
+| 组件 | [[kubelet-component]] | 讲清 Pod 在节点上如何通过 CRI/CNI/CSI 真正运行 |
+| 组件 | [[kube-proxy-component]] | 讲清 Service VIP 到后端 Pod 的 iptables/IPVS/eBPF 转发边界 |
 | CNI | [[kube-proxy]] | 讲清 Service VIP 到后端 Pod 的 iptables/IPVS/eBPF 转发边界 |
 | CNI | [[cilium-deep-dive]] | 讲清 Cilium endpoint、identity、BPF map、kube-proxy replacement |
 | CNI | [[cni-troubleshooting]] | 按 Pod IP、跨节点、ClusterIP、DNS、NetworkPolicy 分层排障 |

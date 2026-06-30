@@ -85,6 +85,13 @@ LLM 推理学习路径、Prefill/Decode、Prefix Cache、KV Cache、Agent 开发
 [agent-development](learning-plan/source/agent-development-source.md)
 
 **专题深挖**（研发排障、白板训练、端到端机制）
+[Kubernetes 组件拆解（每篇带源码入口）](learning-plan/topics/components/README.md) ·
+[kube-apiserver](learning-plan/topics/components/kube-apiserver-component.md) ·
+[etcd](learning-plan/topics/components/etcd-component.md) ·
+[kube-scheduler](learning-plan/topics/components/kube-scheduler-component.md) ·
+[kube-controller-manager](learning-plan/topics/components/kube-controller-manager-component.md) ·
+[kubelet](learning-plan/topics/components/kubelet-component.md) ·
+[kube-proxy component](learning-plan/topics/components/kube-proxy-component.md) ·
 [kube-proxy](learning-plan/topics/networking/kube-proxy.md) ·
 [Cilium deep dive](learning-plan/topics/networking/cilium-deep-dive.md) ·
 [CNI troubleshooting](learning-plan/topics/networking/cni-troubleshooting.md) ·
