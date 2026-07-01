@@ -1,7 +1,7 @@
 # Learning Notes - Claude Code 项目指令
 
 ## 项目概述
-这是一个面向 Kubernetes/云原生岗位求职的技术学习笔记仓库，涵盖云原生、Go、数据库、中间件、算法等领域，目标是系统梳理面试知识点。
+这是一个面向 Kubernetes/云原生岗位求职的技术学习笔记仓库，涵盖云原生、Go、数据库、中间件、算法等领域，目标是系统梳理面试知识点，并在 learning-plan 中沉淀 Kubernetes 与 Go runtime 源码级专题。
 
 ## 笔记规范
 
@@ -40,9 +40,9 @@
 
 ## 目录结构
 ```
-learning-plan/      - Kubernetes 开发学习路线图与源码导读（k8s-development-roadmap 为入口）
+learning-plan/      - Kubernetes 开发学习路线图、源码导读与 Go runtime 源码级专题（k8s-development-roadmap 与 topics/go/README 为入口）
   source/           - 13 篇源码导读：client-go / controller-runtime / scheduler-framework / scheduler-podgroup / volcano / kubelet-cri / cri / etcd / csi / cni / gpu-scheduling / hami / agent-development（+ hami-learning-path）
-  topics/           - 组件拆解 + 研发深挖专题：components/ 下按组件拆分 kube-apiserver / etcd / scheduler / controller-manager / kubelet / kube-proxy / CNI / CSI / addon；networking/storage/agent 下保留排障与专题深挖
+  topics/           - 组件拆解 + 研发深挖专题：components/ 下按组件拆分 kube-apiserver / etcd / scheduler / controller-manager / kubelet / kube-proxy / CNI / CSI / addon；go/ 下保留 GMP / slice / map / channel / context / GC 源码导读和新旧实现对比；networking/storage/agent 下保留排障与专题深挖
   interviews/       - 面试纪要模块化沉淀：K8s Operator、GPU 调度、Device Plugin、系统设计追问
   demos/            - 10 个可运行 demo：sample-controller / kubebuilder-operator / scheduler-plugin / device-plugin / fake-cri / csi-hostpath / cni-bridge / fake-gpu / hami-mac / raftexample-walkthrough
   llm-inference-learning-path.md / llm-inference-progress.md - LLM 推理（Router/KV Cache/PD 分离）8 阶段路径与打卡表

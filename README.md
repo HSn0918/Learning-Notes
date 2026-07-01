@@ -2,7 +2,7 @@
 
 > 面向 **Kubernetes / 云原生 / 后端** 岗位求职的系统化技术笔记。基于 Obsidian 构建，同时兼容 GitHub 浏览。
 
-**130 篇技术笔记** · **10 个可运行 demo** · **13 篇源码导读**，覆盖 8 大板块。
+**139 篇技术笔记** · **10 个可运行 demo** · **13 篇源码导读 + Go runtime 专题**，覆盖 8 大板块。
 每篇知识笔记都配有 **mermaid 图解** + **面试要点 Q&A**，可直接当作复习卡片。
 
 ---
@@ -24,7 +24,7 @@ flowchart LR
 |------|--------|------|
 | ① 打基础 | 岗位语言 Go + 容器基础 Docker | [Go 索引](go/README.md) · [云原生索引（Docker 部分）](cloud-native/README.md) |
 | ② K8s 核心 | 基础设施 → 控制面 → 网络 → 存储 → 扩展 | [云原生索引](cloud-native/README.md) |
-| ③ 源码 + 动手 | 读源码 + 跑 demo，把机制吃透 | [learning-plan 专区](#-learning-plan--kubernetes-开发深挖专区) |
+| ③ 源码 + 动手 | 读源码 + 跑 demo，把机制吃透 | [learning-plan 专区](learning-plan/k8s-development-roadmap.md) |
 | ④ 后端功底 | MySQL/Redis 必考、Kafka、手撕算法 | [数据库](database/README.md) · [中间件](middleware/README.md) · [算法](algorithm/README.md) |
 | ⭐ 加分方向 | AI Infra：LLM 推理、Agent 开发、GPU 调度/HAMi | [AI](ai/README.md) · [GPU 调度](cloud-native/kubernetes/control-plane/gpu-scheduling.md) |
 
@@ -38,8 +38,8 @@ flowchart LR
 容器与 Kubernetes 全栈，岗位核心主战场。
 `Docker 底层` `Cgroup/Namespace/UnionFS` `etcd` `Informer` `Scheduler` `RBAC` `CNI` `Cilium` `CSI` `Operator` `GPU 调度`
 
-### 🐹 [Go 语言](go/README.md) · 9 篇
-runtime 底层是面试区分度所在。
+### 🐹 [Go 语言](go/README.md) · 9 篇 ＆ [Go Runtime 源码专题](learning-plan/topics/go/README.md) · 8 篇
+runtime 底层是面试区分度所在，`learning-plan/topics/go` 额外沉淀源码级导读。
 `GMP 调度` `三色标记 GC` `Channel` `Map/Slice 内存模型` `Context` `泛型/版本特性`
 
 ### 🗄️ [数据库 Database](database/README.md) · 13 篇
@@ -59,7 +59,7 @@ LLM 推理学习路径、Prefill/Decode、Prefix Cache、KV Cache、Agent 开发
 
 ---
 
-## 🧭 learning-plan · Kubernetes 开发深挖专区
+## 🧭 learning-plan · Kubernetes / Go Runtime 开发深挖专区
 
 > 新手先读 **[k8s-development-roadmap](learning-plan/k8s-development-roadmap.md)** —— 一张决策图告诉你该走哪条路径，别直接乱点下面的链接。
 
@@ -85,6 +85,15 @@ LLM 推理学习路径、Prefill/Decode、Prefix Cache、KV Cache、Agent 开发
 [agent-development](learning-plan/source/agent-development-source.md)
 
 **专题深挖**（研发排障、白板训练、端到端机制）
+[Go Runtime 源码专题](learning-plan/topics/go/README.md) ·
+[GMP](learning-plan/topics/go/go-gmp-source.md) ·
+[slice](learning-plan/topics/go/go-slice-source.md) ·
+[map](learning-plan/topics/go/go-map-source.md) ·
+[channel](learning-plan/topics/go/go-channel-source.md) ·
+[context](learning-plan/topics/go/go-context-source.md) ·
+[GC](learning-plan/topics/go/go-gc-source.md) ·
+[新旧 map](learning-plan/topics/go/go-map-old-vs-new.md) ·
+[新旧 GC](learning-plan/topics/go/go-gc-old-vs-new.md) ·
 [Kubernetes 组件拆解（每篇带源码入口）](learning-plan/topics/components/README.md) ·
 [kube-apiserver](learning-plan/topics/components/kube-apiserver-component.md) ·
 [etcd](learning-plan/topics/components/etcd-component.md) ·
