@@ -36,7 +36,8 @@ class Report:
 
 
 def iter_files(root: Path, suffix: str | None = None) -> list[Path]:
-    files = [path for path in root.rglob("*") if path.is_file() and ".git" not in path.parts]
+    excluded_parts = {".git", ".idea", "node_modules"}
+    files = [path for path in root.rglob("*") if path.is_file() and not excluded_parts.intersection(path.parts)]
     if suffix is not None:
         files = [path for path in files if path.suffix.lower() == suffix]
     return sorted(files)

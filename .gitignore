@@ -18,5 +18,8 @@ cloud-native/kubernetes/demos/hami-mac/libvgpu-hook-demo/*.dylib
 cloud-native/kubernetes/demos/hami-mac/libvgpu-hook-demo/*.so
 cloud-native/kubernetes/demos/hami-mac/libvgpu-hook-demo/victim
 
+# node 依赖（DSH 等本地工具安装，不入库）
+node_modules/
+
 # macOS
 .DS_Store
