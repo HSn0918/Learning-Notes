@@ -256,12 +256,12 @@ spec:
 | 场景 | 推荐方案 | Access Mode | 说明 |
 | --- | --- | --- | --- |
 | **开发测试** | hostPath / Local PV / OpenEBS Local PV | RWO | 零依赖，开箱即用 |
-| **生产 - 单读写（数据库）** | [[ceph-csi\|Ceph RBD]] / 云盘 CSI / [[longhorn\|Longhorn]] | RWO | 高可靠、支持快照备份 |
-| **生产 - 多读写（共享文件）** | CephFS / [[nfs-csi\|NFS CSI]] / 云厂商 NAS | RWX | 多 Pod 共享读写 |
-| **高性能 AI/ML** | [[openebs\|OpenEBS Mayastor]] / FSx Lustre / CPFS | RWO/RWX | NVMe-oF 低延迟，高吞吐 |
+| **生产 - 单读写（数据库）** | [[ceph-csi|Ceph RBD]] / 云盘 CSI / [[longhorn|Longhorn]] | RWO | 高可靠、支持快照备份 |
+| **生产 - 多读写（共享文件）** | CephFS / [[nfs-csi|NFS CSI]] / 云厂商 NAS | RWX | 多 Pod 共享读写 |
+| **高性能 AI/ML** | [[openebs|OpenEBS Mayastor]] / FSx Lustre / CPFS | RWO/RWX | NVMe-oF 低延迟，高吞吐 |
 | **灾备 & 数据保护** | Ceph RBD + Snapshot / Longhorn Backup | RWO | 快照 + 异地备份到 S3 |
-| **边缘 / 资源受限** | [[longhorn\|Longhorn]] / OpenEBS Jiva | RWO | 轻量级，节点少也能跑 |
-| **云上环境** | [[cloud-provider-csi\|云厂商 CSI]] | RWO/RWX | 零运维，深度集成 |
+| **边缘 / 资源受限** | [[longhorn|Longhorn]] / OpenEBS Jiva | RWO | 轻量级，节点少也能跑 |
+| **云上环境** | [[cloud-provider-csi|云厂商 CSI]] | RWO/RWX | 零运维，深度集成 |
 
 ### 性能对比（参考基准）
 

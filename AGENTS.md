@@ -1,135 +1,94 @@
-# Learning Notes - Agent 协作规则
+# Learning Notes 协作规则
 
-## 笔记整理 Agent
+## 语言与目标
 
-### 职责
-- 维护笔记间的双向链接完整性
-- 检查并清理空文件和 stub 文件
-- 确保 README.md (MOC) 与实际笔记目录保持同步
-- 检查图片引用是否有效
+- 默认使用中文，代码、命令、API、配置键和专有名词保持原语言。
+- 本仓库是个人技术学习笔记，不以求职或面试作为信息架构主轴。
+- 修改前先确认知识归属、现有 MOC、相关笔记和版本边界；不要直接新建平行目录。
+- 不主动暂存或提交 Git 变更，除非用户明确要求。
 
-### 操作规则
-1. **新增笔记时**：在笔记开头添加相关链接，并更新 README.md 对应分类，同步更新 CLAUDE.md 目录结构
-2. **删除笔记时**：搜索所有引用该笔记的 wikilink 并移除或更新
-3. **重命名笔记时**：全局搜索并替换所有旧名称的 wikilink
-4. **合并笔记时**：保留更完整的文件名，合并非重复内容，删除被合并的文件
+## 信息架构
 
-### 质量检查清单
-- [ ] 所有 `[[wikilink]]` 指向的文件都存在（用 `fd -t f -e md | xargs grep -l '\[\['` 扫描）
-- [ ] 无空文件（0 行或仅含标签/图片引用）
-- [ ] 图片文件都在对应目录的 `图片/` 子目录中
-- [ ] README.md 包含所有笔记的链接
-- [ ] 文件名全为英文小写 + 连字符格式
-- [ ] 每篇笔记有 `## 面试要点` 章节
+顶层目录按领域划分：
 
-### 断链检测命令
-```bash
-# 检测所有断链 wikilink
-grep -roh '\[\[[a-z0-9_-]*\]\]' --include='*.md' --exclude='AGENTS.md' . | \
-  sort -u | sed 's/\[\[//;s/\]\]//' | \
-  while read link; do
-    found=$(fd -t f "^${link}\.md$" 2>/dev/null | head -1)
-    [ -z "$found" ] && echo "BROKEN: [[$link]]"
-  done
+```text
+ai/            LLM 基础、推理、后训练、Agent
+cloud-native/  容器与 Kubernetes
+go/            Go 语言机制与 Runtime 源码
+database/      MySQL、Redis、PostgreSQL、Elasticsearch
+middleware/    Kafka、NATS、Canal、分布式事务
+algorithm/     算法与数据结构
+misc/          工具类笔记
+docs/          仓库架构与维护文档
+scripts/       自动校验工具
 ```
 
----
+每个知识文件只能有一个 canonical 归属。学习路线、源码、Demo、题库属于该领域的辅助视图，不创建跨领域内容大桶。
 
-## 内容审查 Agent
+## 文档类型
 
-### 职责
-- 审查笔记内容的准确性和完整性
-- 识别内容重复的笔记并建议合并
-- 标记过时或不准确的技术内容（尤其是版本相关内容）
+### MOC / README
 
-### 操作规则
-1. 不直接修改笔记的技术内容，仅提出建议
-2. 发现重复内容时，列出具体文件和重复段落
-3. 发现过时内容时，标注具体位置和建议更新方向
-4. Go 版本特性注意区分 1.18/1.21/1.22/1.23 差异
-5. K8s 内容注意区分版本（如 dockershim 在 1.24 移除）
+必需：H1、范围说明、推荐顺序或分类、对责任范围内内容的链接。不强制标签、Mermaid 和面试问答。
 
----
+### 主题知识笔记
 
-## 链接维护 Agent
-
-### 职责
-- 定期扫描所有笔记中的 wikilink，确保指向有效
-- 发现孤立笔记（无入链和出链）并建议添加链接
-- 维护知识图谱的连通性
-
-### 操作规则
-1. 使用断链检测命令（见上方）扫描所有 wikilink
-2. 对比实际文件列表，找出断链
-3. 对孤立笔记推荐至少 2 个相关笔记进行链接
-
----
-
-## 新增笔记模板
+建议结构：
 
 ```markdown
-#标签1 #标签2
+#tag
 
-相关笔记：[[file-a]] | [[file-b]] | [[file-c]]
+相关笔记：[[related-note]]
+
+# 标题
 
 ## 概述
-
-简短描述该主题。
-
-## 核心概念
-
-### 子主题 1
-
-内容...
-
-```mermaid
-flowchart TD
-    A[...] --> B[...]
+## 核心机制
+## 实践或示例
+## 自检问题
+## 参考与版本边界
 ```
 
-### 子主题 2
+机制存在多节点关系时使用 Mermaid；没有重要关系时不为了形式强行画图。`## 面试要点` 是可选复习卡片，不再是所有文档的硬性要求。
 
-内容...
+### 源码导读
 
-```go
-// 代码示例
-```
+在主题笔记要求之外，必须注明项目版本、commit 或审查日期、源码入口、关键调用链和验证方式。不要把易漂移的 `master` 行号写成永久事实。
 
-## 面试要点
+### 学习路线 / 进度
 
-### Q: 问题 1？
+必须说明目标人群、前置条件、阶段产出和完成标准。不强制面试问答。
 
-A: 回答...
+### Demo 手册
 
-### Q: 问题 2？
+必须说明环境、运行命令、预期结果、最后验证环境/日期和已知限制。代码与说明保持同目录，整体移动。
 
-A: 回答...
-```
+### 题库
 
----
+使用“问题 → 考察点 → 回答骨架 → 设计延伸 → 常见误区”，并链接 canonical 笔记，不复制技术正文。
 
-## 目录规范（新增笔记时对照）
+## 链接与资源
 
-| 主题 | 目录 | 示例文件名 |
-|------|------|-----------|
-| Docker 底层 | `cloud-native/docker/` | `cgroup.md` |
-| K8s 控制平面 | `cloud-native/kubernetes/control-plane/` | `scheduler-deep-dive.md` |
-| K8s 网络插件 | `cloud-native/kubernetes/networking/` | `cilium.md` |
-| K8s 存储插件 | `cloud-native/kubernetes/storage/` | `ceph-csi.md` |
-| K8s 网络深挖/排障 | `learning-plan/topics/networking/` | `cni-troubleshooting.md` |
-| K8s 存储深挖/排障 | `learning-plan/topics/storage/` | `csi-troubleshooting.md` |
-| K8s 基础设施 | `cloud-native/kubernetes/infrastructure/` | `etcd.md` |
-| K8s 扩展开发 | `cloud-native/kubernetes/extension/` | `operator-pattern.md` |
-| MySQL | `database/mysql/` | `mysql-transaction.md` |
-| Redis | `database/redis/` | `redis-cluster.md` |
-| PostgreSQL | `database/postgresql/` | `postgresql-advanced.md` |
-| ES | `database/elasticsearch/` | `es-field-types.md` |
-| Kafka | `middleware/kafka/` | `kafka-basics.md` |
-| Go 语言 | `go/` | `channel.md` |
-| 算法搜索 | `algorithm/search/` | `dijkstra.md` |
-| 算法排序 | `algorithm/sorting/` | `heap-sort.md` |
-| 算法技巧 | `algorithm/techniques/` | `sliding-window.md` |
-| 字符串算法 | `algorithm/string/` | `kmp.md` |
-| 动态规划 | `algorithm/dp/` | `house-robber.md` |
-| 数据结构 | `algorithm/data-structures/` | `lru.md` |
-| AI/LLM | `ai/` | `llm-inference-pipeline.md` |
+- 普通 Markdown 文件名使用全局唯一的英文小写 kebab-case；`README.md` 例外。
+- 新增、删除、重命名或移动后运行 `python3 scripts/validate_notes.py`。
+- Wikilink 使用 `[[file-name]]`、`[[file-name|显示名]]` 或 `[[file-name#标题]]`，不要写 `\|`。
+- 图片保存在所属主题附近的 `图片/` 目录；图片 basename 必须全局唯一。
+- 兼容 GitHub 的页面优先使用相对 Markdown 图片链接；使用 Obsidian embed 时必须保证校验器可唯一解析。
+- 根 README 只维护一级入口；新增笔记更新最近的所属 MOC，不要求根 README 罗列每篇内容。
+
+## 修改流程
+
+1. 确定文档类型与唯一归属。
+2. 查找已有笔记，明确概念页、组件页、源码页和 Demo 的职责边界。
+3. 更新正文及最近的 MOC。
+4. 运行结构校验；必要时运行 `python3 scripts/validate_notes.py --quality` 查看历史质量债务。
+5. 检查 `git diff --check` 与 `git status --short`，确认未自动暂存。
+
+## 禁止事项
+
+- 不创建空重定向笔记或只有链接的 stub；移动时尽量保留 basename。
+- 不为了“统一”机械合并不同深度的概念页、组件页和源码页。
+- 不手工维护容易漂移的全库精确篇数。
+- 不把“命令成功退出”“已编译”写成完整实验成功；应记录预期输出、运行状态与限制。
+
+完整架构说明见 `docs/architecture.md`。

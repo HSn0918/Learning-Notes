@@ -49,7 +49,7 @@ flowchart LR
 
 ### 完整处理流程
 
-![](自定义控制器运行原理.png)
+![自定义控制器运行原理](../control-plane/图片/自定义控制器运行原理.png)
 
 简单来说：Reflector 通过检测 Kubernetes API 来跟踪资源变化，一旦发现有变化，就将该 Object 存储到队列中。Informer 循环取出该 Object 并将其存入 Indexer 进行检索，同时触发 Callback 回调函数，并将变更的 Object Key 信息放入到工作队列中。此时自定义 Controller 里面的 Process Item 就会获取工作队列里面的 Key，并从 Indexer 中获取 Key 对应的 Object，从而进行相关的业务处理。
 

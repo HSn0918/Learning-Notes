@@ -6,17 +6,17 @@ Pasted image *.png
 .traces/
 
 # demo 编译产物（二进制名与目录同名）
-learning-plan/demos/sample-controller/sample-controller
-learning-plan/demos/device-plugin/device-plugin
-learning-plan/demos/fake-gpu/fake-gpu
-learning-plan/demos/hami-mac/hami-mac
-learning-plan/demos/csi-hostpath/csi-hostpath
-learning-plan/demos/scheduler-plugin/scheduler-plugin
-learning-plan/demos/raftexample-walkthrough/etcd-client-demo/etcd-client-demo
-learning-plan/demos/cni-bridge/*.so
-learning-plan/demos/hami-mac/libvgpu-hook-demo/*.dylib
-learning-plan/demos/hami-mac/libvgpu-hook-demo/*.so
-learning-plan/demos/hami-mac/libvgpu-hook-demo/victim
+cloud-native/kubernetes/demos/sample-controller/sample-controller
+cloud-native/kubernetes/demos/device-plugin/device-plugin
+cloud-native/kubernetes/demos/fake-gpu/fake-gpu
+cloud-native/kubernetes/demos/hami-mac/hami-mac
+cloud-native/kubernetes/demos/csi-hostpath/csi-hostpath
+cloud-native/kubernetes/demos/scheduler-plugin/scheduler-plugin
+cloud-native/kubernetes/demos/raftexample-walkthrough/etcd-client-demo/etcd-client-demo
+cloud-native/kubernetes/demos/cni-bridge/*.so
+cloud-native/kubernetes/demos/hami-mac/libvgpu-hook-demo/*.dylib
+cloud-native/kubernetes/demos/hami-mac/libvgpu-hook-demo/*.so
+cloud-native/kubernetes/demos/hami-mac/libvgpu-hook-demo/victim
 
 # macOS
 .DS_Store

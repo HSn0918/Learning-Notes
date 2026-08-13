@@ -1,0 +1,39 @@
+module github.com/learning-notes/csi-hostpath
+
+go 1.26
+
+// --- 重要：构建说明 ---
+//
+// 这是一个**教学骨架**。真正能在集群里跑生产负载请看
+// https://github.com/kubernetes-csi/csi-driver-host-path —— 它的代码组织
+// 是社区参考实现，本 demo 是它的极简化版本。
+//
+// 本 demo 实现：
+//   - Identity service：GetPluginInfo / Probe / GetPluginCapabilities
+//   - Node service：NodePublishVolume / NodeUnpublishVolume / NodeGetInfo / NodeGetCapabilities
+//   - Controller service：CreateVolume / DeleteVolume / ControllerGetCapabilities（stub）
+//
+// 在 Linux 节点上能真实做 bind mount。该实现直接使用 Linux mount flags，
+// macOS 上需用 GOOS=linux 交叉编译验证，不能原生构建或运行。
+
+require (
+	github.com/container-storage-interface/spec v1.9.0
+	golang.org/x/sys v0.20.0
+	google.golang.org/grpc v1.65.0
+	google.golang.org/protobuf v1.34.1
+	k8s.io/klog/v2 v2.130.1
+)
+
+require (
+	github.com/go-logr/logr v1.4.1 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
+	golang.org/x/net v0.25.0 // indirect
+	golang.org/x/text v0.15.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
+)
+
+// 间接依赖（go mod tidy 会自动补齐）：
+//   - github.com/golang/protobuf
+//   - golang.org/x/net
+//   - golang.org/x/text
+//   - google.golang.org/genproto/googleapis/rpc
