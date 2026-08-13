@@ -395,17 +395,74 @@ containerd 1.7+ 引入的 plugin 机制，让"网络配置 hook"不必走 CNI fo
 
 ## 面试要点
 
-| 问题 | 回答要点 |
-| :--- | :--- |
-| **CNI 是什么？怎么被调用的？** | 一种容器网络规范：可执行文件 + env + stdin/stdout JSON。runtime（kubelet→containerd）在 RunPodSandbox 时 fork+exec `/opt/cni/bin/<type>`，传 `CNI_COMMAND=ADD` + netconf JSON，插件配好 netns 后 stdout 返回 IP/路由/接口信息。 |
-| **CNI 的 4 个命令是什么？** | ADD（建网）/ DEL（拆网）/ CHECK（巡检）/ VERSION（声明 spec 版本）。ADD 和 DEL 必须幂等，runtime 会重试。 |
-| **conflist 是什么？为什么是数组？** | `/etc/cni/net.d/*.conflist` 描述插件链：libcni 按顺序调每个插件，**后一个插件的 stdin 包含前一个的 stdout 结果**（prevResult chain）。典型链：calico/bridge → portmap → bandwidth。 |
-| **kubelet 1.24+ 删了 dockershim，CNI 还归 kubelet 管吗？** | 不归。CNI 的调用完全在 CRI runtime（containerd/CRI-O）里，kubelet 只在 `PodSandboxStatus.network.ip` 读到结果。这也是为什么换 CNI 不需要重启 kubelet，只要重启 containerd。 |
-| **bridge 插件做了哪些事？** | (1) ensure 网桥 (2) 创建 veth pair (3) 链式调 IPAM 拿 IP (4) 进 netns 配 IP + 默认路由 (5) 输出 Result。 |
-| **host-local IPAM 怎么避免分重 IP？** | 每个 IP 一个文件 `/var/lib/cni/networks/<network>/<ip>`，用 ext4 `O_EXCL` 创建做互斥锁；同节点完美，跨节点不行（所以 Calico 用 etcd 做集群 IPAM）。 |
-| **Calico 跟 bridge 模式的本质差异？** | Calico 不用网桥，每个 Pod 一根 veth + host 端一条 `/32` 路由；Felix 通过 BGP 把 `/32` 播给其他节点 → 跨节点免封装。bridge 模式跨节点需要 overlay（Flannel VXLAN）或外层路由器。 |
-| **Cilium 跟 iptables 的关系？** | Cilium 完全不用 iptables，把网络策略 / Service NAT 编译成 eBPF 程序挂到 tc/xdp hook；可选 kube-proxy replacement 完全替换 iptables-based Service。 |
-| **CNI 插件失败会导致什么？** | RunPodSandbox 失败 → Pod 状态 ContainerCreating，事件里有 `FailedCreatePodSandBox: ... cni ...`。kubelet 不会自动清理，要靠下一次 sync 重试。 |
-| **DEL 必须幂等是什么意思？** | runtime 可能在 DEL 已经成功后又调一次（重启、超时重试），插件碰到"netns 不存在 / veth 已删"必须返回成功而不是报错，否则会有孤儿 IP / 失败重试风暴。 |
-| **CNI 怎么承担 NetworkPolicy？** | CNI 协议本身不管 NetworkPolicy；由具体插件实现：Calico 走 iptables / eBPF 链，Cilium 走 eBPF 程序，Flannel 不实现（要配 Calico 做策略层）。 |
-| **CNI 跟 CSI 设计上有什么相似点？** | 都是"K8s 主干不实现，定个协议让外部按协议接"。差异：CSI 用 gRPC + sidecar，CNI 用 fork+exec + 链式插件。CSI 更复杂因为存储语义多（attach/mount/snapshot/expand），CNI 只管"配好 Pod 的网络"。 |
+### Q：CNI 是什么？怎么被调用的？
+
+> [!question]- 参考答案（点击展开）
+>
+> 一种容器网络规范：可执行文件 + env + stdin/stdout JSON。runtime（kubelet→containerd）在 RunPodSandbox 时 fork+exec `/opt/cni/bin/<type>`，传 `CNI_COMMAND=ADD` + netconf JSON，插件配好 netns 后 stdout 返回 IP/路由/接口信息。
+
+### Q：CNI 的 4 个命令是什么？
+
+> [!question]- 参考答案（点击展开）
+>
+> ADD（建网）/ DEL（拆网）/ CHECK（巡检）/ VERSION（声明 spec 版本）。ADD 和 DEL 必须幂等，runtime 会重试。
+
+### Q：conflist 是什么？为什么是数组？
+
+> [!question]- 参考答案（点击展开）
+>
+> `/etc/cni/net.d/*.conflist` 描述插件链：libcni 按顺序调每个插件，**后一个插件的 stdin 包含前一个的 stdout 结果**（prevResult chain）。典型链：calico/bridge → portmap → bandwidth。
+
+### Q：kubelet 1.24+ 删了 dockershim，CNI 还归 kubelet 管吗？
+
+> [!question]- 参考答案（点击展开）
+>
+> 不归。CNI 的调用完全在 CRI runtime（containerd/CRI-O）里，kubelet 只在 `PodSandboxStatus.network.ip` 读到结果。这也是为什么换 CNI 不需要重启 kubelet，只要重启 containerd。
+
+### Q：bridge 插件做了哪些事？
+
+> [!question]- 参考答案（点击展开）
+>
+> (1) ensure 网桥 (2) 创建 veth pair (3) 链式调 IPAM 拿 IP (4) 进 netns 配 IP + 默认路由 (5) 输出 Result。
+
+### Q：host-local IPAM 怎么避免分重 IP？
+
+> [!question]- 参考答案（点击展开）
+>
+> 每个 IP 一个文件 `/var/lib/cni/networks/<network>/<ip>`，用 ext4 `O_EXCL` 创建做互斥锁；同节点完美，跨节点不行（所以 Calico 用 etcd 做集群 IPAM）。
+
+### Q：Calico 跟 bridge 模式的本质差异？
+
+> [!question]- 参考答案（点击展开）
+>
+> Calico 不用网桥，每个 Pod 一根 veth + host 端一条 `/32` 路由；Felix 通过 BGP 把 `/32` 播给其他节点 → 跨节点免封装。bridge 模式跨节点需要 overlay（Flannel VXLAN）或外层路由器。
+
+### Q：Cilium 跟 iptables 的关系？
+
+> [!question]- 参考答案（点击展开）
+>
+> Cilium 完全不用 iptables，把网络策略 / Service NAT 编译成 eBPF 程序挂到 tc/xdp hook；可选 kube-proxy replacement 完全替换 iptables-based Service。
+
+### Q：CNI 插件失败会导致什么？
+
+> [!question]- 参考答案（点击展开）
+>
+> RunPodSandbox 失败 → Pod 状态 ContainerCreating，事件里有 `FailedCreatePodSandBox: ... cni ...`。kubelet 不会自动清理，要靠下一次 sync 重试。
+
+### Q：DEL 必须幂等是什么意思？
+
+> [!question]- 参考答案（点击展开）
+>
+> runtime 可能在 DEL 已经成功后又调一次（重启、超时重试），插件碰到"netns 不存在 / veth 已删"必须返回成功而不是报错，否则会有孤儿 IP / 失败重试风暴。
+
+### Q：CNI 怎么承担 NetworkPolicy？
+
+> [!question]- 参考答案（点击展开）
+>
+> CNI 协议本身不管 NetworkPolicy；由具体插件实现：Calico 走 iptables / eBPF 链，Cilium 走 eBPF 程序，Flannel 不实现（要配 Calico 做策略层）。
+
+### Q：CNI 跟 CSI 设计上有什么相似点？
+
+> [!question]- 参考答案（点击展开）
+>
+> 都是"K8s 主干不实现，定个协议让外部按协议接"。差异：CSI 用 gRPC + sidecar，CNI 用 fork+exec + 链式插件。CSI 更复杂因为存储语义多（attach/mount/snapshot/expand），CNI 只管"配好 Pod 的网络"。

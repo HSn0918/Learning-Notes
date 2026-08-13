@@ -116,25 +116,46 @@ sequenceDiagram
 ### 高频问题
 
 **Q: Linux Namespace 是什么？它和 Cgroup 的区别是什么？**
-A: Namespace 是内核提供的资源隔离机制，让不同进程组看到独立的系统资源视图（如 PID、网络、挂载点），解决"看见什么"的问题。Cgroup 则负责资源限制与统计（CPU、内存、IO 等），解决"能用多少"的问题。容器隔离正是靠 Namespace（隔离视图）+ Cgroup（限制配额）+ rootfs（UnionFS 文件系统）三者共同实现。
+
+> [!question]- 参考答案（点击展开）
+>
+> Namespace 是内核提供的资源隔离机制，让不同进程组看到独立的系统资源视图（如 PID、网络、挂载点），解决"看见什么"的问题。Cgroup 则负责资源限制与统计（CPU、内存、IO 等），解决"能用多少"的问题。容器隔离正是靠 Namespace（隔离视图）+ Cgroup（限制配额）+ rootfs（UnionFS 文件系统）三者共同实现。
 
 **Q: Linux 一共有哪几种 Namespace？分别隔离什么？**
-A: 常说的有 7 种（本笔记表格列出）：PID（进程 ID）、Network（网络设备/端口/协议栈）、Mount（文件系统挂载点）、UTS（主机名和域名）、IPC（信号量/消息队列/共享内存）、User（用户和用户组 UID/GID 映射）、Cgroup（cgroup 根目录视图）；从 Linux 5.6 起又新增了 Time namespace（隔离系统启动时间/单调时钟），所以当前内核实际是 8 种。其中 Mount 是最早引入的（Linux 2.4.19，参数为 `CLONE_NEWNS`，命名上没有 MNT 后缀），Cgroup namespace 是较晚（Linux 4.6）加入的。
+
+> [!question]- 参考答案（点击展开）
+>
+> 常说的有 7 种（本笔记表格列出）：PID（进程 ID）、Network（网络设备/端口/协议栈）、Mount（文件系统挂载点）、UTS（主机名和域名）、IPC（信号量/消息队列/共享内存）、User（用户和用户组 UID/GID 映射）、Cgroup（cgroup 根目录视图）；从 Linux 5.6 起又新增了 Time namespace（隔离系统启动时间/单调时钟），所以当前内核实际是 8 种。其中 Mount 是最早引入的（Linux 2.4.19，参数为 `CLONE_NEWNS`，命名上没有 MNT 后缀），Cgroup namespace 是较晚（Linux 4.6）加入的。
 
 **Q: Namespace 是通过哪些系统调用创建和加入的？**
-A: 主要有三个：`clone()` 在创建新进程时通过 `CLONE_NEW*` flag（如 `CLONE_NEWPID`、`CLONE_NEWNET`）一并创建新 namespace；`unshare()` 让当前进程脱离原 namespace 进入新建的 namespace；`setns()` 让进程加入一个已存在的 namespace（`nsenter` 命令底层即调用它）。Docker 创建容器时正是用 `clone()` 带上一组 `CLONE_NEW*` flag。
+
+> [!question]- 参考答案（点击展开）
+>
+> 主要有三个：`clone()` 在创建新进程时通过 `CLONE_NEW*` flag（如 `CLONE_NEWPID`、`CLONE_NEWNET`）一并创建新 namespace；`unshare()` 让当前进程脱离原 namespace 进入新建的 namespace；`setns()` 让进程加入一个已存在的 namespace（`nsenter` 命令底层即调用它）。Docker 创建容器时正是用 `clone()` 带上一组 `CLONE_NEW*` flag。
 
 **Q: PID Namespace 有什么特殊之处？容器里的 PID 1 有什么含义？**
-A: PID Namespace 内的进程从 1 开始独立编号，容器内第一个进程就是 PID 1，承担"init 进程"角色，需负责回收（reap）僵尸子进程，否则容易出现僵尸进程堆积（因此常用 tini/dumb-init 作为 PID 1）。同一进程在不同层级 namespace 中拥有不同 PID（容器内可能是 1，宿主机上是某个大数）。PID 1 被杀死会导致整个 namespace 内所有进程被终止，这也是容器退出的机制。
+
+> [!question]- 参考答案（点击展开）
+>
+> PID Namespace 内的进程从 1 开始独立编号，容器内第一个进程就是 PID 1，承担"init 进程"角色，需负责回收（reap）僵尸子进程，否则容易出现僵尸进程堆积（因此常用 tini/dumb-init 作为 PID 1）。同一进程在不同层级 namespace 中拥有不同 PID（容器内可能是 1，宿主机上是某个大数）。PID 1 被杀死会导致整个 namespace 内所有进程被终止，这也是容器退出的机制。
 
 **Q: 如何查看和进入一个容器（进程）的 Namespace？**
-A: 用 `lsns -t <type>`（type 可取 mnt/net/pid/user/ipc/uts/cgroup）列出系统中某类 namespace；用 `ls -la /proc/<pid>/ns/` 查看某进程所属的各 namespace（软链接形如 `net:[inode号]`，inode 相同即同一 namespace）；用 `nsenter -t <pid> -n ip addr` 进入目标进程的 network namespace 执行命令，常用于调试容器网络而无需进入容器本身。
+
+> [!question]- 参考答案（点击展开）
+>
+> 用 `lsns -t <type>`（type 可取 mnt/net/pid/user/ipc/uts/cgroup）列出系统中某类 namespace；用 `ls -la /proc/<pid>/ns/` 查看某进程所属的各 namespace（软链接形如 `net:[inode号]`，inode 相同即同一 namespace）；用 `nsenter -t <pid> -n ip addr` 进入目标进程的 network namespace 执行命令，常用于调试容器网络而无需进入容器本身。
 
 **Q: User Namespace 解决了什么安全问题？**
-A: User Namespace 实现 UID/GID 映射，让容器内的 root（UID 0）映射到宿主机上的一个普通非特权用户。这样即使容器内进程以 root 运行、发生逃逸，在宿主机上也只是普通用户权限，大幅缩小攻击面。它也是实现 rootless container（如 rootless Docker/Podman）的核心机制。
+
+> [!question]- 参考答案（点击展开）
+>
+> User Namespace 实现 UID/GID 映射，让容器内的 root（UID 0）映射到宿主机上的一个普通非特权用户。这样即使容器内进程以 root 运行、发生逃逸，在宿主机上也只是普通用户权限，大幅缩小攻击面。它也是实现 rootless container（如 rootless Docker/Podman）的核心机制。
 
 **Q: 同一个 Pod 里的多个容器是如何共享 Namespace 的？**
-A: Kubernetes Pod 内的容器默认共享 Network、IPC、UTS namespace（因此可以用 localhost 互相访问、共享端口空间），但默认各自拥有独立的 PID 和 Mount namespace（PID 可通过 `shareProcessNamespace: true` 共享）。实现上 Pod 会先启动一个 pause（infra）容器持有这些共享 namespace，其余业务容器通过 `setns()` 加入，从而保证即使业务容器重启，共享的网络栈也不丢失。
+
+> [!question]- 参考答案（点击展开）
+>
+> Kubernetes Pod 内的容器默认共享 Network、IPC、UTS namespace（因此可以用 localhost 互相访问、共享端口空间），但默认各自拥有独立的 PID 和 Mount namespace（PID 可通过 `shareProcessNamespace: true` 共享）。实现上 Pod 会先启动一个 pause（infra）容器持有这些共享 namespace，其余业务容器通过 `setns()` 加入，从而保证即使业务容器重启，共享的网络栈也不丢失。
 
 ### 面试加分点
 

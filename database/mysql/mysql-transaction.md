@@ -174,8 +174,28 @@ SELECT * FROM users WHERE age > 20 FOR UPDATE; -- 当前读，返回 4 行（幻
 
 ### 面试要点
 
-1. **MVCC 如何实现无锁读？** 通过 undo log 版本链 + Read View 可见性判断，SELECT 不需要加锁就能读到一致性快照。
-2. **RC 和 RR 的核心区别？** Read View 的生成时机不同：RC 每次 SELECT 都生成新的，RR 整个事务复用第一次的。
-3. **InnoDB RR 级别能完全避免幻读吗？** 快照读通过 MVCC 可以，当前读通过 Next-Key Lock 可以，但如果先快照读再当前读，仍然可能观察到"幻读"现象。
-4. **undo log 什么时候清理？** 当没有活跃的 Read View 引用该版本时，purge 线程会清理 undo log。
-5. **为什么 InnoDB 默认 RR 而不是 RC？** 历史原因——早期 MySQL 的 Statement 格式 binlog 在 RC 下会导致主从不一致。现在用 Row 格式 binlog 后，RC 也是安全的。
+1. **MVCC 如何实现无锁读？**
+
+   > [!question]- 参考答案（点击展开）
+   >
+   > 通过 undo log 版本链 + Read View 可见性判断，SELECT 不需要加锁就能读到一致性快照。
+2. **RC 和 RR 的核心区别？**
+
+   > [!question]- 参考答案（点击展开）
+   >
+   > Read View 的生成时机不同：RC 每次 SELECT 都生成新的，RR 整个事务复用第一次的。
+3. **InnoDB RR 级别能完全避免幻读吗？**
+
+   > [!question]- 参考答案（点击展开）
+   >
+   > 快照读通过 MVCC 可以，当前读通过 Next-Key Lock 可以，但如果先快照读再当前读，仍然可能观察到"幻读"现象。
+4. **undo log 什么时候清理？**
+
+   > [!question]- 参考答案（点击展开）
+   >
+   > 当没有活跃的 Read View 引用该版本时，purge 线程会清理 undo log。
+5. **为什么 InnoDB 默认 RR 而不是 RC？**
+
+   > [!question]- 参考答案（点击展开）
+   >
+   > 历史原因——早期 MySQL 的 Statement 格式 binlog 在 RC 下会导致主从不一致。现在用 Row 格式 binlog 后，RC 也是安全的。

@@ -197,12 +197,18 @@ Post-training 前先定义评测，否则 Reward 上升并不等于目标变好�
 
 ### Q：Post-training 与 SFT 是什么关系？
 
-A：Post-training 是 Pre-training 之后的一组训练方法，SFT 是其中最基础的一类。Post-training 还包括偏好优化、Reward Modeling、Online RL 和蒸馏等。
+> [!question]- 参考答案（点击展开）
+>
+> Post-training 是 Pre-training 之后的一组训练方法，SFT 是其中最基础的一类。Post-training 还包括偏好优化、Reward Modeling、Online RL 和蒸馏等。
 
 ### Q：DPO 为什么不等于 Online RL？
 
-A：DPO 直接使用预先收集的 chosen/rejected 数据优化 Policy，不要求当前 Policy 在每个训练阶段与环境交互并生成新 Rollout。Online RL 的数据分布会随 Policy 更新而变化。
+> [!question]- 参考答案（点击展开）
+>
+> DPO 直接使用预先收集的 chosen/rejected 数据优化 Policy，不要求当前 Policy 在每个训练阶段与环境交互并生成新 Rollout。Online RL 的数据分布会随 Policy 更新而变化。
 
 ### Q：为什么 Reward 上升不一定表示模型更好？
 
-A：Reward 只是目标的近似。模型可能利用 Reward Model 或规则漏洞，牺牲未被度量的能力。必须用独立测试集、真实任务指标和失败案例验证。
+> [!question]- 参考答案（点击展开）
+>
+> Reward 只是目标的近似。模型可能利用 Reward Model 或规则漏洞，牺牲未被度量的能力。必须用独立测试集、真实任务指标和失败案例验证。

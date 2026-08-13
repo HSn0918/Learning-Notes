@@ -129,13 +129,18 @@ livenessprobe 周期性调用 CSI Identity service 的 `Probe`，再暴露 HTTP 
 
 ### Q: CSI sidecar 属于 CSI 规范吗？
 
-A: 不属于。CSI 规范只定义 gRPC 接口；sidecar 是 Kubernetes 为了把 K8s 对象事件翻译成 CSI RPC 提供的控制器组件。
+> [!question]- 参考答案（点击展开）
+>
+> 不属于。CSI 规范只定义 gRPC 接口；sidecar 是 Kubernetes 为了把 K8s 对象事件翻译成 CSI RPC 提供的控制器组件。
 
 ### Q: PVC 创建后是谁调用 CreateVolume？
 
-A: external-provisioner watch 到 PVC 需要动态供给后，调用 CSI Controller service 的 `CreateVolume`。CSI driver 本身通常不直接 watch PVC。
+> [!question]- 参考答案（点击展开）
+>
+> external-provisioner watch 到 PVC 需要动态供给后，调用 CSI Controller service 的 `CreateVolume`。CSI driver 本身通常不直接 watch PVC。
 
 ### Q: node-driver-registrar 的作用是什么？
 
-A: 它把 Node Pod 里的 CSI driver 注册给 kubelet，让 kubelet 知道 driver name、socket 路径和节点信息。没有注册成功时，后续 NodeStageVolume/NodePublishVolume 可能根本调不到 driver。
-
+> [!question]- 参考答案（点击展开）
+>
+> 它把 Node Pod 里的 CSI driver 注册给 kubelet，让 kubelet 知道 driver name、socket 路径和节点信息。没有注册成功时，后续 NodeStageVolume/NodePublishVolume 可能根本调不到 driver。

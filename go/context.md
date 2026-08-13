@@ -419,28 +419,52 @@ classDiagram
 ### 高频问题
 
 **Q: Context 的接口包含哪四个方法？分别有什么作用？**
-A: `Deadline()` 返回截止时间和是否设置了 deadline 的 bool；`Done()` 返回一个 `<-chan struct{}`，Context 取消后该 channel 被 close，供 `select` 监听；`Err()` 在 Context 关闭后返回原因（`context canceled` 或 `context deadline exceeded`），未关闭时返回 nil；`Value(key)` 沿 Context 链向上查找 key 对应的 value。
+
+> [!question]- 参考答案（点击展开）
+>
+> `Deadline()` 返回截止时间和是否设置了 deadline 的 bool；`Done()` 返回一个 `<-chan struct{}`，Context 取消后该 channel 被 close，供 `select` 监听；`Err()` 在 Context 关闭后返回原因（`context canceled` 或 `context deadline exceeded`），未关闭时返回 nil；`Value(key)` 沿 Context 链向上查找 key 对应的 value。
 
 **Q: Context 主要用来解决什么问题？典型使用场景有哪些？**
-A: 主要解决 goroutine 的生命周期控制、超时/取消信号传播和请求作用域数据传递。典型场景是 HTTP/RPC 请求链路：上游取消或超时后，通过 Context 把信号扩散到所有下游 goroutine，避免 goroutine 泄漏。标准库 `net`、`database/sql`、`os/exec`、`runtime/pprof` 等都支持传入 Context。
+
+> [!question]- 参考答案（点击展开）
+>
+> 主要解决 goroutine 的生命周期控制、超时/取消信号传播和请求作用域数据传递。典型场景是 HTTP/RPC 请求链路：上游取消或超时后，通过 Context 把信号扩散到所有下游 goroutine，避免 goroutine 泄漏。标准库 `net`、`database/sql`、`os/exec`、`runtime/pprof` 等都支持传入 Context。
 
 **Q: Background() 和 TODO() 有什么区别？**
-A: 二者返回的具体类型不同（go1.21+ 分别是 `backgroundCtx` 和 `todoCtx`），但都基于同一份 `emptyCtx` 实现——所有方法返回零值，不可取消、不携带数据。区别在语义：`Background()` 用于 main、init 或顶层请求入口，作为 Context 树的根；`TODO()` 用于暂时不确定该传哪个 Context、后续待补全的占位场景，便于代码审查时识别。
+
+> [!question]- 参考答案（点击展开）
+>
+> 二者返回的具体类型不同（go1.21+ 分别是 `backgroundCtx` 和 `todoCtx`），但都基于同一份 `emptyCtx` 实现——所有方法返回零值，不可取消、不携带数据。区别在语义：`Background()` 用于 main、init 或顶层请求入口，作为 Context 树的根；`TODO()` 用于暂时不确定该传哪个 Context、后续待补全的占位场景，便于代码审查时识别。
 
 **Q: WithCancel 创建的 Context 取消时，取消信号是怎么传播的？**
-A: `cancelCtx` 用 `children map[canceler]struct{}` 记录所有可取消的子 Context。调用 cancel 时，先加锁设置 err/cause、close 掉 done channel，然后遍历 children 递归调用其 cancel，最后把 children 置 nil。信号沿子树**深度优先递归**传播，锁顺序固定为 parent→child，所以不会死锁。
+
+> [!question]- 参考答案（点击展开）
+>
+> `cancelCtx` 用 `children map[canceler]struct{}` 记录所有可取消的子 Context。调用 cancel 时，先加锁设置 err/cause、close 掉 done channel，然后遍历 children 递归调用其 cancel，最后把 children 置 nil。信号沿子树**深度优先递归**传播，锁顺序固定为 parent→child，所以不会死锁。
 
 **Q: 为什么每次调用 WithCancel/WithTimeout 后都建议 defer cancel()？不调用会怎样？**
-A: cancel 函数负责释放 Context 关联的资源——把自己从父节点的 children 中移除（`removeChild`），并停止 timerCtx 的 timer。如果不调用，对于挂在可取消父节点下的子 Context，它会一直留在父节点的 children map 里直到父节点取消，造成内存泄漏；timerCtx 的定时器也无法提前回收。`go vet`（lostcancel 检查）会对漏掉 cancel 的代码报警告。
+
+> [!question]- 参考答案（点击展开）
+>
+> cancel 函数负责释放 Context 关联的资源——把自己从父节点的 children 中移除（`removeChild`），并停止 timerCtx 的 timer。如果不调用，对于挂在可取消父节点下的子 Context，它会一直留在父节点的 children map 里直到父节点取消，造成内存泄漏；timerCtx 的定时器也无法提前回收。`go vet`（lostcancel 检查）会对漏掉 cancel 的代码报警告。
 
 **Q: WithDeadline 和 WithTimeout 是什么关系？**
-A: `WithTimeout(parent, d)` 只是 `WithDeadline(parent, time.Now().Add(d))` 的语法糖。deadline 是绝对时间点，timeout 是相对时长。底层都用 `timerCtx`，通过 `time.AfterFunc` 在到期时触发 cancel，取消原因为 `context deadline exceeded`（哨兵错误 `context.DeadlineExceeded`）。
+
+> [!question]- 参考答案（点击展开）
+>
+> `WithTimeout(parent, d)` 只是 `WithDeadline(parent, time.Now().Add(d))` 的语法糖。deadline 是绝对时间点，timeout 是相对时长。底层都用 `timerCtx`，通过 `time.AfterFunc` 在到期时触发 cancel，取消原因为 `context deadline exceeded`（哨兵错误 `context.DeadlineExceeded`）。
 
 **Q: 如果父 Context 的 deadline 比子 Context 设置的更早，会发生什么？**
-A: `WithDeadline` 内部会检查：若父节点已有 deadline 且比新设置的更早（`cur.Before(d)`，即父的 `cur` 早于新的 `d`），新 deadline 没有意义，直接退化为 `WithCancel(parent)`，不再单独创建 timer。这样子 Context 仍会随父节点的更早 deadline 一起被取消。
+
+> [!question]- 参考答案（点击展开）
+>
+> `WithDeadline` 内部会检查：若父节点已有 deadline 且比新设置的更早（`cur.Before(d)`，即父的 `cur` 早于新的 `d`），新 deadline 没有意义，直接退化为 `WithCancel(parent)`，不再单独创建 timer。这样子 Context 仍会随父节点的更早 deadline 一起被取消。
 
 **Q: WithValue 传值有哪些注意事项？Value 查找的性能如何？**
-A: key 必须是可比较类型（不可比较会 panic），且应使用包内自定义类型（如 `type ctxKey struct{}`）而非内置的 `string`/`int`，避免跨包 key 冲突。每个 `valueCtx` 只存一个 kv，`Value()` 是沿链向上**线性递归查找**，链越长越慢，因此 Context 只适合传请求作用域的少量元数据（如 traceID、authToken），不应传函数的可选参数。
+
+> [!question]- 参考答案（点击展开）
+>
+> key 必须是可比较类型（不可比较会 panic），且应使用包内自定义类型（如 `type ctxKey struct{}`）而非内置的 `string`/`int`，避免跨包 key 冲突。每个 `valueCtx` 只存一个 kv，`Value()` 是沿链向上**线性递归查找**，链越长越慢，因此 Context 只适合传请求作用域的少量元数据（如 traceID、authToken），不应传函数的可选参数。
 
 ### 面试加分点
 

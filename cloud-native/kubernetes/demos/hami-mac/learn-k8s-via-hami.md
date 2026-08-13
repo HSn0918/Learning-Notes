@@ -92,9 +92,24 @@ kubectl logs hami-consumer
 2. `kubectl logs hami-consumer` 看到 `LD_PRELOAD=/usr/local/vgpu/libvgpu.so` + `CUDA_DEVICE_MEMORY_LIMIT_0=3000m`。
 
 **反思题（不答出来不能进下一关）**：
-- 你 `kubectl apply` 那一刻，yaml 文件去了哪儿？
-- `nvidia.com/gpu: 40` 这个数字是谁写到 Node 上的？
-- 容器里那串 `LD_PRELOAD=...` 是谁注入的？kubelet？containerd？runc？
+
+**问题：你 `kubectl apply` 那一刻，yaml 文件去了哪儿？**
+
+> [!question]- 参考答案（点击展开）
+>
+> `kubectl` 把 YAML 转成 API 请求交给 API Server；经认证、准入（可能含 HAMi webhook）后，期望状态持久化到 etcd。之后 scheduler 选择 Node，目标 kubelet 才根据 Pod spec 收敛容器；YAML 文件本身不会被原样“传给容器”。详见 [[hami-source#五、端到端时序总图]]、[[etcd-source]]。
+
+**问题：`nvidia.com/gpu: 40` 这个数字是谁写到 Node 上的？**
+
+> [!question]- 参考答案（点击展开）
+>
+> Device Plugin 通过 `ListAndWatch` 向 kubelet 上报健康设备；kubelet 再更新 Node 的 `status.capacity` / `allocatable`。HAMi 可把每张物理 GPU 上报为多个伪 vGPU ID，因此 40 是 Kubernetes 资源视图，不等于物理卡数量。详见 [[device-plugin-component#深入：GPU 设备如何注册、上报、Allocate 到容器]]、[[hami-source#3.1 ListAndWatch：把 1 张卡上报 N 次]]。
+
+**问题：容器里那串 `LD_PRELOAD=...` 是谁注入的？kubelet、containerd 还是 runc？**
+
+> [!question]- 参考答案（点击展开）
+>
+> HAMi Device Plugin 在 `Allocate` 响应中返回环境变量；kubelet 的 DeviceManager 把它合并到 CRI `CreateContainer` 请求。containerd / runc 消费最终 runtime spec 启动进程，但不是这项配额环境变量的决策者。详见 [[hami-source#3.2 Allocate：读 annotation，注入 env + libvgpu]]、[[kubelet-cri-source#kubelet 侧：DeviceManager 如何消费]]。
 
 如果答不出，继续下面的关卡。
 
@@ -356,12 +371,46 @@ docker exec hami-mac-control-plane crictl inspect <container-id>
 
 ## 自检：哪些问题你应该能答
 
-- 一个 GPU Pod 从 `kubectl apply` 到容器内 `env` 能看到 `CUDA_DEVICE_MEMORY_LIMIT_0`，**经过哪些组件、哪些 gRPC / HTTP 调用**？（应该能画出 [[hami-learning-path]] 开头那张图）
-- HAMi 为什么不用 framework plugin，而用 extender？
-- 如果 HAMi-webhook 挂了，会发生什么？
-- 如果 HAMi-scheduler 挂了，存量 GPU Pod 还能跑吗？新 GPU Pod 还能调度吗？
-- 一张物理卡上跑 4 个 Pod，每个声明 `nvidia.com/gpumem: 3000`，HAMi 怎么保证它们互不超额？
-- 容器进程能 `LD_PRELOAD=/dev/null` 绕过 libvgpu 吗？（提示：可以！这是 HAMi 的弱隔离边界，详见 HAMi issue 讨论）
-- DRA 出来后 HAMi 还有意义吗？
+**问题：一个 GPU Pod 从 `kubectl apply` 到容器内 `env` 能看到 `CUDA_DEVICE_MEMORY_LIMIT_0`，经过哪些组件、哪些 gRPC / HTTP 调用？**
+
+> [!question]- 参考答案（点击展开）
+>
+> 请求先到 API Server，经 HAMi webhook 改写后入 etcd；`kube-scheduler` 通过 Extender Filter/Bind 选择 Node 和 GPU 分配，并写 Pod annotation。目标 kubelet 通过 DeviceManager 调 Device Plugin `Allocate`（gRPC），把返回 env 合并到 CRI `CreateContainer` 请求，最终由运行时启动容器。详见 [[hami-learning-path]]、[[hami-source#五、端到端时序总图]]。
+
+**问题：HAMi 为什么不用 framework plugin，而用 extender？**
+
+> [!question]- 参考答案（点击展开）
+>
+> Extender 可作为独立进程部署和升级，无需维护自定义 kube-scheduler 二进制；HAMi 接受额外 HTTP 调用和较少扩展点，以换取 GPU 设备级调度的独立演进。它不是通用性能最优解。详见 [[hami-source#2.1 为什么是 Extender 而不是 Framework Plugin]]。
+
+**问题：如果 HAMi-webhook 挂了，会发生什么？**
+
+> [!question]- 参考答案（点击展开）
+>
+> 取决于 `MutatingWebhookConfiguration.failurePolicy`：`Fail` 会拒绝匹配 Pod 的创建/更新；`Ignore` 会放行未改写的 Pod，可能缺少默认资源、annotation 或 `schedulerName`。应通过实际 webhook 配置和 API Server admission 错误确认，不能仅凭 Pod Pending 推断。详见 [[hami-source#一、HAMi-webhook：把 vGPU 请求「翻译」给 extender]]。
+
+**问题：如果 HAMi-scheduler 挂了，存量 GPU Pod 还能跑吗？新 GPU Pod 还能调度吗？**
+
+> [!question]- 参考答案（点击展开）
+>
+> 已经 Bind 到 Node、且容器已由 kubelet 启动的 Pod 可继续运行；使用 HAMi scheduler profile 的新 Pod 无法完成 Filter/Bind，通常会保持 Pending，直至调度器恢复。实际结果还取决于副本、leader 选举和 Pod 的 `schedulerName`。详见 [[hami-source#2.4 Bind：把分配方案钉死在 Pod annotation 上]]。
+
+**问题：一张物理卡上跑 4 个 Pod，每个声明 `nvidia.com/gpumem: 3000`，HAMi 怎么保证它们互不超额？**
+
+> [!question]- 参考答案（点击展开）
+>
+> Extender 以 Pod annotation 和 cache 计算每张卡的剩余显存，Bind 把每个 Pod 的具体配额写入 annotation；Device Plugin 在 `Allocate` 注入限额，`libvgpu.so` 对 CUDA 分配执行配额检查。它是用户态软件隔离，不能等同 MIG 的硬件隔离。详见 [[hami-source#二、HAMi-scheduler：vGPU 虚拟调度的核心]]、[[hami-source#四、HAMi-core（libvgpu.so）：容器内的真实隔离]]。
+
+**问题：容器进程能 `LD_PRELOAD=/dev/null` 绕过 libvgpu 吗？**
+
+> [!question]- 参考答案（点击展开）
+>
+> 如果工作负载能篡改启动环境或自行绕过被 hook 的调用路径，确实可能绕过这层用户态限制；因此它不是对抗恶意租户的完整安全边界。生产上应结合容器权限、镜像准入、运行时隔离和硬件能力评估。详见 [[hami-source#4.1 LD_PRELOAD 拦截原理]]。
+
+**问题：DRA 出来后 HAMi 还有意义吗？**
+
+> [!question]- 参考答案（点击展开）
+>
+> DRA 改进的是资源声明、选择和绑定的 Kubernetes API；它不自动提供 GPU 切分/配额执行机制。HAMi 的软件 hook 可作为 DRA driver 之下的实现之一，二者更可能组合而非简单替代。详见 [[gpu-scheduling-source#DRA：下一代资源框架]]、[[hami-source#七、几个深入问题]]。
 
 最后一句话：**K8s 不是看会的，是跑会的**。这篇文档列的每个动手项都跑一遍，比读 10 本 K8s 书都管用。

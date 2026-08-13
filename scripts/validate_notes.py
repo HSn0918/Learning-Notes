@@ -18,6 +18,15 @@ IMAGE_SUFFIXES = {".gif", ".jpeg", ".jpg", ".png", ".svg", ".webp"}
 KEBAB_MARKDOWN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*\.md$")
 WIKILINK = re.compile(r"(!?)\[\[([^\[\]\n]+)\]\]")
 MARKDOWN_LINK = re.compile(r"(!?)\[[^\]]*\]\((<[^>]+>|[^)]+)\)")
+ANSWER_CALLOUT = "> [!question]- \u53c2\u8003\u7b54\u6848\uff08\u70b9\u51fb\u5c55\u5f00\uff09"
+QUESTION_HEADING = re.compile(r"^(#{2,6})\s+Q(?:\d+)?\s*[:\uff1a].+", re.IGNORECASE)
+BOLD_QUESTION = re.compile(r"^\*\*(?:Q(?:\d+)?|\u95ee\u9898)\s*[:\uff1a].+\*\*\s*$", re.IGNORECASE)
+HEADING = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
+LIST_QUESTION = re.compile(r"^\s*(?:[-*]|\d+\.)\s+.+[?\uff1f]")
+LEGACY_QA_TABLE_ROW = re.compile(r"^\|\s*\*\*.+[?\uff1f].*\*\*\s*\|.+\|\s*$")
+LEGACY_INLINE_LIST_QA = re.compile(
+    r"^\s*(?:[-*]|\d+\.)\s+\*\*.+[?\uff1f]\*\*\s+\S"
+)
 
 
 @dataclass
@@ -78,18 +87,137 @@ def strip_code(text: str) -> str:
     fence: str | None = None
     for line in text.splitlines():
         stripped = line.lstrip()
-        marker = stripped[:3]
+        fence_candidate = stripped
+        while fence_candidate.startswith(">"):
+            fence_candidate = fence_candidate[1:].lstrip()
+        marker = fence_candidate[:3]
         if fence is None and marker in {"```", "~~~"}:
             fence = marker
             output.append("")
             continue
         if fence is not None:
-            if stripped.startswith(fence):
+            if fence_candidate.startswith(fence):
                 fence = None
             output.append("")
             continue
         output.append(strip_inline_code(line))
     return "\n".join(output)
+
+
+def is_interview_section(title: str) -> bool:
+    return title.strip().startswith(("\u9762\u8bd5\u8981\u70b9", "\u9762\u8bd5\u5ef6\u5c55\u95ee\u9898"))
+
+
+def is_prompt_section(title: str) -> bool:
+    normalized = title.strip()
+    return any(
+        phrase in normalized
+        for phrase in (
+            "\u5173\u952e\u95ee\u9898",
+            "\u6838\u5fc3\u96be\u70b9",
+            "\u5173\u952e\u8bbe\u8ba1\u70b9",
+            "\u5de5\u7a0b\u96be\u70b9",
+            "\u9ad8\u9636\u81ea\u68c0\u9898",
+            "\u81ea\u68c0\uff1a\u54ea\u4e9b\u95ee\u9898",
+            "\u81ea\u68c0\u95ee\u9898",
+        )
+    )
+
+
+def question_has_answer(lines: list[str], question_index: int) -> tuple[bool, bool]:
+    """Return whether a question has the canonical callout and non-empty content."""
+    marker_index: int | None = None
+    for index in range(question_index + 1, len(lines)):
+        if lines[index].strip():
+            marker_index = index
+            break
+    if marker_index is None or lines[marker_index].strip() != ANSWER_CALLOUT:
+        return False, False
+
+    has_content = False
+    for line in lines[marker_index + 1 :]:
+        if not line.strip():
+            continue
+        stripped = line.lstrip()
+        if not stripped.startswith(">"):
+            break
+        content = stripped[1:].strip()
+        if content and content != ANSWER_CALLOUT and content not in {"```", "~~~"}:
+            has_content = True
+            break
+    return True, has_content
+
+
+def validate_learning_questions(source: Path, text: str, report: Report, root: Path) -> None:
+    """Require every formal learning question to have a collapsed reference answer."""
+    raw_lines = text.splitlines()
+    clean_lines = strip_code(text).splitlines()
+    current_h2 = ""
+    prompt_level: int | None = None
+    plain_prompt = False
+
+    for index, line in enumerate(clean_lines):
+        heading = HEADING.match(line)
+        if heading:
+            level = len(heading.group(1))
+            title = heading.group(2).strip()
+            if level == 2:
+                current_h2 = title
+            if prompt_level is not None and level <= prompt_level:
+                prompt_level = None
+            plain_prompt = False
+            if is_prompt_section(title):
+                prompt_level = level
+        elif line.strip() in {
+            "\u5b66\u4e60\u95ee\u9898\uff1a",
+            "\u5b66\u4e60\u95ee\u9898:",
+            "\u8bfb\u5b8c\u5e94\u8be5\u80fd\u7b54\uff1a",
+            "\u8bfb\u5b8c\u5e94\u8be5\u80fd\u7b54:",
+            "\u6838\u5fc3\u95ee\u9898\uff1a",
+            "\u6838\u5fc3\u95ee\u9898:",
+        }:
+            plain_prompt = True
+        elif "\u5fc5\u987b\u80fd\u56de\u7b54" in line or "\u91cd\u70b9\u5173\u6ce8" in line:
+            plain_prompt = True
+
+        formal = bool(QUESTION_HEADING.match(line) or BOLD_QUESTION.match(line))
+        if heading and heading.group(2).strip().endswith(("?", "\uff1f")):
+            formal = True
+        if source.name == "k8s-interview.md" and heading:
+            heading_level = len(heading.group(1))
+            heading_title = heading.group(2).strip()
+            if heading_level == 3 or (heading_level == 2 and heading_title.endswith(("?", "\uff1f"))):
+                formal = True
+        if (
+            source.name == "kafka-interview.md"
+            and heading
+            and len(heading.group(1)) == 2
+            and re.match(r"\d+\.", heading.group(2))
+        ):
+            formal = True
+        if (prompt_level is not None or plain_prompt or is_interview_section(current_h2)) and LIST_QUESTION.match(line):
+            formal = True
+
+        if LEGACY_QA_TABLE_ROW.match(line):
+            report.errors.append(
+                f"{relative(source, root)}:{index + 1}: \u95ee\u7b54\u8868\u683c\u7684\u7b54\u6848\u672a\u6298\u53e0\uff0c\u8bf7\u6539\u4e3a\u9898\u5e72 + \u53c2\u8003\u7b54\u6848 callout"
+            )
+            continue
+        if LEGACY_INLINE_LIST_QA.match(line):
+            report.errors.append(
+                f"{relative(source, root)}:{index + 1}: \u9898\u76ee\u4e0e\u7b54\u6848\u4ecd\u5728\u540c\u4e00\u884c\uff0c\u8bf7\u6539\u4e3a\u9898\u5e72 + \u53c2\u8003\u7b54\u6848 callout"
+            )
+            continue
+        if not formal:
+            continue
+
+        has_callout, has_content = question_has_answer(raw_lines, index)
+        if not has_callout:
+            report.errors.append(
+                f"{relative(source, root)}:{index + 1}: \u6b63\u5f0f\u5b66\u4e60\u9898\u540e\u7f3a\u5c11\u9ed8\u8ba4\u6298\u53e0\u7684\u53c2\u8003\u7b54\u6848"
+            )
+        elif not has_content:
+            report.errors.append(f"{relative(source, root)}:{index + 1}: \u53c2\u8003\u7b54\u6848\u4e3a\u7a7a")
 
 
 def split_wikilink(inner: str) -> tuple[str, str | None]:
@@ -238,6 +366,7 @@ def validate(root: Path, include_quality: bool = False) -> Report:
         graph[path.resolve()] = parse_edges(
             path, text, stem_index, image_index, heading_index, report, root
         )
+        validate_learning_questions(path, text, report, root)
 
     root_readme = (root / "README.md").resolve()
     if not root_readme.exists():

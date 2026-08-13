@@ -342,25 +342,46 @@ GET /blog/_mapping?pretty
 ### 高频问题
 
 **Q: text 和 keyword 类型有什么区别？分别用在什么场景？**
-A: `text` 在写入时会被 analyzer 分词成多个 term 建立倒排索引，适合全文检索，但**不能直接用于排序和聚合**（默认不开 doc_values）；`keyword` 不分词、按原始文本整体建立倒排索引，支持精确匹配、过滤、排序和聚合。需要分词搜索（文章、商品描述）用 `text`，需要精确匹配/排序/聚合（状态码、ID、手机号）用 `keyword`。
+
+> [!question]- 参考答案（点击展开）
+>
+> `text` 在写入时会被 analyzer 分词成多个 term 建立倒排索引，适合全文检索，但**不能直接用于排序和聚合**（默认不开 doc_values）；`keyword` 不分词、按原始文本整体建立倒排索引，支持精确匹配、过滤、排序和聚合。需要分词搜索（文章、商品描述）用 `text`，需要精确匹配/排序/聚合（状态码、ID、手机号）用 `keyword`。
 
 **Q: 一个字符串字段没有显式指定 mapping，ES 会怎么处理？**
-A: ES 通过 dynamic mapping 自动推断类型。对字符串字段，默认映射为 `text` 类型，并额外生成一个 `keyword` 子字段（`field.keyword`），这样既能全文检索又能用子字段做排序聚合；该 `keyword` 子字段默认带 `ignore_above: 256`，即超过 256 字符的值不会被索引到子字段。dynamic mapping 推断可能不符合预期（如带空格的日期被识别为 text），生产环境建议显式定义 mapping。
+
+> [!question]- 参考答案（点击展开）
+>
+> ES 通过 dynamic mapping 自动推断类型。对字符串字段，默认映射为 `text` 类型，并额外生成一个 `keyword` 子字段（`field.keyword`），这样既能全文检索又能用子字段做排序聚合；该 `keyword` 子字段默认带 `ignore_above: 256`，即超过 256 字符的值不会被索引到子字段。dynamic mapping 推断可能不符合预期（如带空格的日期被识别为 text），生产环境建议显式定义 mapping。
 
 **Q: 为什么对象数组会丢失字段间的关联？nested 类型怎么解决？**
-A: ES 内部把 object 数组**扁平化**存储，例如 `user:[{first:John,last:Smith},{first:Alice,last:White}]` 会变成 `user.first:[alice,john]` 和 `user.last:[smith,white]` 两个独立数组，对象内部的对应关系丢失，无法查询 "first=Alice 且 last=White"。`nested` 类型把数组中每个对象索引为**独立的隐藏 Lucene 文档**，保留对象内部字段关联，配合 nested query 即可精确查询。
+
+> [!question]- 参考答案（点击展开）
+>
+> ES 内部把 object 数组**扁平化**存储，例如 `user:[{first:John,last:Smith},{first:Alice,last:White}]` 会变成 `user.first:[alice,john]` 和 `user.last:[smith,white]` 两个独立数组，对象内部的对应关系丢失，无法查询 "first=Alice 且 last=White"。`nested` 类型把数组中每个对象索引为**独立的隐藏 Lucene 文档**，保留对象内部字段关联，配合 nested query 即可精确查询。
 
 **Q: 使用 nested 类型有哪些代价？**
-A: 主要有三点：一是存储/索引开销大，一个含 100 个嵌套对象的文档实际索引了 101 个 Lucene 文档；二是更新代价高，更新父文档会"株连"重建所有嵌套子文档；三是查询/聚合需走专门的 nested query / nested aggregation，使用上更受限。每个索引默认最多 50 个嵌套字段（`index.mapping.nested_fields.limit`）。因此条件允许时 ES 更推荐**大宽表/反范式**模式，能合并字段就尽量规避 nested。
+
+> [!question]- 参考答案（点击展开）
+>
+> 主要有三点：一是存储/索引开销大，一个含 100 个嵌套对象的文档实际索引了 101 个 Lucene 文档；二是更新代价高，更新父文档会"株连"重建所有嵌套子文档；三是查询/聚合需走专门的 nested query / nested aggregation，使用上更受限。每个索引默认最多 50 个嵌套字段（`index.mapping.nested_fields.limit`）。因此条件允许时 ES 更推荐**大宽表/反范式**模式，能合并字段就尽量规避 nested。
 
 **Q: date 类型默认支持哪些格式？存储 `2020-12-01 20:10:15` 这种格式要注意什么？**
-A: 默认支持 `strict_date_optional_time`（ISO8601，如 `yyyy-MM-dd'T'HH:mm:ss.SSSZ` 或 `yyyy-MM-dd`，秒以下小数部分可选）和 `epoch_millis`（自 1970-01-01 的毫秒数）。`2020-12-01 20:10:15` 这种带空格的格式不在默认范围内，必须在 mapping 中用 `format` 指定，可用 `||` 串联多个格式，如 `yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis`。若不主动指定为 `date`，动态映射会把它识别成 `text`。
+
+> [!question]- 参考答案（点击展开）
+>
+> 默认支持 `strict_date_optional_time`（ISO8601，如 `yyyy-MM-dd'T'HH:mm:ss.SSSZ` 或 `yyyy-MM-dd`，秒以下小数部分可选）和 `epoch_millis`（自 1970-01-01 的毫秒数）。`2020-12-01 20:10:15` 这种带空格的格式不在默认范围内，必须在 mapping 中用 `format` 指定，可用 `||` 串联多个格式，如 `yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis`。若不主动指定为 `date`，动态映射会把它识别成 `text`。
 
 **Q: ES 里的数组是怎么表示的？有什么约束？**
-A: ES 没有专门的数组类型，**任何字段开箱即用都能存储多个值**，无需在 mapping 中声明。约束是同一字段数组内所有元素类型必须一致（如都是 keyword 或都是 integer）。注意普通 object 数组会被扁平化，若需要保持对象内部关联必须用 `nested`。
+
+> [!question]- 参考答案（点击展开）
+>
+> ES 没有专门的数组类型，**任何字段开箱即用都能存储多个值**，无需在 mapping 中声明。约束是同一字段数组内所有元素类型必须一致（如都是 keyword 或都是 integer）。注意普通 object 数组会被扁平化，若需要保持对象内部关联必须用 `nested`。
 
 **Q: 数值类型选型上有什么原则？scaled_float 是什么？**
-A: 整型有 byte/short/integer/long，浮点有 float/double/half_float/scaled_float，**在满足取值范围的前提下优先选范围更小的类型**以节省存储、提升效率。`scaled_float` 按缩放因子 `scaling_factor` 把浮点数乘以因子后以 long 存储（如价格保留两位小数用因子 100），比 double 更省空间且精度可控，适合金额这类小数位固定的场景。
+
+> [!question]- 参考答案（点击展开）
+>
+> 整型有 byte/short/integer/long，浮点有 float/double/half_float/scaled_float，**在满足取值范围的前提下优先选范围更小的类型**以节省存储、提升效率。`scaled_float` 按缩放因子 `scaling_factor` 把浮点数乘以因子后以 long 存储（如价格保留两位小数用因子 100），比 double 更省空间且精度可控，适合金额这类小数位固定的场景。
 
 ### 面试加分点
 

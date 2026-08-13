@@ -285,8 +285,19 @@ Agent 不能直接拿全局密钥。推荐：
 生产 Agent 必须能回答三个问题：
 
 1. 慢在哪里？
+
+   > [!question]- 参考答案（点击展开）
+   > 沿 `invoke_agent -> plan -> retrieval -> chat -> execute_tool -> verifier` 拆 span，并分别观察 queue time、TTFT、LLM duration、retrieval latency 和 tool duration。只看整次任务耗时无法区分模型、检索、工具还是排队变慢。
+
 2. 贵在哪里？
+
+   > [!question]- 参考答案（点击展开）
+   > 把 input/output token、模型与 provider、检索/重排次数、工具调用次数和重试次数归因到同一任务与版本。成本必须与 task success 和质量指标一起看，否则“少用 token”可能只是让任务失败得更便宜。
+
 3. 错在哪里？
+
+   > [!question]- 参考答案（点击展开）
+   > 在每个 span 记录结构化状态、错误类型和重试结果，并保留低敏的 tool/result 引用与 verifier 结论。用 trace 找到首个失败节点，再区分模型决策错误、schema/policy 拒绝、外部工具失败和恢复逻辑失败；不要只看最终一个通用异常。
 
 推荐 span tree：
 
@@ -376,27 +387,39 @@ flowchart LR
 
 ### Q: 什么叫生产级 Agent？
 
-A: 生产级 Agent 是可控自动化系统，不是能调用工具的聊天 Demo。它要有显式状态、工具权限、幂等、超时、人审、RAG 引用、可观测、评估、灰度和回滚。核心问题不是“模型会不会做”，而是模型做错时系统能不能发现、阻断、恢复和复盘。
+> [!question]- 参考答案（点击展开）
+>
+> 生产级 Agent 是可控自动化系统，不是能调用工具的聊天 Demo。它要有显式状态、工具权限、幂等、超时、人审、RAG 引用、可观测、评估、灰度和回滚。核心问题不是“模型会不会做”，而是模型做错时系统能不能发现、阻断、恢复和复盘。
 
 ### Q: 为什么生产 Agent 需要 graph runtime？
 
-A: 因为生产任务有条件分支、循环、失败恢复、人审中断和长任务恢复。线性 chain 很难表达这些控制流；把 planner、retriever、tool executor、verifier、人审节点显式放进 graph，才能测试、观测和恢复。
+> [!question]- 参考答案（点击展开）
+>
+> 因为生产任务有条件分支、循环、失败恢复、人审中断和长任务恢复。线性 chain 很难表达这些控制流；把 planner、retriever、tool executor、verifier、人审节点显式放进 graph，才能测试、观测和恢复。
 
 ### Q: Agent 工具为什么必须做幂等？
 
-A: Agent loop、网络和外部 API 都可能重试。如果创建工单、发通知、改配置没有幂等键，重试会重复产生副作用。生产写工具必须先查 idempotency store，再执行；成功结果要持久化，后续重试直接返回已有结果。
+> [!question]- 参考答案（点击展开）
+>
+> Agent loop、网络和外部 API 都可能重试。如果创建工单、发通知、改配置没有幂等键，重试会重复产生副作用。生产写工具必须先查 idempotency store，再执行；成功结果要持久化，后续重试直接返回已有结果。
 
 ### Q: Prompt injection 在 Agent 里为什么更危险？
 
-A: 普通 RAG 最坏是答错；Agent 有工具权限，prompt injection 可能诱导模型调用工具、泄露数据或执行写操作。因此外部文档只能当 data，不能当 instruction；工具调用前必须过 policy engine，高风险操作必须人审。
+> [!question]- 参考答案（点击展开）
+>
+> 普通 RAG 最坏是答错；Agent 有工具权限，prompt injection 可能诱导模型调用工具、泄露数据或执行写操作。因此外部文档只能当 data，不能当 instruction；工具调用前必须过 policy engine，高风险操作必须人审。
 
 ### Q: 生产 Agent 怎么做可观测？
 
-A: 用 OpenTelemetry 把一次任务拆成 `invoke_agent -> plan -> retrieval -> chat -> execute_tool -> verifier`。记录 provider、model、agent version、token、latency、error、tool duration 等低敏低基数字段。prompt、output、tool arguments 默认不进 trace，排障需要时 opt-in、脱敏、截断和限期保存。
+> [!question]- 参考答案（点击展开）
+>
+> 用 OpenTelemetry 把一次任务拆成 `invoke_agent -> plan -> retrieval -> chat -> execute_tool -> verifier`。记录 provider、model、agent version、token、latency、error、tool duration 等低敏低基数字段。prompt、output、tool arguments 默认不进 trace，排障需要时 opt-in、脱敏、截断和限期保存。
 
 ### Q: 生产 Agent 发布前怎么验收？
 
-A: 至少跑五层 eval：retrieval recall、answer faithfulness、tool 参数正确率、workflow task success rate、安全攻击用例。上线走 shadow/canary，监控 task success、latency、cost、tool error、approval rate 和人工接管率；发现回归能按 prompt/model/tool/index/policy 版本回滚。
+> [!question]- 参考答案（点击展开）
+>
+> 至少跑五层 eval：retrieval recall、answer faithfulness、tool 参数正确率、workflow task success rate、安全攻击用例。上线走 shadow/canary，监控 task success、latency、cost、tool error、approval rate 和人工接管率；发现回归能按 prompt/model/tool/index/policy 版本回滚。
 
 ## 参考资料
 

@@ -188,12 +188,18 @@ kubectl get pod <pod-name> -n <namespace> --show-labels
 
 ### Q: Pod 一直 ContainerCreating，提示 failed to setup network，怎么查？
 
-A: 先看 `kubectl describe pod` event，确认是 CNI ADD 失败；再到节点看 kubelet/containerd 日志；检查 `/etc/cni/net.d` 配置、`/opt/cni/bin` 插件、IPAM 状态和 CNI DaemonSet 日志。不要先查 Service，因为 Pod 还没完成入网。
+> [!question]- 参考答案（点击展开）
+>
+> 先看 `kubectl describe pod` event，确认是 CNI ADD 失败；再到节点看 kubelet/containerd 日志；检查 `/etc/cni/net.d` 配置、`/opt/cni/bin` 插件、IPAM 状态和 CNI DaemonSet 日志。不要先查 Service，因为 Pod 还没完成入网。
 
 ### Q: Pod IP 能跨节点 ping，但 ClusterIP 不通，说明什么？
 
-A: CNI Pod 网络大概率是通的，问题转向 Service 数据面：EndpointSlice、kube-proxy iptables/IPVS 规则，或者 Cilium 的 BPF service map。
+> [!question]- 参考答案（点击展开）
+>
+> CNI Pod 网络大概率是通的，问题转向 Service 数据面：EndpointSlice、kube-proxy iptables/IPVS 规则，或者 Cilium 的 BPF service map。
 
 ### Q: 怎么判断是 DNS 问题还是网络问题？
 
-A: 先直接访问 Service ClusterIP 或 Pod IP；如果 IP 通、域名不通，查 CoreDNS 和 Pod `/etc/resolv.conf`；如果 IP 也不通，回到 CNI/kube-proxy/NetworkPolicy 链路。
+> [!question]- 参考答案（点击展开）
+>
+> 先直接访问 Service ClusterIP 或 Pod IP；如果 IP 通、域名不通，查 CoreDNS 和 Pod `/etc/resolv.conf`；如果 IP 也不通，回到 CNI/kube-proxy/NetworkPolicy 链路。

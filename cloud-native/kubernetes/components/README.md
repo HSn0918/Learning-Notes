@@ -161,20 +161,30 @@ kubelet watches assigned pod
 
 ### Q: Kubernetes 最小可运行集群需要哪些组件？
 
-A: 控制面至少需要 kube-apiserver、etcd、kube-scheduler、kube-controller-manager；节点侧需要 kubelet、container runtime、CNI 插件。kube-proxy、CoreDNS 通常也会部署，否则 Service 转发和 DNS 体验不完整。
+> [!question]- 参考答案（点击展开）
+>
+> 控制面至少需要 kube-apiserver、etcd、kube-scheduler、kube-controller-manager；节点侧需要 kubelet、container runtime、CNI 插件。kube-proxy、CoreDNS 通常也会部署，否则 Service 转发和 DNS 体验不完整。
 
 ### Q: 所有组件都直接访问 etcd 吗？
 
-A: 不是。只有 kube-apiserver 直接读写 etcd。scheduler、controller-manager、kubelet、CoreDNS、kube-proxy 等都通过 kube-apiserver watch 或 update 对象。
+> [!question]- 参考答案（点击展开）
+>
+> 不是。只有 kube-apiserver 直接读写 etcd。scheduler、controller-manager、kubelet、CoreDNS、kube-proxy 等都通过 kube-apiserver watch 或 update 对象。
 
 ### Q: CNI、CSI、CRI 的边界是什么？
 
-A: CRI 是 kubelet 与容器运行时的接口；CNI 是容器运行时创建 Pod sandbox 网络时调用的网络插件接口；CSI 是 Kubernetes 与存储驱动之间的卷生命周期和挂载接口。
+> [!question]- 参考答案（点击展开）
+>
+> CRI 是 kubelet 与容器运行时的接口；CNI 是容器运行时创建 Pod sandbox 网络时调用的网络插件接口；CSI 是 Kubernetes 与存储驱动之间的卷生命周期和挂载接口。
 
 ### Q: 控制器和 scheduler 都 watch apiserver，它们的区别是什么？
 
-A: scheduler 只负责给未绑定 Pod 选择 Node 并写入绑定结果；controller 负责各种资源的持续 reconcile，例如 Deployment 创建 ReplicaSet、NodeController 处理节点状态、EndpointSliceController 维护后端列表。
+> [!question]- 参考答案（点击展开）
+>
+> scheduler 只负责给未绑定 Pod 选择 Node 并写入绑定结果；controller 负责各种资源的持续 reconcile，例如 Deployment 创建 ReplicaSet、NodeController 处理节点状态、EndpointSliceController 维护后端列表。
 
 ### Q: addon 和核心组件怎么区分？
 
-A: 核心组件是 Kubernetes 集群控制循环和节点执行的基础；addon 是运行在集群里的普通 workload，用 Kubernetes API 提供附加能力，例如 DNS、Dashboard、metrics、logging。
+> [!question]- 参考答案（点击展开）
+>
+> 核心组件是 Kubernetes 集群控制循环和节点执行的基础；addon 是运行在集群里的普通 workload，用 Kubernetes API 提供附加能力，例如 DNS、Dashboard、metrics、logging。

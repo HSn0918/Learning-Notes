@@ -205,20 +205,28 @@ flowchart LR
 
 ### Q1: 什么场景下选择 NFS CSI？
 
-需要 ReadWriteMany（RWX）多 Pod 共享文件、已有 NFS 基础设施、集群规模不大、对性能要求不极端的场景。典型案例：多副本 Web 应用共享上传文件、CI/CD artifact 共享、日志聚合。
+> [!question]- 参考答案（点击展开）
+>
+> 需要 ReadWriteMany（RWX）多 Pod 共享文件、已有 NFS 基础设施、集群规模不大、对性能要求不极端的场景。典型案例：多副本 Web 应用共享上传文件、CI/CD artifact 共享、日志聚合。
 
 ### Q2: NFS CSI 的局限是什么？
 
-主要三点：1）NFS Server 是单点，需要额外做 HA；2）性能受限于单台 Server 的网络和磁盘；3）不支持 Volume Snapshot。如果需要高可用的共享文件存储，应考虑 CephFS 或云厂商 NAS。
+> [!question]- 参考答案（点击展开）
+>
+> 主要三点：1）NFS Server 是单点，需要额外做 HA；2）性能受限于单台 Server 的网络和磁盘；3）不支持 Volume Snapshot。如果需要高可用的共享文件存储，应考虑 CephFS 或云厂商 NAS。
 
 ### Q3: NFS 和 CephFS 如何选择？
 
-小规模、简单部署、已有 NFS 基础设施 → NFS CSI。大规模、高性能要求、需要快照和高可用 → CephFS。云上环境 → 直接用云厂商 NAS（如 AWS EFS、阿里云 NAS）。
+> [!question]- 参考答案（点击展开）
+>
+> 小规模、简单部署、已有 NFS 基础设施 → NFS CSI。大规模、高性能要求、需要快照和高可用 → CephFS。云上环境 → 直接用云厂商 NAS（如 AWS EFS、阿里云 NAS）。
 
 ### Q4: NFS CSI 的 mountOptions 有哪些常用配置？
 
-- `nfsvers=4.1`：指定 NFS 协议版本（推荐 4.1）
-- `hard`：NFS Server 无响应时无限重试（soft 会返回错误）
-- `noresvport`：不使用保留端口，避免端口耗尽
-- `rsize=1048576,wsize=1048576`：读写缓冲区大小，影响吞吐
-- `timeo=600`：超时时间（单位 0.1 秒）
+> [!question]- 参考答案（点击展开）
+>
+> - `nfsvers=4.1`：指定 NFS 协议版本（推荐 4.1）
+> - `hard`：NFS Server 无响应时无限重试（soft 会返回错误）
+> - `noresvport`：不使用保留端口，避免端口耗尽
+> - `rsize=1048576,wsize=1048576`：读写缓冲区大小，影响吞吐
+> - `timeo=600`：超时时间（单位 0.1 秒）

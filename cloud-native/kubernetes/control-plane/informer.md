@@ -166,11 +166,28 @@ flowchart LR
 
 ## 面试延展问题
 
-| 追问 | 回答思路 |
-| --- | --- |
-| **Resync 是什么？** | 周期性地将本地缓存中的对象重新推回 DeltaFIFO，触发 Update 事件，不会再次调用 API Server，确保最终一致性与重试机会。 |
-| **Informer 与 Lister 有何关系？** | Lister 是基于 Informer 本地缓存（Indexer）提供的查询接口，用户通过 List()/Get() 从缓存获取对象，无需访问 API Server。 |
-| **本地存储 key 还是对象？** | Store 以 namespace/name 为 key，value 为完整对象（如 *v1.Pod）。 |
-| **Controller 如何处理并发？** | 使用带速率限制和重试的 WorkQueue，启动多个 Worker goroutine，保证同一 key 不被并发处理，并提供限速和重试策略。 |
+### Q：Resync 是什么？
+
+> [!question]- 参考答案（点击展开）
+>
+> 周期性地将本地缓存中的对象重新推回 DeltaFIFO，触发 Update 事件，不会再次调用 API Server，确保最终一致性与重试机会。
+
+### Q：Informer 与 Lister 有何关系？
+
+> [!question]- 参考答案（点击展开）
+>
+> Lister 是基于 Informer 本地缓存（Indexer）提供的查询接口，用户通过 List()/Get() 从缓存获取对象，无需访问 API Server。
+
+### Q：本地存储 key 还是对象？
+
+> [!question]- 参考答案（点击展开）
+>
+> Store 以 namespace/name 为 key，value 为完整对象（如 *v1.Pod）。
+
+### Q：Controller 如何处理并发？
+
+> [!question]- 参考答案（点击展开）
+>
+> 使用带速率限制和重试的 WorkQueue，启动多个 Worker goroutine，保证同一 key 不被并发处理，并提供限速和重试策略。
 
 > **总结**: Informer 是 Kubernetes 控制器模式的基础组件，凭借 List+Watch、DeltaFIFO、Indexer 和 WorkQueue，实现高性能、低延迟且可靠的事件驱动机制；通过 SharedInformerFactory 和自定义索引，可进一步优化多控制器场景下的资源共享与查询效率。

@@ -151,48 +151,50 @@ flowchart LR
 
 ### 哪些 client 走本地缓存？哪些直连 APIServer？
 
-这是 controller-runtime / client-go 最容易混淆的点。一张表分清：
-
-```
-读           ┌─ Lister (client-go)              → Indexer 本地缓存
-            ├─ Indexer / Cache 直接调用         → 本地缓存
-            ├─ controller-runtime 默认 Client    → 本地缓存（Cache 后端）
-            │   .Get() / .List()
-            ├─ ClientReader (Reader 接口实现)    → 本地缓存
-            └─ Clientset.CoreV1().Pods().Get()  → ❌ 直连 APIServer
-
-写           Clientset / DynamicClient / 默认 Client.Create/Update/Delete
-                                                → ❌ 直连 APIServer（写不能走缓存）
-```
-
-| Client | 读路径 | 写路径 | 何时用 |
-| --- | --- | --- | --- |
-| `Lister`（如 `podLister.Pods(ns).Get(name)`） | 本地 Indexer | — 只读 | client-go 控制器里读资源的首选 |
-| `Indexer.ByIndex` / `GetByKey` | 本地 Indexer | — 只读 | 需要按 label/field 索引时 |
-| **controller-runtime `mgr.GetClient()`** | 本地 Cache（informer 后端） | 直连 APIServer | Operator 的 `r.Client` 默认就是这个 |
-| `mgr.GetAPIReader()` | ❌ 直连 APIServer | — 只读 | 启动阶段缓存未 sync、或绕过缓存读最新值 |
-| `client.New(cfg, Options{})`（不传 Cache） | 直连 APIServer | 直连 APIServer | 一次性脚本、init 阶段 |
-| `kubernetes.Clientset` | 直连 APIServer | 直连 APIServer | apiserver 自身、非控制器场景、写操作 |
-| `dynamic.Interface` | 直连 APIServer | 直连 APIServer | 处理 unstructured / CRD 通用工具 |
-
-具体到代码层面：
-
-```go
-// Reconciler 里 r.Client 实际是 DelegatingClient
-type DelegatingClient struct {
-    Reader       // 来自 Cache（informer 缓存）
-    Writer       // 来自 typed client（直连 APIServer）
-    StatusClient
-}
-
-r.Client.Get(ctx, key, &pod)        // ✅ 走缓存
-r.Client.List(ctx, &podList)        // ✅ 走缓存
-r.Client.Create(ctx, &pod)          // ❌ 直连 APIServer
-r.Client.Update(ctx, &pod)          // ❌ 直连 APIServer
-r.Client.Status().Update(ctx, &pod) // ❌ 直连 APIServer（/status 子资源）
-```
-
-源码见本文「关键源码片段 → 5. split client」。
+> [!question]- 参考答案（点击展开）
+>
+> 这是 controller-runtime / client-go 最容易混淆的点。一张表分清：
+>
+> ```
+> 读           ┌─ Lister (client-go)              → Indexer 本地缓存
+>             ├─ Indexer / Cache 直接调用         → 本地缓存
+>             ├─ controller-runtime 默认 Client    → 本地缓存（Cache 后端）
+>             │   .Get() / .List()
+>             ├─ ClientReader (Reader 接口实现)    → 本地缓存
+>             └─ Clientset.CoreV1().Pods().Get()  → ❌ 直连 APIServer
+>
+> 写           Clientset / DynamicClient / 默认 Client.Create/Update/Delete
+>                                                 → ❌ 直连 APIServer（写不能走缓存）
+> ```
+>
+> | Client | 读路径 | 写路径 | 何时用 |
+> | --- | --- | --- | --- |
+> | `Lister`（如 `podLister.Pods(ns).Get(name)`） | 本地 Indexer | — 只读 | client-go 控制器里读资源的首选 |
+> | `Indexer.ByIndex` / `GetByKey` | 本地 Indexer | — 只读 | 需要按 label/field 索引时 |
+> | **controller-runtime `mgr.GetClient()`** | 本地 Cache（informer 后端） | 直连 APIServer | Operator 的 `r.Client` 默认就是这个 |
+> | `mgr.GetAPIReader()` | ❌ 直连 APIServer | — 只读 | 启动阶段缓存未 sync、或绕过缓存读最新值 |
+> | `client.New(cfg, Options{})`（不传 Cache） | 直连 APIServer | 直连 APIServer | 一次性脚本、init 阶段 |
+> | `kubernetes.Clientset` | 直连 APIServer | 直连 APIServer | apiserver 自身、非控制器场景、写操作 |
+> | `dynamic.Interface` | 直连 APIServer | 直连 APIServer | 处理 unstructured / CRD 通用工具 |
+>
+> 具体到代码层面：
+>
+> ```go
+> // Reconciler 里 r.Client 实际是 DelegatingClient
+> type DelegatingClient struct {
+>     Reader       // 来自 Cache（informer 缓存）
+>     Writer       // 来自 typed client（直连 APIServer）
+>     StatusClient
+> }
+>
+> r.Client.Get(ctx, key, &pod)        // ✅ 走缓存
+> r.Client.List(ctx, &podList)        // ✅ 走缓存
+> r.Client.Create(ctx, &pod)          // ❌ 直连 APIServer
+> r.Client.Update(ctx, &pod)          // ❌ 直连 APIServer
+> r.Client.Status().Update(ctx, &pod) // ❌ 直连 APIServer（/status 子资源）
+> ```
+>
+> 源码见本文「关键源码片段 → 5. split client」。
 
 ### 三个常踩的坑
 
@@ -1542,34 +1544,67 @@ func (b *Builder) Complete(r Reconciler) error {
 ## 面试要点
 
 **Q: controller-runtime 和 client-go 是什么关系？**
-A: controller-runtime 是构建在 client-go 之上的高层封装。client-go 提供 Informer、WorkQueue、RESTClient、leaderelection 等原语；controller-runtime 把它们组装成 Manager / Controller / Reconciler / Cache / Client 等抽象，让用户只需写 `Reconcile` 函数。kubebuilder、operator-sdk 又基于 controller-runtime 生成脚手架。
+
+> [!question]- 参考答案（点击展开）
+>
+> controller-runtime 是构建在 client-go 之上的高层封装。client-go 提供 Informer、WorkQueue、RESTClient、leaderelection 等原语；controller-runtime 把它们组装成 Manager / Controller / Reconciler / Cache / Client 等抽象，让用户只需写 `Reconcile` 函数。kubebuilder、operator-sdk 又基于 controller-runtime 生成脚手架。
 
 **Q: Manager 的作用是什么？为什么多个 Controller 要共用一个 Manager？**
-A: Manager 统一管理所有 Runnable 的生命周期、提供共享的 Cache 和 Client、做 Leader Election 与信号处理。共用 Manager 的关键收益是**共享 Cache**——同一个资源类型只建立一份 Informer（一条 Watch 连接），多个 Controller 复用，显著降低 APIServer 压力和内存。
+
+> [!question]- 参考答案（点击展开）
+>
+> Manager 统一管理所有 Runnable 的生命周期、提供共享的 Cache 和 Client、做 Leader Election 与信号处理。共用 Manager 的关键收益是**共享 Cache**——同一个资源类型只建立一份 Informer（一条 Watch 连接），多个 Controller 复用，显著降低 APIServer 压力和内存。
 
 **Q: Reconcile 为什么只拿到 Request（namespace/name）而不是对象本身？**
-A: 从事件入队到 worker 取出存在时间差，期间对象可能被多次修改，WorkQueue 又会对同 key 去重。如果直接传对象会拿到过期数据。只传 key、由 Reconcile 自己 `Get` 最新对象，配合"读走 Cache"，保证处理的是最新状态。这也要求 Reconcile 必须幂等。
+
+> [!question]- 参考答案（点击展开）
+>
+> 从事件入队到 worker 取出存在时间差，期间对象可能被多次修改，WorkQueue 又会对同 key 去重。如果直接传对象会拿到过期数据。只传 key、由 Reconcile 自己 `Get` 最新对象，配合"读走 Cache"，保证处理的是最新状态。这也要求 Reconcile 必须幂等。
 
 **Q: 为什么 Client 读走缓存、写走 APIServer？写完立刻读会有什么问题？**
-A: Reconcile 读操作频繁，走 Informer 本地缓存可零 APIServer 压力且低延迟；写必须落到 APIServer 才生效。问题是写完立刻读可能读到旧值——缓存要等 Watch 事件回来才更新，存在延迟。所以 Reconcile 必须幂等，需要强一致读时用 `mgr.GetAPIReader()` 直连 APIServer。
+
+> [!question]- 参考答案（点击展开）
+>
+> Reconcile 读操作频繁，走 Informer 本地缓存可零 APIServer 压力且低延迟；写必须落到 APIServer 才生效。问题是写完立刻读可能读到旧值——缓存要等 Watch 事件回来才更新，存在延迟。所以 Reconcile 必须幂等，需要强一致读时用 `mgr.GetAPIReader()` 直连 APIServer。
 
 **Q: Reconcile 返回 error、Requeue、RequeueAfter 有什么区别？**
-A: 返回 `error` → WorkQueue 按 RateLimiter 指数退避无限重试，适合临时错误；`RequeueAfter` → 固定延迟重新入队且不算失败（清空限速计数），适合定期巡检；`Requeue: true` 立即重试（已弃用）。永久性错误不要返回 error，否则该 key 被无限重试占用队列，应记录 Event/Status Condition 后返回 nil。
+
+> [!question]- 参考答案（点击展开）
+>
+> 返回 `error` → WorkQueue 按 RateLimiter 指数退避无限重试，适合临时错误；`RequeueAfter` → 固定延迟重新入队且不算失败（清空限速计数），适合定期巡检；`Requeue: true` 立即重试（已弃用）。永久性错误不要返回 error，否则该 key 被无限重试占用队列，应记录 Event/Status Condition 后返回 nil。
 
 **Q: `For` / `Owns` / `Watches` 三者的区别？**
-A: `For` 声明主资源，用 `EnqueueRequestForObject`，对象自身的 key 入队；`Owns` 声明被主资源拥有的从资源，用 `EnqueueRequestForOwner`，沿 ownerReference 找回主资源 key 入队（从资源被改回时让 Controller 修复）；`Watches` 监听任意资源，配合自定义 `EnqueueRequestsFromMapFunc` 做多对多映射。
+
+> [!question]- 参考答案（点击展开）
+>
+> `For` 声明主资源，用 `EnqueueRequestForObject`，对象自身的 key 入队；`Owns` 声明被主资源拥有的从资源，用 `EnqueueRequestForOwner`，沿 ownerReference 找回主资源 key 入队（从资源被改回时让 Controller 修复）；`Watches` 监听任意资源，配合自定义 `EnqueueRequestsFromMapFunc` 做多对多映射。
 
 **Q: Predicate 有什么用？GenerationChangedPredicate 解决什么问题？**
-A: Predicate 在事件入队前过滤，避免无意义的 Reconcile。`GenerationChangedPredicate` 只在 `metadata.generation`（spec 变化才会变）改变时放行。Controller 自己 `Status().Update()` 会改 resourceVersion 但不改 generation，用它能避免"自己改 status → 触发自己 Reconcile"的无效循环。
+
+> [!question]- 参考答案（点击展开）
+>
+> Predicate 在事件入队前过滤，避免无意义的 Reconcile。`GenerationChangedPredicate` 只在 `metadata.generation`（spec 变化才会变）改变时放行。Controller 自己 `Status().Update()` 会改 resourceVersion 但不改 generation，用它能避免"自己改 status → 触发自己 Reconcile"的无效循环。
 
 **Q: MaxConcurrentReconciles 调大后同一个对象会被并发处理吗？**
-A: 不会。它只是增加 worker goroutine 数量，让不同 key 并行处理。WorkQueue 保证同一个 key 同一时刻只被一个 worker 处理（处理中再次入队要等 `Done` 后才可取），所以同一对象始终串行，无需在 Reconcile 内部加锁。
+
+> [!question]- 参考答案（点击展开）
+>
+> 不会。它只是增加 worker goroutine 数量，让不同 key 并行处理。WorkQueue 保证同一个 key 同一时刻只被一个 worker 处理（处理中再次入队要等 `Done` 后才可取），所以同一对象始终串行，无需在 Reconcile 内部加锁。
 
 **Q: Mutating 和 Validating Webhook 的执行顺序和职责？**
-A: 先 Mutating 后 Validating。Mutating 可修改对象（注入默认值、sidecar），返回 JSONPatch；Validating 只校验不修改，校验的是 Mutating 改完后的最终对象。在 controller-runtime 中分别对应 `CustomDefaulter.Default` 和 `CustomValidator.ValidateCreate/Update/Delete`。
+
+> [!question]- 参考答案（点击展开）
+>
+> 先 Mutating 后 Validating。Mutating 可修改对象（注入默认值、sidecar），返回 JSONPatch；Validating 只校验不修改，校验的是 Mutating 改完后的最终对象。在 controller-runtime 中分别对应 `CustomDefaulter.Default` 和 `CustomValidator.ValidateCreate/Update/Delete`。
 
 **Q: failurePolicy 设为 Fail 和 Ignore 各有什么影响？**
-A: `Fail`（默认）→ webhook 不可达/超时时拒绝请求，安全但 webhook 故障会阻塞相关资源写操作；`Ignore` → 放行请求，可用性优先但可能放过本应拦截的对象。生产环境一般用 `Fail`，但必须用 `namespaceSelector` 排除 kube-system，否则 webhook Pod 自己起不来时会把整个控制面锁死。
+
+> [!question]- 参考答案（点击展开）
+>
+> `Fail`（默认）→ webhook 不可达/超时时拒绝请求，安全但 webhook 故障会阻塞相关资源写操作；`Ignore` → 放行请求，可用性优先但可能放过本应拦截的对象。生产环境一般用 `Fail`，但必须用 `namespaceSelector` 排除 kube-system，否则 webhook Pod 自己起不来时会把整个控制面锁死。
 
 **Q: Webhook 的证书是怎么管理的？**
-A: webhook server 以 HTTPS 运行，证书默认放在 `/tmp/k8s-webhook-server/serving-certs` 的 `tls.crt`/`tls.key`。APIServer 需信任该证书，CA bundle 要写进 `WebhookConfiguration.clientConfig.caBundle`。生产通常用 cert-manager 自动签发证书并通过注入注解自动填充 caBundle，实现轮转。
+
+> [!question]- 参考答案（点击展开）
+>
+> webhook server 以 HTTPS 运行，证书默认放在 `/tmp/k8s-webhook-server/serving-certs` 的 `tls.crt`/`tls.key`。APIServer 需信任该证书，CA bundle 要写进 `WebhookConfiguration.clientConfig.caBundle`。生产通常用 cert-manager 自动签发证书并通过注入注解自动填充 caBundle，实现轮转。

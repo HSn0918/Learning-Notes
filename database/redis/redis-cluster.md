@@ -305,8 +305,28 @@ flowchart TD
 
 ### 面试要点
 
-1. **主从复制是同步还是异步的？** 异步的。主节点写入成功就返回客户端，不等从节点确认。因此主节点宕机可能丢数据。可以配置 `min-replicas-to-write` 和 `min-replicas-max-lag` 做半同步。
-2. **Sentinel 的 quorum 是什么？** 判定 Master 客观下线（ODOWN）所需的最少 Sentinel 同意数。通常设为 Sentinel 数量的一半加一。
-3. **Redis Cluster 为什么是 16384 个 slot？** 够用且通信开销小。Gossip 消息中用 bitmap 表示 slot 分配，16384 bit = 2KB。如果 slot 太多，bitmap 太大影响网络效率。
-4. **Cluster 模式的限制？** 不支持跨 slot 的多 key 操作（除非使用 hash tag）；不支持 SELECT 多数据库；客户端需要支持 Cluster 协议。
-5. **脑裂问题怎么解决？** 配置 `min-replicas-to-write 1`，当 Master 发现没有足够的从节点连接时拒绝写入，避免脑裂后旧 Master 继续接受写入导致数据丢失。
+1. **主从复制是同步还是异步的？**
+
+   > [!question]- 参考答案（点击展开）
+   >
+   > 异步的。主节点写入成功就返回客户端，不等从节点确认。因此主节点宕机可能丢数据。可以配置 `min-replicas-to-write` 和 `min-replicas-max-lag` 做半同步。
+2. **Sentinel 的 quorum 是什么？**
+
+   > [!question]- 参考答案（点击展开）
+   >
+   > 判定 Master 客观下线（ODOWN）所需的最少 Sentinel 同意数。通常设为 Sentinel 数量的一半加一。
+3. **Redis Cluster 为什么是 16384 个 slot？**
+
+   > [!question]- 参考答案（点击展开）
+   >
+   > 够用且通信开销小。Gossip 消息中用 bitmap 表示 slot 分配，16384 bit = 2KB。如果 slot 太多，bitmap 太大影响网络效率。
+4. **Cluster 模式的限制？**
+
+   > [!question]- 参考答案（点击展开）
+   >
+   > 不支持跨 slot 的多 key 操作（除非使用 hash tag）；不支持 SELECT 多数据库；客户端需要支持 Cluster 协议。
+5. **脑裂问题怎么解决？**
+
+   > [!question]- 参考答案（点击展开）
+   >
+   > 配置 `min-replicas-to-write 1`，当 Master 发现没有足够的从节点连接时拒绝写入，避免脑裂后旧 Master 继续接受写入导致数据丢失。

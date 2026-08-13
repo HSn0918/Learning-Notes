@@ -359,15 +359,62 @@ gantt
 
 ## 面试要点
 
-| 问题 | 回答要点 |
-| --- | --- |
-| **K8s 开发岗一般考察哪些方向？** | 三大方向：① 控制器/Operator 开发（client-go、controller-runtime、CRD、Webhook）；② 调度/资源（Scheduler-framework、Device Plugin、GPU）；③ 底层扩展（CNI、CSI、CRI、APIServer 聚合）。所有方向都要求 Go 语言扎实和会读 K8s 源码。 |
-| **如果从零开始，学习顺序建议是什么？** | Go → kubectl/etcd → client-go → controller-runtime → Webhook → Scheduler-framework → CNI/CSI/CRI/Device Plugin → APIServer 聚合 → etcd 源码。先掌握控制器开发再深入底层，避免一开始陷在 CNI/CSI 实现细节里。 |
-| **client-go 和 controller-runtime 的关系？** | controller-runtime 基于 client-go 封装。它把 Informer/Lister/Workqueue/Cache 封装进 Manager，提供 Reconciler 编程范式，省掉 sample-controller 那种胶水代码。生产 Operator 用 controller-runtime + Kubebuilder，但定位疑难问题仍需理解 client-go。 |
-| **Scheduler 扩展，Framework Plugin 和 Extender 怎么选？** | Framework Plugin 是进程内 Go 代码、性能好、覆盖全部扩展点，但要重新编译调度器；Extender 是 HTTP webhook，仅 Filter/Score/Bind，有网络延迟和单点风险。生产深度定制优先 Plugin，Extender 仅用于对接遗留系统。 |
-| **CRD + Webhook + Controller 是 K8s 扩展的"三件套"，分工如何？** | CRD 定义资源模型与 schema；Webhook 在写入路径做默认值注入（Mutating）与不变量校验（Validating）；Controller/Operator 在写入完成后异步 reconcile 把期望态变成实际态。三者解耦，可独立演进。 |
-| **Device Plugin 之后是 DRA，DRA 解决了什么？** | Device Plugin 只能上报"数量"，调度器看不到设备拓扑/属性（NVLink、共享 GPU、带宽），分配在 kubelet 侧。DRA（Dynamic Resource Allocation, KEP-3063/4381）把"资源声明 + 调度时分配"上移到 apiserver/调度器，支持复杂资源（结构化参数、共享、拓扑），未来替代 Device Plugin。 |
-| **想读 K8s 源码，哪些入口最高 ROI？** | ① `staging/src/k8s.io/client-go/tools/cache` 看 Informer 机制（中型代码量、自包含）；② `pkg/scheduler/scheduler.go::ScheduleOne` 看一次调度循环；③ `pkg/kubelet/kubelet.go::syncLoop` 看节点侧主循环；④ controller-runtime 的 `pkg/internal/controller/controller.go::Start` 看 Reconciler 怎么被驱动。 |
-| **如何跟进 K8s 社区进展？** | 关注 KEP 仓库（kubernetes/enhancements）的 release milestones、SIG 周会纪要、Kubernetes Blog 的 release notes；订阅 "Last Week in Kubernetes Development"。重点版本：1.28+ 的 In-place Resize、Sidecar Container、DRA、Validating Admission Policy（CEL）。 |
-| **学习计划里为什么把 etcd 放到最后？** | etcd 是 K8s 的存储底座，但日常控制器/调度器开发不直接和 etcd 打交道（apiserver 已抽象）。先掌握上层开发能力（控制器、Webhook、调度）后，再回头读 raft/MVCC 源码，理解 `resourceVersion ↔ revision`、watch cache、compaction 等机制，能把整个体系打通。 |
-| **学习成果如何对外展示？** | ① GitHub：1 个 sample-controller、1 个 Kubebuilder Operator、1 个 scheduler plugin、1 个 device plugin；② 笔记仓库（本仓库即是）；③ 在生产/演示集群上跑通自己的扩展并写 demo 文档；④ 参与一个 CNCF 项目提交 PR（哪怕只是文档/typo）。 |
+### Q：K8s 开发岗一般考察哪些方向？
+
+> [!question]- 参考答案（点击展开）
+>
+> 三大方向：① 控制器/Operator 开发（client-go、controller-runtime、CRD、Webhook）；② 调度/资源（Scheduler-framework、Device Plugin、GPU）；③ 底层扩展（CNI、CSI、CRI、APIServer 聚合）。所有方向都要求 Go 语言扎实和会读 K8s 源码。
+
+### Q：如果从零开始，学习顺序建议是什么？
+
+> [!question]- 参考答案（点击展开）
+>
+> Go → kubectl/etcd → client-go → controller-runtime → Webhook → Scheduler-framework → CNI/CSI/CRI/Device Plugin → APIServer 聚合 → etcd 源码。先掌握控制器开发再深入底层，避免一开始陷在 CNI/CSI 实现细节里。
+
+### Q：client-go 和 controller-runtime 的关系？
+
+> [!question]- 参考答案（点击展开）
+>
+> controller-runtime 基于 client-go 封装。它把 Informer/Lister/Workqueue/Cache 封装进 Manager，提供 Reconciler 编程范式，省掉 sample-controller 那种胶水代码。生产 Operator 用 controller-runtime + Kubebuilder，但定位疑难问题仍需理解 client-go。
+
+### Q：Scheduler 扩展，Framework Plugin 和 Extender 怎么选？
+
+> [!question]- 参考答案（点击展开）
+>
+> Framework Plugin 是进程内 Go 代码、性能好、覆盖全部扩展点，但要重新编译调度器；Extender 是 HTTP webhook，仅 Filter/Score/Bind，有网络延迟和单点风险。生产深度定制优先 Plugin，Extender 仅用于对接遗留系统。
+
+### Q：CRD + Webhook + Controller 是 K8s 扩展的"三件套"，分工如何？
+
+> [!question]- 参考答案（点击展开）
+>
+> CRD 定义资源模型与 schema；Webhook 在写入路径做默认值注入（Mutating）与不变量校验（Validating）；Controller/Operator 在写入完成后异步 reconcile 把期望态变成实际态。三者解耦，可独立演进。
+
+### Q：Device Plugin 之后是 DRA，DRA 解决了什么？
+
+> [!question]- 参考答案（点击展开）
+>
+> Device Plugin 只能上报"数量"，调度器看不到设备拓扑/属性（NVLink、共享 GPU、带宽），分配在 kubelet 侧。DRA（Dynamic Resource Allocation, KEP-3063/4381）把"资源声明 + 调度时分配"上移到 apiserver/调度器，支持复杂资源（结构化参数、共享、拓扑），未来替代 Device Plugin。
+
+### Q：想读 K8s 源码，哪些入口最高 ROI？
+
+> [!question]- 参考答案（点击展开）
+>
+> ① `staging/src/k8s.io/client-go/tools/cache` 看 Informer 机制（中型代码量、自包含）；② `pkg/scheduler/scheduler.go::ScheduleOne` 看一次调度循环；③ `pkg/kubelet/kubelet.go::syncLoop` 看节点侧主循环；④ controller-runtime 的 `pkg/internal/controller/controller.go::Start` 看 Reconciler 怎么被驱动。
+
+### Q：如何跟进 K8s 社区进展？
+
+> [!question]- 参考答案（点击展开）
+>
+> 关注 KEP 仓库（kubernetes/enhancements）的 release milestones、SIG 周会纪要、Kubernetes Blog 的 release notes；订阅 "Last Week in Kubernetes Development"。重点版本：1.28+ 的 In-place Resize、Sidecar Container、DRA、Validating Admission Policy（CEL）。
+
+### Q：学习计划里为什么把 etcd 放到最后？
+
+> [!question]- 参考答案（点击展开）
+>
+> etcd 是 K8s 的存储底座，但日常控制器/调度器开发不直接和 etcd 打交道（apiserver 已抽象）。先掌握上层开发能力（控制器、Webhook、调度）后，再回头读 raft/MVCC 源码，理解 `resourceVersion ↔ revision`、watch cache、compaction 等机制，能把整个体系打通。
+
+### Q：学习成果如何对外展示？
+
+> [!question]- 参考答案（点击展开）
+>
+> ① GitHub：1 个 sample-controller、1 个 Kubebuilder Operator、1 个 scheduler plugin、1 个 device plugin；② 笔记仓库（本仓库即是）；③ 在生产/演示集群上跑通自己的扩展并写 demo 文档；④ 参与一个 CNCF 项目提交 PR（哪怕只是文档/typo）。

@@ -552,19 +552,21 @@ Indexer 是带「索引」能力的 Store，是 Informer 的本地缓存，也�
 
 ### 哪些 client 走本地缓存？
 
-client-go 提供的访问入口里只有「基于 Indexer 的那一类」走本地缓存，其它直连 APIServer：
-
-| Client | 读路径 | 写路径 | 何时用 |
-| --- | --- | --- | --- |
-| **`Lister`**（`podLister.Pods(ns).Get(name)`） | ✅ 本地 Indexer | — 只读 | 控制器 syncHandler 里读资源的首选 |
-| **`Indexer.ByIndex` / `GetByKey`** | ✅ 本地 Indexer | — 只读 | 按 label / field 索引查询 |
-| `kubernetes.Clientset`（如 `clientset.CoreV1().Pods(ns).Get(...)`） | ❌ 直连 APIServer | ❌ 直连 APIServer | 写操作、apiserver 自身、非控制器场景 |
-| `dynamic.Interface` | ❌ 直连 APIServer | ❌ 直连 APIServer | 处理 unstructured / CRD 通用工具 |
-| `RESTClient` | ❌ 直连 APIServer | ❌ 直连 APIServer | 上面两者的底层封装 |
-
-简单原则：**写永远走 Clientset 直连 APIServer**；控制器里的读优先走 Lister，写完后由 Informer 的 Watch 事件触发下一轮 Reconcile，闭环成立。Reconcile 必须幂等 —— Update 完立刻 Get 可能读到旧值（缓存还没收到自己刚写的 Watch 事件）。
-
-controller-runtime 把这两条路合成了一个 split client，详见 [[controller-runtime-source]] 的「split client」章节。
+> [!question]- 参考答案（点击展开）
+>
+> client-go 提供的访问入口里只有「基于 Indexer 的那一类」走本地缓存，其它直连 APIServer：
+>
+> | Client | 读路径 | 写路径 | 何时用 |
+> | --- | --- | --- | --- |
+> | **`Lister`**（`podLister.Pods(ns).Get(name)`） | ✅ 本地 Indexer | — 只读 | 控制器 syncHandler 里读资源的首选 |
+> | **`Indexer.ByIndex` / `GetByKey`** | ✅ 本地 Indexer | — 只读 | 按 label / field 索引查询 |
+> | `kubernetes.Clientset`（如 `clientset.CoreV1().Pods(ns).Get(...)`） | ❌ 直连 APIServer | ❌ 直连 APIServer | 写操作、apiserver 自身、非控制器场景 |
+> | `dynamic.Interface` | ❌ 直连 APIServer | ❌ 直连 APIServer | 处理 unstructured / CRD 通用工具 |
+> | `RESTClient` | ❌ 直连 APIServer | ❌ 直连 APIServer | 上面两者的底层封装 |
+>
+> 简单原则：**写永远走 Clientset 直连 APIServer**；控制器里的读优先走 Lister，写完后由 Informer 的 Watch 事件触发下一轮 Reconcile，闭环成立。Reconcile 必须幂等 —— Update 完立刻 Get 可能读到旧值（缓存还没收到自己刚写的 Watch 事件）。
+>
+> controller-runtime 把这两条路合成了一个 split client，详见 [[controller-runtime-source]] 的「split client」章节。
 
 ### Store / Indexer 接口
 
@@ -1256,19 +1258,76 @@ func (c *Controller) syncHandler(key string) error {
 
 ## 面试要点
 
-| 问题 | 回答要点 |
-| --- | --- |
-| **client-go 有哪几种客户端，区别是什么？** | RESTClient（最底层 HTTP 封装）；Clientset（强类型，按 GVK 划分，编译期安全，最常用）；DynamicClient（操作 unstructured，无需编译期类型，适合 CRD/通用工具）；DiscoveryClient（发现 API 资源列表）。前三者都基于 RESTClient。 |
-| **Informer 的整体数据流是怎样的？** | Reflector List+Watch → DeltaFIFO → controller.processLoop Pop → HandleDeltas 更新 Indexer 并 distribute 事件 → EventHandler enqueue key 到 Workqueue → Worker 用 Lister 取对象执行 syncHandler。 |
-| **DeltaFIFO 为什么是「Delta」队列？如何去重？** | items 是 `key -> Deltas`（同一对象累积多个 Delta），queue 保存 key 顺序。Pop 时一次取出某 key 的整串 Delta。dedupDeltas 只合并队尾「连续的 Deleted」（如 Deleted + DeletedFinalStateUnknown），不会合并 Added/Updated。 |
-| **DeltaFIFO 的 Replace 做了什么？为什么需要它？** | relist 时用全量列表覆盖：为每个对象发 Replaced Delta；并对比 knownObjects（Indexer）中存在但本次列表没有的 key，补发 Deleted（DeletedFinalStateUnknown），修复 Watch 中断期间漏掉的删除事件。 |
-| **Indexer 如何实现快速查询？** | ThreadSafeStore 维护 items（key→对象）和 indices（indexName→索引值→key 集合）。增删改对象时 updateIndices 同步维护索引。client-go 默认注册 namespace 索引，Lister 按命名空间查询走 ByIndex 而非全表扫描。 |
-| **Resync 是什么？会不会访问 API Server？** | DeltaFIFO 周期性把 Indexer 中全部对象重新入队为 Sync Delta，触发 UpdateFunc（old==new）。完全在本地进行，不访问 API Server，目的是给控制器最终一致性兜底和重试机会。 |
-| **HasSynced / WaitForCacheSync 的作用？** | HasSynced 表示首批 List 的对象已全部进入本地缓存。控制器启动 Worker 前必须 WaitForCacheSync，否则 Lister 读到不完整数据会做出错误 reconcile 决策。 |
-| **Workqueue 如何保证同一 key 不被并发处理又不丢更新？** | 用 dirty/processing/queue 三个集合：item 在 processing 期间再次 Add 只标记 dirty 不立即入队；Done 时若 dirty 仍有它则重新入队。保证同一 key 串行处理，且处理期间的新变更不丢失。 |
-| **Workqueue 的限速/重试机制？** | RateLimitingQueue 在 DelayingQueue 上加 AddRateLimited，默认 RateLimiter 取「每 item 指数退避(5ms~1000s)」与「全局令牌桶(10QPS/100)」的较大延迟。失败 AddRateLimited、成功 Forget、收尾 Done。 |
-| **为什么 Workqueue 入队 key 而不是对象？EventHandler 为什么不做业务逻辑？** | 入队 key 可去重，且处理时用 Lister 取最新对象，避免处理过期对象。EventHandler 同步执行于事件分发链路，做重活会阻塞分发，所以只负责 enqueue，业务逻辑交给异步 Worker 的 syncHandler。 |
-| **SharedInformerFactory 共享了什么？** | 用 `map[reflect.Type]Informer` 保证同一 GVR 的 Informer 全局唯一，多个控制器复用同一份 Reflector/DeltaFIFO/Indexer 与一条 Watch 连接，降低 API Server 压力与内存。 |
-| **自定义控制器的标准结构？** | Informer 监听 → EventHandler enqueue key → Workqueue 去重限速 → runWorker 循环 processNextItem → Lister 读缓存 → syncHandler 幂等 reconcile，失败 AddRateLimited 重试。即 sample-controller 模式。 |
+### Q：client-go 有哪几种客户端，区别是什么？
+
+> [!question]- 参考答案（点击展开）
+>
+> RESTClient（最底层 HTTP 封装）；Clientset（强类型，按 GVK 划分，编译期安全，最常用）；DynamicClient（操作 unstructured，无需编译期类型，适合 CRD/通用工具）；DiscoveryClient（发现 API 资源列表）。前三者都基于 RESTClient。
+
+### Q：Informer 的整体数据流是怎样的？
+
+> [!question]- 参考答案（点击展开）
+>
+> Reflector List+Watch → DeltaFIFO → controller.processLoop Pop → HandleDeltas 更新 Indexer 并 distribute 事件 → EventHandler enqueue key 到 Workqueue → Worker 用 Lister 取对象执行 syncHandler。
+
+### Q：DeltaFIFO 为什么是「Delta」队列？如何去重？
+
+> [!question]- 参考答案（点击展开）
+>
+> items 是 `key -> Deltas`（同一对象累积多个 Delta），queue 保存 key 顺序。Pop 时一次取出某 key 的整串 Delta。dedupDeltas 只合并队尾「连续的 Deleted」（如 Deleted + DeletedFinalStateUnknown），不会合并 Added/Updated。
+
+### Q：DeltaFIFO 的 Replace 做了什么？为什么需要它？
+
+> [!question]- 参考答案（点击展开）
+>
+> relist 时用全量列表覆盖：为每个对象发 Replaced Delta；并对比 knownObjects（Indexer）中存在但本次列表没有的 key，补发 Deleted（DeletedFinalStateUnknown），修复 Watch 中断期间漏掉的删除事件。
+
+### Q：Indexer 如何实现快速查询？
+
+> [!question]- 参考答案（点击展开）
+>
+> ThreadSafeStore 维护 items（key→对象）和 indices（indexName→索引值→key 集合）。增删改对象时 updateIndices 同步维护索引。client-go 默认注册 namespace 索引，Lister 按命名空间查询走 ByIndex 而非全表扫描。
+
+### Q：Resync 是什么？会不会访问 API Server？
+
+> [!question]- 参考答案（点击展开）
+>
+> DeltaFIFO 周期性把 Indexer 中全部对象重新入队为 Sync Delta，触发 UpdateFunc（old==new）。完全在本地进行，不访问 API Server，目的是给控制器最终一致性兜底和重试机会。
+
+### Q：HasSynced / WaitForCacheSync 的作用？
+
+> [!question]- 参考答案（点击展开）
+>
+> HasSynced 表示首批 List 的对象已全部进入本地缓存。控制器启动 Worker 前必须 WaitForCacheSync，否则 Lister 读到不完整数据会做出错误 reconcile 决策。
+
+### Q：Workqueue 如何保证同一 key 不被并发处理又不丢更新？
+
+> [!question]- 参考答案（点击展开）
+>
+> 用 dirty/processing/queue 三个集合：item 在 processing 期间再次 Add 只标记 dirty 不立即入队；Done 时若 dirty 仍有它则重新入队。保证同一 key 串行处理，且处理期间的新变更不丢失。
+
+### Q：Workqueue 的限速/重试机制？
+
+> [!question]- 参考答案（点击展开）
+>
+> RateLimitingQueue 在 DelayingQueue 上加 AddRateLimited，默认 RateLimiter 取「每 item 指数退避(5ms~1000s)」与「全局令牌桶(10QPS/100)」的较大延迟。失败 AddRateLimited、成功 Forget、收尾 Done。
+
+### Q：为什么 Workqueue 入队 key 而不是对象？EventHandler 为什么不做业务逻辑？
+
+> [!question]- 参考答案（点击展开）
+>
+> 入队 key 可去重，且处理时用 Lister 取最新对象，避免处理过期对象。EventHandler 同步执行于事件分发链路，做重活会阻塞分发，所以只负责 enqueue，业务逻辑交给异步 Worker 的 syncHandler。
+
+### Q：SharedInformerFactory 共享了什么？
+
+> [!question]- 参考答案（点击展开）
+>
+> 用 `map[reflect.Type]Informer` 保证同一 GVR 的 Informer 全局唯一，多个控制器复用同一份 Reflector/DeltaFIFO/Indexer 与一条 Watch 连接，降低 API Server 压力与内存。
+
+### Q：自定义控制器的标准结构？
+
+> [!question]- 参考答案（点击展开）
+>
+> Informer 监听 → EventHandler enqueue key → Workqueue 去重限速 → runWorker 循环 processNextItem → Lister 读缓存 → syncHandler 幂等 reconcile，失败 AddRateLimited 重试。即 sample-controller 模式。
 
 > **总结**：client-go 通过 `tools/cache` 把 List-Watch 抽象为 Reflector→DeltaFIFO→Indexer 的数据通路，用 SharedInformer 共享缓存、用 Workqueue 解耦事件与处理并提供限速重试。理解这条链路上每个组件的源码职责，是编写可靠 Controller/Operator 的前提。

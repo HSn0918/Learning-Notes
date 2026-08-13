@@ -697,15 +697,62 @@ func (wc *watchChan) startWatching(watchClosedCh chan struct{},
 
 ## 面试要点
 
-| 问题 | 回答要点 |
-| --- | --- |
-| **etcd 的整体分层架构？** | gRPC API（v3rpc）→ EtcdServer → raft 共识库 → WAL + Snapshot + boltdb(MVCC)。写走 raft，读走 ReadIndex。 |
-| **为什么说 etcd 的 raft 库是「纯状态机」？** | raft 库不碰网络也不碰磁盘，只通过 `Ready` 结构把待持久化日志、待发消息、待 apply 日志交给上层；上层处理完调 `Advance`。这样 raft 可单测、可复用。 |
-| **处理 Ready 的顺序为什么不能乱？** | 必须先持久化 Entries/HardState 到 WAL，再发 Messages，再 apply CommittedEntries。先落盘后发送，保证「承诺过的日志一定不丢」。 |
-| **etcd v3 的 MVCC 是怎么实现的？** | 每次写分配全局递增 revision（main/sub），boltdb 以 revision 为 key 存多版本数据；内存 treeIndex（B 树）维护用户 key → revisions 的映射。查询先查 treeIndex 定位 revision，再读 boltdb。 |
-| **WAL 和 Snapshot 各解决什么问题？** | WAL 保证崩溃后可回放恢复一致状态（先写日志后 apply）；Snapshot 对状态机打快照，从而截断 WAL，防止日志无限增长。重启时 = 加载 snapshot + 回放其后的 WAL。 |
-| **watch 的 synced / unsynced 是什么？** | synced 是已追上最新 revision 的 watcher，新写入直接推送；unsynced 是起始 revision 落后的 watcher，由后台 goroutine 从 boltdb 补历史事件，追上后迁移到 synced。 |
-| **etcd 怎么保证线性一致读？** | ReadIndex：Leader 记录当前 commitIndex，发一轮心跳确认自己仍是合法 Leader，等 appliedIndex 追上后再读 mvcc。比「读也走日志」更轻量。 |
-| **compaction 的作用？不做会怎样？** | 删除指定 revision 之前的历史版本，回收 boltdb 空间。不做则 boltdb 无限膨胀；compaction 后 watch 早于 compactRev 的 revision 会报 ErrCompacted。 |
-| **K8s 的 resourceVersion 和 etcd 是什么关系？** | resourceVersion 直接就是 etcd 的 revision。List 返回当时 revision，Watch 带上它即可增量续传，是 Informer 的底层基础。 |
-| **想读 etcd 源码从哪入手？** | 先读 `contrib/raftexample`（几百行，完整演示 raft 库接线），再读 `server/etcdserver/server.go` 的 run 循环和 `raft.go`，最后看 `server/storage/mvcc`。 |
+### Q：etcd 的整体分层架构？
+
+> [!question]- 参考答案（点击展开）
+>
+> gRPC API（v3rpc）→ EtcdServer → raft 共识库 → WAL + Snapshot + boltdb(MVCC)。写走 raft，读走 ReadIndex。
+
+### Q：为什么说 etcd 的 raft 库是「纯状态机」？
+
+> [!question]- 参考答案（点击展开）
+>
+> raft 库不碰网络也不碰磁盘，只通过 `Ready` 结构把待持久化日志、待发消息、待 apply 日志交给上层；上层处理完调 `Advance`。这样 raft 可单测、可复用。
+
+### Q：处理 Ready 的顺序为什么不能乱？
+
+> [!question]- 参考答案（点击展开）
+>
+> 必须先持久化 Entries/HardState 到 WAL，再发 Messages，再 apply CommittedEntries。先落盘后发送，保证「承诺过的日志一定不丢」。
+
+### Q：etcd v3 的 MVCC 是怎么实现的？
+
+> [!question]- 参考答案（点击展开）
+>
+> 每次写分配全局递增 revision（main/sub），boltdb 以 revision 为 key 存多版本数据；内存 treeIndex（B 树）维护用户 key → revisions 的映射。查询先查 treeIndex 定位 revision，再读 boltdb。
+
+### Q：WAL 和 Snapshot 各解决什么问题？
+
+> [!question]- 参考答案（点击展开）
+>
+> WAL 保证崩溃后可回放恢复一致状态（先写日志后 apply）；Snapshot 对状态机打快照，从而截断 WAL，防止日志无限增长。重启时 = 加载 snapshot + 回放其后的 WAL。
+
+### Q：watch 的 synced / unsynced 是什么？
+
+> [!question]- 参考答案（点击展开）
+>
+> synced 是已追上最新 revision 的 watcher，新写入直接推送；unsynced 是起始 revision 落后的 watcher，由后台 goroutine 从 boltdb 补历史事件，追上后迁移到 synced。
+
+### Q：etcd 怎么保证线性一致读？
+
+> [!question]- 参考答案（点击展开）
+>
+> ReadIndex：Leader 记录当前 commitIndex，发一轮心跳确认自己仍是合法 Leader，等 appliedIndex 追上后再读 mvcc。比「读也走日志」更轻量。
+
+### Q：compaction 的作用？不做会怎样？
+
+> [!question]- 参考答案（点击展开）
+>
+> 删除指定 revision 之前的历史版本，回收 boltdb 空间。不做则 boltdb 无限膨胀；compaction 后 watch 早于 compactRev 的 revision 会报 ErrCompacted。
+
+### Q：K8s 的 resourceVersion 和 etcd 是什么关系？
+
+> [!question]- 参考答案（点击展开）
+>
+> resourceVersion 直接就是 etcd 的 revision。List 返回当时 revision，Watch 带上它即可增量续传，是 Informer 的底层基础。
+
+### Q：想读 etcd 源码从哪入手？
+
+> [!question]- 参考答案（点击展开）
+>
+> 先读 `contrib/raftexample`（几百行，完整演示 raft 库接线），再读 `server/etcdserver/server.go` 的 run 循环和 `raft.go`，最后看 `server/storage/mvcc`。

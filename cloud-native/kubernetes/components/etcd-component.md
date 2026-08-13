@@ -418,20 +418,30 @@ etcdctl snapshot save <snapshot.db>
 
 ### Q: etcd 在 Kubernetes 中保存什么？
 
-A: 保存 API 对象的持久化状态，例如 Pod、Node、Deployment、Secret、ConfigMap、Lease、CRD 对象等。容器进程和网络包转发不在 etcd 中执行。
+> [!question]- 参考答案（点击展开）
+>
+> 保存 API 对象的持久化状态，例如 Pod、Node、Deployment、Secret、ConfigMap、Lease、CRD 对象等。容器进程和网络包转发不在 etcd 中执行。
 
 ### Q: `resourceVersion` 和 etcd revision 有什么关系？
 
-A: Kubernetes storage 层把 etcd revision 暴露为对象的 `resourceVersion`。Informer 用它做 list/watch 衔接和增量事件订阅。
+> [!question]- 参考答案（点击展开）
+>
+> Kubernetes storage 层把 etcd revision 暴露为对象的 `resourceVersion`。Informer 用它做 list/watch 衔接和增量事件订阅。
 
 ### Q: 为什么 etcd 通常要求奇数个成员？
 
-A: Raft 需要多数派确认。3 个成员可以容忍 1 个失败，5 个成员可以容忍 2 个失败；偶数成员通常不会提升容错能力，反而增加复制成本。
+> [!question]- 参考答案（点击展开）
+>
+> Raft 需要多数派确认。3 个成员可以容忍 1 个失败，5 个成员可以容忍 2 个失败；偶数成员通常不会提升容错能力，反而增加复制成本。
 
 ### Q: watch compacted 是什么含义？
 
-A: 客户端请求的历史 revision 已被 etcd compaction 清理，不能继续增量 watch，必须重新 list 获取新快照。
+> [!question]- 参考答案（点击展开）
+>
+> 客户端请求的历史 revision 已被 etcd compaction 清理，不能继续增量 watch，必须重新 list 获取新快照。
 
 ### Q: etcd 慢会怎样影响集群？
 
-A: apiserver 写入变慢，controller/scheduler watch 延迟增加，最终表现为 Pod 调度慢、状态更新慢、控制器收敛慢。
+> [!question]- 参考答案（点击展开）
+>
+> apiserver 写入变慢，controller/scheduler watch 延迟增加，最终表现为 Pod 调度慢、状态更新慢、控制器收敛慢。

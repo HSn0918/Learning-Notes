@@ -287,25 +287,35 @@ ceph df
 
 ### Q1: Ceph RBD 和 CephFS 的区别？分别在什么场景使用？
 
-RBD 是块存储，提供 ReadWriteOnce 访问模式，适合数据库等需要高性能单 Pod 独占存储的场景。CephFS 是 POSIX 文件系统，支持 ReadWriteMany，适合多 Pod 共享读写文件的场景。RBD 性能更高因为是直接块 I/O，CephFS 有元数据服务器（MDS）的开销但支持多写。
+> [!question]- 参考答案（点击展开）
+>
+> RBD 是块存储，提供 ReadWriteOnce 访问模式，适合数据库等需要高性能单 Pod 独占存储的场景。CephFS 是 POSIX 文件系统，支持 ReadWriteMany，适合多 Pod 共享读写文件的场景。RBD 性能更高因为是直接块 I/O，CephFS 有元数据服务器（MDS）的开销但支持多写。
 
 ### Q2: Ceph 的 CRUSH Map 是什么？有什么作用？
 
-CRUSH（Controlled Replication Under Scalable Hashing）是 Ceph 的数据分布算法。CRUSH Map 定义了集群的物理拓扑（机房、机架、主机、磁盘），客户端通过 CRUSH 算法直接计算数据所在的 OSD，不需要查询中心化的元数据服务，这是 Ceph 能水平扩展的关键。
+> [!question]- 参考答案（点击展开）
+>
+> CRUSH（Controlled Replication Under Scalable Hashing）是 Ceph 的数据分布算法。CRUSH Map 定义了集群的物理拓扑（机房、机架、主机、磁盘），客户端通过 CRUSH 算法直接计算数据所在的 OSD，不需要查询中心化的元数据服务，这是 Ceph 能水平扩展的关键。
 
 ### Q3: ceph-csi 的 Controller Plugin 和 Node Plugin 分别做什么？
 
-Controller Plugin 以 Deployment 方式运行，负责 Volume 的生命周期管理（CreateVolume、DeleteVolume、Snapshot、Expand）。Node Plugin 以 DaemonSet 方式运行在每个节点上，负责将 Volume 挂载到 Pod 目录（NodeStageVolume 映射块设备，NodePublishVolume bind mount 到 Pod）。
+> [!question]- 参考答案（点击展开）
+>
+> Controller Plugin 以 Deployment 方式运行，负责 Volume 的生命周期管理（CreateVolume、DeleteVolume、Snapshot、Expand）。Node Plugin 以 DaemonSet 方式运行在每个节点上，负责将 Volume 挂载到 Pod 目录（NodeStageVolume 映射块设备，NodePublishVolume bind mount 到 Pod）。
 
 ### Q4: Ceph 集群需要多少个 MON？为什么是奇数？
 
-至少 3 个 MON，建议奇数个（3 或 5）。MON 使用 Paxos 协议做一致性选举，奇数个节点可以在少数节点故障时仍然达成多数派共识（quorum）。例如 3 个 MON 可以容忍 1 个故障，5 个可以容忍 2 个。
+> [!question]- 参考答案（点击展开）
+>
+> 至少 3 个 MON，建议奇数个（3 或 5）。MON 使用 Paxos 协议做一致性选举，奇数个节点可以在少数节点故障时仍然达成多数派共识（quorum）。例如 3 个 MON 可以容忍 1 个故障，5 个可以容忍 2 个。
 
 ### Q5: PVC 挂载失败如何排查？
 
-1. `kubectl describe pvc` 查看 PVC 事件
-2. `kubectl describe pod` 查看 Pod 挂载错误
-3. 检查 CSI 插件日志：`kubectl logs -n ceph-csi -l app=ceph-csi-rbd`
-4. 检查 Ceph 集群状态：`ceph status` 确认 HEALTH_OK
-5. 检查 Secret 中的认证信息是否正确
-6. 检查 Node 上是否安装了 `ceph-common` 包（RBD kernel module）
+> [!question]- 参考答案（点击展开）
+>
+> 1. `kubectl describe pvc` 查看 PVC 事件
+> 2. `kubectl describe pod` 查看 Pod 挂载错误
+> 3. 检查 CSI 插件日志：`kubectl logs -n ceph-csi -l app=ceph-csi-rbd`
+> 4. 检查 Ceph 集群状态：`ceph status` 确认 HEALTH_OK
+> 5. 检查 Secret 中的认证信息是否正确
+> 6. 检查 Node 上是否安装了 `ceph-common` 包（RBD kernel module）

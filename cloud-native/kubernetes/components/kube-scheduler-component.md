@@ -286,20 +286,30 @@ kubectl -n kube-system get lease
 
 ### Q: kube-scheduler 的输入和输出是什么？
 
-A: 输入是未绑定的 Pending Pod、Node、PV/PVC、拓扑和策略对象；输出是 Pod 到 Node 的绑定结果。
+> [!question]- 参考答案（点击展开）
+>
+> 输入是未绑定的 Pending Pod、Node、PV/PVC、拓扑和策略对象；输出是 Pod 到 Node 的绑定结果。
 
 ### Q: Filter 和 Score 的区别？
 
-A: Filter 是硬约束，节点不满足就不能调度；Score 是软偏好，在可行节点中选择更优节点。
+> [!question]- 参考答案（点击展开）
+>
+> Filter 是硬约束，节点不满足就不能调度；Score 是软偏好，在可行节点中选择更优节点。
 
 ### Q: scheduler 和 kubelet 在资源分配上怎么分工？
 
-A: scheduler 基于 Node capacity/allocatable 选择节点；kubelet 在节点上执行容器创建、volume mount、device allocation 等实际动作。
+> [!question]- 参考答案（点击展开）
+>
+> scheduler 基于 Node capacity/allocatable 选择节点；kubelet 在节点上执行容器创建、volume mount、device allocation 等实际动作。
 
 ### Q: assume cache 解决什么问题？
 
-A: 解决调度器在 bind 写入 apiserver 前的资源抢占窗口。assume 后调度器本地先认为资源已占用，避免后续 Pod 看到过期容量。
+> [!question]- 参考答案（点击展开）
+>
+> 解决调度器在 bind 写入 apiserver 前的资源抢占窗口。assume 后调度器本地先认为资源已占用，避免后续 Pod 看到过期容量。
 
 ### Q: 调度扩展优先选 Plugin 还是 Extender？
 
-A: 深度定制优先 Scheduling Framework Plugin，性能好且扩展点完整；Extender 通过 HTTP 调用，适合兼容外部系统，但延迟和可用性风险更高。
+> [!question]- 参考答案（点击展开）
+>
+> 深度定制优先 Scheduling Framework Plugin，性能好且扩展点完整；Extender 通过 HTTP 调用，适合兼容外部系统，但延迟和可用性风险更高。

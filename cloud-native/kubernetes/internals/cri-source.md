@@ -1209,44 +1209,76 @@ K8s 1.24+ 节点如果还配 `--container-runtime=docker`，kubelet 直接拒绝
 
 ### 6. CRI 是同步还是异步的？
 
-所有 CRI RPC 在 proto 层都是 **同步** unary RPC——客户端调一次返回一次结果。但运行时实现可以选择"提交后立即返回"，把真正工作 offload 到后台：
-- containerd 的 `RunPodSandbox` 是真正同步——返回时 sandbox 已经 ready。
-- 早期 dockershim 也有"create 完立刻返回，start 真正异步"的实现。
-- `PullImage` 通常**真正同步阻塞**——直到镜像拉完才返回，所以 timeout 设计成 `WithCancel` 而不是固定超时。
-
-只有 `GetContainerEvents` 是 server streaming（持续推容器状态变化）。其他都是 unary。
+> [!question]- 参考答案（点击展开）
+>
+> 所有 CRI RPC 在 proto 层都是 **同步** unary RPC——客户端调一次返回一次结果。但运行时实现可以选择"提交后立即返回"，把真正工作 offload 到后台：
+> - containerd 的 `RunPodSandbox` 是真正同步——返回时 sandbox 已经 ready。
+> - 早期 dockershim 也有"create 完立刻返回，start 真正异步"的实现。
+> - `PullImage` 通常**真正同步阻塞**——直到镜像拉完才返回，所以 timeout 设计成 `WithCancel` 而不是固定超时。
+>
+> 只有 `GetContainerEvents` 是 server streaming（持续推容器状态变化）。其他都是 unary。
 
 ## 十一、面试要点
 
 **Q1: 为什么 K8s 需要 CRI？没有它会怎样？**
-早期 kubelet 代码里硬编码 docker 调用，要加 rkt 就在主干 import rkttools，每加一种运行时主干就臃肿一次。CRI 把"运行时调用"抽成 gRPC 接口契约，让运行时变成可插拔的下层进程。后来 docker 在容器领域市占率下降、containerd/CRI-O 兴起，CRI 让 K8s 顺利切换运行时；2022 年 v1.24 移除 dockershim 也是借这层抽象完成的。
+
+> [!question]- 参考答案（点击展开）
+>
+> 早期 kubelet 代码里硬编码 docker 调用，要加 rkt 就在主干 import rkttools，每加一种运行时主干就臃肿一次。CRI 把"运行时调用"抽成 gRPC 接口契约，让运行时变成可插拔的下层进程。后来 docker 在容器领域市占率下降、containerd/CRI-O 兴起，CRI 让 K8s 顺利切换运行时；2022 年 v1.24 移除 dockershim 也是借这层抽象完成的。
 
 **Q2: sandbox 和 container 是什么区别？为什么 CRI 要分两层？**
-sandbox 是 Pod 级别的"namespace 持有者"（实际就是 pause 容器），持有 net/ipc/uts namespace；container 是业务进程容器，加入 sandbox 的 namespace。分两层是因为 Pod 内多容器要共享 IP，必须有人持有 netns；如果让业务容器持有，业务容器 crash 就丢 IP。分开后业务容器可以独立重启、sandbox 保持 IP 不变。
+
+> [!question]- 参考答案（点击展开）
+>
+> sandbox 是 Pod 级别的"namespace 持有者"（实际就是 pause 容器），持有 net/ipc/uts namespace；container 是业务进程容器，加入 sandbox 的 namespace。分两层是因为 Pod 内多容器要共享 IP，必须有人持有 netns；如果让业务容器持有，业务容器 crash 就丢 IP。分开后业务容器可以独立重启、sandbox 保持 IP 不变。
 
 **Q3: RunPodSandbox 里到底做了什么？CNI 在哪一步被调？**
-RunPodSandbox 在 runtime 内部做四件事：① 启动 pause 容器创建 netns/ipc/uts；② 创建 cgroup；③ 调用 CNI ADD 给 netns 配 IP/路由（CNI 不在 CRI proto 里，在 runtime 内部）；④ 把 sandbox 状态置 READY。kubelet 在 RunPodSandbox **返回成功后**才开始 PullImage + CreateContainer。CNI 完全是 runtime 的实现细节，kubelet 看不到。详见 [[cni-source]]。
+
+> [!question]- 参考答案（点击展开）
+>
+> RunPodSandbox 在 runtime 内部做四件事：① 启动 pause 容器创建 netns/ipc/uts；② 创建 cgroup；③ 调用 CNI ADD 给 netns 配 IP/路由（CNI 不在 CRI proto 里，在 runtime 内部）；④ 把 sandbox 状态置 READY。kubelet 在 RunPodSandbox **返回成功后**才开始 PullImage + CreateContainer。CNI 完全是 runtime 的实现细节，kubelet 看不到。详见 [[cni-source]]。
 
 **Q4: dockershim 什么时候移除？现在怎么继续用 docker 当 K8s 后端？**
-v1.20（2020.12）deprecated，v1.24（2022.04）移除。继续用 docker 的路径是 Mirantis 维护的 `cri-dockerd`：一个外部进程，把 CRI gRPC 调用翻译成 docker API。但多一跳（kubelet → cri-dockerd → dockerd → containerd → runc），新集群基本都直连 containerd。
+
+> [!question]- 参考答案（点击展开）
+>
+> v1.20（2020.12）deprecated，v1.24（2022.04）移除。继续用 docker 的路径是 Mirantis 维护的 `cri-dockerd`：一个外部进程，把 CRI gRPC 调用翻译成 docker API。但多一跳（kubelet → cri-dockerd → dockerd → containerd → runc），新集群基本都直连 containerd。
 
 **Q5: containerd 和 CRI-O 的区别？**
-containerd 是通用容器运行时（也被 nerdctl、ctr 使用），CRI 只是它的一个 plugin；CRI-O 是专为 K8s 设计、只实现 CRI 的极简运行时。containerd 用 shim（每 sandbox 一个 Go 进程）做 task 监控，CRI-O 用 conmon（每容器一个 C 进程）；containerd 自带 image/snapshot store，CRI-O 复用 podman 的 containers/storage、containers/image 库。RHEL/OpenShift 默认 CRI-O，云厂商（GKE/EKS/AKS）默认 containerd。性能上没有显著差异。
+
+> [!question]- 参考答案（点击展开）
+>
+> containerd 是通用容器运行时（也被 nerdctl、ctr 使用），CRI 只是它的一个 plugin；CRI-O 是专为 K8s 设计、只实现 CRI 的极简运行时。containerd 用 shim（每 sandbox 一个 Go 进程）做 task 监控，CRI-O 用 conmon（每容器一个 C 进程）；containerd 自带 image/snapshot store，CRI-O 复用 podman 的 containers/storage、containers/image 库。RHEL/OpenShift 默认 CRI-O，云厂商（GKE/EKS/AKS）默认 containerd。性能上没有显著差异。
 
 **Q6: kubectl exec 走 CRI 的哪个 RPC？数据流怎么走？**
-走 CRI `Exec` RPC，但这个 RPC **只返回一个 URL，不传数据**。完整流：kubectl → apiserver（SPDY upgrade）→ kubelet → CRI `Exec`(container_id, cmd) → runtime 返回 streaming URL → kubelet 拨这个 URL 走 HTTP/2 SPDY → 数据通过 SPDY 多路复用（stdin/stdout/stderr/resize 四个 stream）双向传输。这是个"控制面 gRPC + 数据面 HTTP/2"的分层设计——CRI proto 不需要承担音视频/TTY 数据流。
+
+> [!question]- 参考答案（点击展开）
+>
+> 走 CRI `Exec` RPC，但这个 RPC **只返回一个 URL，不传数据**。完整流：kubectl → apiserver（SPDY upgrade）→ kubelet → CRI `Exec`(container_id, cmd) → runtime 返回 streaming URL → kubelet 拨这个 URL 走 HTTP/2 SPDY → 数据通过 SPDY 多路复用（stdin/stdout/stderr/resize 四个 stream）双向传输。这是个"控制面 gRPC + 数据面 HTTP/2"的分层设计——CRI proto 不需要承担音视频/TTY 数据流。
 
 **Q7: PLEG 怎么感知容器变化？为什么不用 CRI 的 stream？**
-PLEG（Pod Lifecycle Event Generator，详见 [[kubelet-cri-source]]）每秒 `ListContainers + ListPodSandbox`，diff 出"新的退出 / 新的运行"事件推给 syncLoop。CRI 1.27+ 加了 `GetContainerEvents` server streaming RPC（"event-driven PLEG"），但默认还是 polling 模式——因为 stream 在 runtime 重启时连接会断，PLEG 还是要靠 list 兜底；保留 polling 让架构更稳健。Evented PLEG 在 v1.27 alpha、v1.30 beta，目前生产仍以 polling 为主。
+
+> [!question]- 参考答案（点击展开）
+>
+> PLEG（Pod Lifecycle Event Generator，详见 [[kubelet-cri-source]]）每秒 `ListContainers + ListPodSandbox`，diff 出"新的退出 / 新的运行"事件推给 syncLoop。CRI 1.27+ 加了 `GetContainerEvents` server streaming RPC（"event-driven PLEG"），但默认还是 polling 模式——因为 stream 在 runtime 重启时连接会断，PLEG 还是要靠 list 兜底；保留 polling 让架构更稳健。Evented PLEG 在 v1.27 alpha、v1.30 beta，目前生产仍以 polling 为主。
 
 **Q8: pause 容器到底干嘛？我能不能不要它？**
-pause 容器是 Pod 内多容器**共享 net/ipc/uts namespace 的载体**——namespace 是 Linux 内核的概念，必须有进程持有，pause 是那个"sleep + 收 SIGCHLD"的极简持有者。没有它就要让某个业务容器持有，那个容器 crash 就丢 IP。pause 二进制只有几 KB（C 程序，源码在 `build/pause/`），开销可忽略。在 hostNetwork=true 的 Pod 里也有 pause（它仍然持有 ipc/uts），但不持有 net。
+
+> [!question]- 参考答案（点击展开）
+>
+> pause 容器是 Pod 内多容器**共享 net/ipc/uts namespace 的载体**——namespace 是 Linux 内核的概念，必须有进程持有，pause 是那个"sleep + 收 SIGCHLD"的极简持有者。没有它就要让某个业务容器持有，那个容器 crash 就丢 IP。pause 二进制只有几 KB（C 程序，源码在 `build/pause/`），开销可忽略。在 hostNetwork=true 的 Pod 里也有 pause（它仍然持有 ipc/uts），但不持有 net。
 
 **Q9: CRI 是同步的还是异步的？StopPodSandbox 失败会怎样？**
-所有 CRI RPC 在 proto 层都是同步 unary（除了 `GetContainerEvents` 是 server streaming）。但运行时实现可以"提交后异步执行"，proto 不约束。Stop/Remove 系列必须 **idempotent**——多次调用必须都成功，因为 kubelet 会反复重试。如果 `StopPodSandbox` 失败（典型：CNI DEL 返回错误），kubelet 在下次 syncPod 继续重试，sandbox 一直 NOTREADY 直到 CNI 恢复或者强删。
+
+> [!question]- 参考答案（点击展开）
+>
+> 所有 CRI RPC 在 proto 层都是同步 unary（除了 `GetContainerEvents` 是 server streaming）。但运行时实现可以"提交后异步执行"，proto 不约束。Stop/Remove 系列必须 **idempotent**——多次调用必须都成功，因为 kubelet 会反复重试。如果 `StopPodSandbox` 失败（典型：CNI DEL 返回错误），kubelet 在下次 syncPod 继续重试，sandbox 一直 NOTREADY 直到 CNI 恢复或者强删。
 
 **Q10: 如果 CRI sock 不通会发生什么？kubelet 怎么处理？**
-`cri-client` 在 `NewRemoteRuntimeService` 的 `validateServiceConnection` 阶段就会 fail（调 `Version` 失败），kubelet 启动直接退出。运行时启动后，kubelet 每秒钟调一次 `Status`，连续失败会把节点 condition 设置成 `Ready=False`、reason=`KubeletNotReady`，调度器停止往该节点投 Pod。kubelet 不会主动重启容器运行时（这是 systemd / 节点 init 系统的职责），但会把 runtime 错误指数退避重试（`syncLoop` 里的 `runtimeErrors`，base=100ms, max=5s）。
+
+> [!question]- 参考答案（点击展开）
+>
+> `cri-client` 在 `NewRemoteRuntimeService` 的 `validateServiceConnection` 阶段就会 fail（调 `Version` 失败），kubelet 启动直接退出。运行时启动后，kubelet 每秒钟调一次 `Status`，连续失败会把节点 condition 设置成 `Ready=False`、reason=`KubeletNotReady`，调度器停止往该节点投 Pod。kubelet 不会主动重启容器运行时（这是 systemd / 节点 init 系统的职责），但会把 runtime 错误指数退避重试（`syncLoop` 里的 `runtimeErrors`，base=100ms, max=5s）。
 
 ## 十二、参考资料
 

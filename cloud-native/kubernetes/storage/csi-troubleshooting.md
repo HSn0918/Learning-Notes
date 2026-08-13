@@ -198,12 +198,18 @@ kubectl get volumesnapshotclass
 
 ### Q: PVC Pending 怎么排查？
 
-A: 先 `describe pvc` 看 event，再检查 StorageClass、provisioner name、access mode、volume mode、容量、topology 和 WaitForFirstConsumer。然后看 external-provisioner 和 driver Controller service 日志。
+> [!question]- 参考答案（点击展开）
+>
+> 先 `describe pvc` 看 event，再检查 StorageClass、provisioner name、access mode、volume mode、容量、topology 和 WaitForFirstConsumer。然后看 external-provisioner 和 driver Controller service 日志。
 
 ### Q: Pod 挂载 PVC 失败，应该先看 attacher 还是 kubelet？
 
-A: 先看 Pod event 和 VolumeAttachment。如果 VolumeAttachment 没 attached，查 external-attacher/ControllerPublishVolume；如果已经 attached 但 mount 失败，查 kubelet、node-driver-registrar 和 Node service。
+> [!question]- 参考答案（点击展开）
+>
+> 先看 Pod event 和 VolumeAttachment。如果 VolumeAttachment 没 attached，查 external-attacher/ControllerPublishVolume；如果已经 attached 但 mount 失败，查 kubelet、node-driver-registrar 和 Node service。
 
 ### Q: FileSystemResizePending 表示什么？
 
-A: 后端卷通常已经扩容，但节点侧文件系统还没完成 resize。需要 kubelet 在挂载卷的节点上调用 `NodeExpandVolume`，或者等待 Pod 重新挂载触发文件系统扩容。
+> [!question]- 参考答案（点击展开）
+>
+> 后端卷通常已经扩容，但节点侧文件系统还没完成 resize。需要 kubelet 在挂载卷的节点上调用 `NodeExpandVolume`，或者等待 Pod 重新挂载触发文件系统扩容。

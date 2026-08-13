@@ -513,29 +513,31 @@ client_idle_timeout = 0          ; 客户端空闲超时（0=禁用）
 
 ### 1. 什么是 Table Bloat？如何排查和解决？
 
-**原因**：PostgreSQL MVCC 下 UPDATE/DELETE 留下 dead tuple，VACUUM 未能及时清理时表文件膨胀。
-
-**排查**：
-```sql
--- 查看 dead tuple 比例
-SELECT relname,
-       n_live_tup,
-       n_dead_tup,
-       round(n_dead_tup::numeric / NULLIF(n_live_tup + n_dead_tup, 0) * 100, 2) AS dead_pct,
-       pg_size_pretty(pg_total_relation_size(relid)) AS total_size
-FROM pg_stat_user_tables
-ORDER BY n_dead_tup DESC;
-
--- 用 pgstattuple 扩展精确统计
-CREATE EXTENSION pgstattuple;
-SELECT * FROM pgstattuple('orders');
-```
-
-**解决**：
-- 短期：`VACUUM ANALYZE table_name`
-- 彻底重写（生产低峰）：`VACUUM FULL table_name` 或 `CLUSTER table_name USING idx`
-- 在线重建（不锁表）：使用 `pg_repack` 工具
-- 根本治理：调低 `autovacuum_vacuum_scale_factor`，增加 `autovacuum_vacuum_cost_delay` 频率
+> [!question]- 参考答案（点击展开）
+>
+> **原因**：PostgreSQL MVCC 下 UPDATE/DELETE 留下 dead tuple，VACUUM 未能及时清理时表文件膨胀。
+>
+> **排查**：
+> ```sql
+> -- 查看 dead tuple 比例
+> SELECT relname,
+>        n_live_tup,
+>        n_dead_tup,
+>        round(n_dead_tup::numeric / NULLIF(n_live_tup + n_dead_tup, 0) * 100, 2) AS dead_pct,
+>        pg_size_pretty(pg_total_relation_size(relid)) AS total_size
+> FROM pg_stat_user_tables
+> ORDER BY n_dead_tup DESC;
+>
+> -- 用 pgstattuple 扩展精确统计
+> CREATE EXTENSION pgstattuple;
+> SELECT * FROM pgstattuple('orders');
+> ```
+>
+> **解决**：
+> - 短期：`VACUUM ANALYZE table_name`
+> - 彻底重写（生产低峰）：`VACUUM FULL table_name` 或 `CLUSTER table_name USING idx`
+> - 在线重建（不锁表）：使用 `pg_repack` 工具
+> - 根本治理：调低 `autovacuum_vacuum_scale_factor`，增加 `autovacuum_vacuum_cost_delay` 频率
 
 ### 2. VACUUM 关键参数调优
 
@@ -574,46 +576,54 @@ ALTER TABLE orders SET (
 
 ### 4. 逻辑复制 vs 流复制如何选择？
 
-- **HA 主备切换、读写分离** → 流复制（低延迟、自动同步 DDL）
-- **跨大版本升级（如 PG 14 → PG 16）** → 逻辑复制（目标库可不同版本）
-- **CDC（变更数据捕获）/ 同步部分表到下游** → 逻辑复制（按表订阅）
-- **异构同步（PG → Kafka / PG → 其他 DB）** → 逻辑解码（pglogical / debezium）
+> [!question]- 参考答案（点击展开）
+>
+> - **HA 主备切换、读写分离** → 流复制（低延迟、自动同步 DDL）
+> - **跨大版本升级（如 PG 14 → PG 16）** → 逻辑复制（目标库可不同版本）
+> - **CDC（变更数据捕获）/ 同步部分表到下游** → 逻辑复制（按表订阅）
+> - **异构同步（PG → Kafka / PG → 其他 DB）** → 逻辑解码（pglogical / debezium）
 
 ### 5. PgBouncer Transaction Mode 的限制有哪些？
 
-Transaction mode 下，每个事务结束后连接归还连接池，以下**不可用**：
-1. `SET` 会话变量（归还后被重置）
-2. `pg_advisory_lock`（会话级锁随连接归还丢失）
-3. Named prepared statements（需客户端库关闭或使用 `server_reset_query`）
-4. `LISTEN/NOTIFY`
-5. 跨事务游标
-
-**解决方案**：若业务必须用上述特性，切换为 **session mode**，或在应用层避免依赖。
+> [!question]- 参考答案（点击展开）
+>
+> Transaction mode 下，每个事务结束后连接归还连接池，以下**不可用**：
+> 1. `SET` 会话变量（归还后被重置）
+> 2. `pg_advisory_lock`（会话级锁随连接归还丢失）
+> 3. Named prepared statements（需客户端库关闭或使用 `server_reset_query`）
+> 4. `LISTEN/NOTIFY`
+> 5. 跨事务游标
+>
+> **解决方案**：若业务必须用上述特性，切换为 **session mode**，或在应用层避免依赖。
 
 ### 6. 如何防止 XID Wraparound？
 
-1. 确保 `autovacuum` 正常运行（监控 `pg_stat_user_tables.last_autovacuum`）
-2. 监控 `age(datfrozenxid)`，超过 1.5 亿时告警
-3. 对大表降低 `autovacuum_freeze_max_age`，提前触发 freeze
-4. 避免长事务（长事务阻塞 autovacuum 推进 freeze）：监控 `pg_stat_activity` 中 `xact_start`
-
-```sql
--- 监控高风险数据库
-SELECT datname, age(datfrozenxid) AS xid_age
-FROM pg_database
-WHERE age(datfrozenxid) > 150000000  -- 1.5亿告警
-ORDER BY xid_age DESC;
-
--- 监控阻塞 autovacuum 的长事务
-SELECT pid, now() - xact_start AS duration, query
-FROM pg_stat_activity
-WHERE xact_start IS NOT NULL
-  AND state != 'idle'
-ORDER BY duration DESC;
-```
+> [!question]- 参考答案（点击展开）
+>
+> 1. 确保 `autovacuum` 正常运行（监控 `pg_stat_user_tables.last_autovacuum`）
+> 2. 监控 `age(datfrozenxid)`，超过 1.5 亿时告警
+> 3. 对大表降低 `autovacuum_freeze_max_age`，提前触发 freeze
+> 4. 避免长事务（长事务阻塞 autovacuum 推进 freeze）：监控 `pg_stat_activity` 中 `xact_start`
+>
+> ```sql
+> -- 监控高风险数据库
+> SELECT datname, age(datfrozenxid) AS xid_age
+> FROM pg_database
+> WHERE age(datfrozenxid) > 150000000  -- 1.5亿告警
+> ORDER BY xid_age DESC;
+>
+> -- 监控阻塞 autovacuum 的长事务
+> SELECT pid, now() - xact_start AS duration, query
+> FROM pg_stat_activity
+> WHERE xact_start IS NOT NULL
+>   AND state != 'idle'
+> ORDER BY duration DESC;
+> ```
 
 ### 7. Window Function 与 GROUP BY 的区别？
 
-- `GROUP BY` 将多行**折叠**为一行，窗口函数**保留所有行**。
-- 窗口函数在 `WHERE`、`GROUP BY`、`HAVING` 之后执行，可以在同一 SELECT 中混用聚合与窗口函数。
-- 同一查询可以有多个不同 `OVER()` 子句的窗口函数，互不干扰。
+> [!question]- 参考答案（点击展开）
+>
+> - `GROUP BY` 将多行**折叠**为一行，窗口函数**保留所有行**。
+> - 窗口函数在 `WHERE`、`GROUP BY`、`HAVING` 之后执行，可以在同一 SELECT 中混用聚合与窗口函数。
+> - 同一查询可以有多个不同 `OVER()` 子句的窗口函数，互不干扰。

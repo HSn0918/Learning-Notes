@@ -166,12 +166,18 @@ cilium connectivity test
 
 **Q: Cilium 为什么比传统 CNI 性能更好？**
 
-A: Cilium 使用 eBPF 直接在 Linux 内核中处理网络数据包，绕过了 iptables 和 netfilter 的逐条规则匹配。传统方案中 iptables 规则数量与 Service 数量成正比（O(n)），在大规模集群中会成为瓶颈；eBPF 使用 hash map 查找，时间复杂度为 O(1)，且避免了用户态/内核态的频繁切换。
+> [!question]- 参考答案（点击展开）
+>
+> Cilium 使用 eBPF 直接在 Linux 内核中处理网络数据包，绕过了 iptables 和 netfilter 的逐条规则匹配。传统方案中 iptables 规则数量与 Service 数量成正比（O(n)），在大规模集群中会成为瓶颈；eBPF 使用 hash map 查找，时间复杂度为 O(1)，且避免了用户态/内核态的频繁切换。
 
 **Q: Cilium 的 Hubble 是什么？有什么用？**
 
-A: Hubble 是 Cilium 内置的可观测性平台，利用 eBPF 在内核层面采集网络流量元数据，提供：L3/L4/L7 的流量可视化、DNS 请求监控、HTTP/gRPC 调用追踪、NetworkPolicy 命中/丢弃日志。它不需要 sidecar，零侵入地提供 Service Map 和流量拓扑。
+> [!question]- 参考答案（点击展开）
+>
+> Hubble 是 Cilium 内置的可观测性平台，利用 eBPF 在内核层面采集网络流量元数据，提供：L3/L4/L7 的流量可视化、DNS 请求监控、HTTP/gRPC 调用追踪、NetworkPolicy 命中/丢弃日志。它不需要 sidecar，零侵入地提供 Service Map 和流量拓扑。
 
 **Q: Cilium 如何实现 Service Mesh？和 Istio sidecar 模式有什么区别？**
 
-A: Cilium 通过 eBPF 在内核层面实现 L7 流量管理（负载均衡、重试、限流），不需要在每个 Pod 注入 sidecar proxy。优势是：减少了每个 Pod 额外的 CPU/内存开销、消除了 sidecar 带来的额外网络跳数（latency）、简化了运维复杂度。
+> [!question]- 参考答案（点击展开）
+>
+> Cilium 通过 eBPF 在内核层面实现 L7 流量管理（负载均衡、重试、限流），不需要在每个 Pod 注入 sidecar proxy。优势是：减少了每个 Pod 额外的 CPU/内存开销、消除了 sidecar 带来的额外网络跳数（latency）、简化了运维复杂度。

@@ -16,9 +16,24 @@
 
 核心问题：
 - `WithCancel` 如何把 child 挂到 parent？
+
+  > [!question]- 参考答案（点击展开）
+  > `WithCancel` 创建 `cancelCtx` 后调用 `propagateCancel`。如果 parent 能解析为标准库的 `cancelCtx`，它会在持锁状态下把 child 加入 parent 的 `children` map；parent 已取消则直接取消 child。其他 parent 会尝试注册 `AfterFunc`，最后才退化为监听 `parent.Done()` 的 goroutine。
+
 - parent cancel 后如何传播到所有 children？
+
+  > [!question]- 参考答案（点击展开）
+  > `cancelCtx.cancel` 记录 `err/cause`、关闭 `Done`，再持锁遍历 `children` 并调用每个 child 的 `cancel`，从而沿取消树递归传播。最后清空 children；由 child 主动取消时还会把自己从 parent 中移除。
+
 - 什么时候 cancel 传播不需要新 goroutine，什么时候需要？
+
+  > [!question]- 参考答案（点击展开）
+  > parent 是标准库可识别的 `cancelCtx` 时通过 `children` map 传播，不需要每个 child 一个 goroutine；parent 支持 `AfterFunc` 时注册回调。只有 parent 有 `Done`、又无法识别且不支持 `AfterFunc` 时，才启动 goroutine 同时等待 parent 或 child 结束。
+
 - 为什么必须调用返回的 `cancel`？
+
+  > [!question]- 参考答案（点击展开）
+  > `cancel` 不只关闭 `Done`，还会停止 timer、从 parent 的 `children` map 移除当前节点并释放对子树和值的引用。忘记调用会让这些资源至少存活到 parent 取消或 deadline 到期；通常应在创建成功后立即 `defer cancel()`。
 
 ## 核心接口
 
@@ -294,28 +309,42 @@ parent cancel 会递归 cancel 所有 child。如果一个 parent 下挂了大�
 
 ### Q: Context 的核心作用是什么？
 
-A: Context 用来在 API 边界传递 request scope 的取消、deadline 和少量 metadata。它解决的是 goroutine 生命周期和跨调用链取消传播，不是通用参数包。
+> [!question]- 参考答案（点击展开）
+>
+> Context 用来在 API 边界传递 request scope 的取消、deadline 和少量 metadata。它解决的是 goroutine 生命周期和跨调用链取消传播，不是通用参数包。
 
 ### Q: `WithCancel` 的 child 是怎么被 parent 取消的？
 
-A: `WithCancel` 创建 `cancelCtx` 后调用 `propagateCancel`。如果 parent 是标准库 cancel context，child 会被加入 parent 的 `children` map；parent cancel 时遍历 children 递归取消。如果 parent 不是可识别的 cancel context，可能注册 `AfterFunc` 或启动 goroutine 监听 parent.Done。
+> [!question]- 参考答案（点击展开）
+>
+> `WithCancel` 创建 `cancelCtx` 后调用 `propagateCancel`。如果 parent 是标准库 cancel context，child 会被加入 parent 的 `children` map；parent cancel 时遍历 children 递归取消。如果 parent 不是可识别的 cancel context，可能注册 `AfterFunc` 或启动 goroutine 监听 parent.Done。
 
 ### Q: 为什么必须调用 cancel？
 
-A: cancel 不只是关闭 Done。它还会从 parent 的 children map 中移除当前节点、停止 timer、释放 children 引用、设置 err/cause。忘记 cancel 会延长 timer、value 和 child context 的生命周期。
+> [!question]- 参考答案（点击展开）
+>
+> cancel 不只是关闭 Done。它还会从 parent 的 children map 中移除当前节点、停止 timer、释放 children 引用、设置 err/cause。忘记 cancel 会延长 timer、value 和 child context 的生命周期。
 
 ### Q: `Done()` 为什么 lazy 创建？
 
-A: 很多 context 从未被 select 监听。如果每次 `WithCancel` 都创建 channel，会有不必要分配。`cancelCtx.Done()` 首次调用才创建 channel；如果取消时还没创建，就直接存入一个复用的 closed channel。
+> [!question]- 参考答案（点击展开）
+>
+> 很多 context 从未被 select 监听。如果每次 `WithCancel` 都创建 channel，会有不必要分配。`cancelCtx.Done()` 首次调用才创建 channel；如果取消时还没创建，就直接存入一个复用的 closed channel。
 
 ### Q: `Err()` 和 `Cause()` 的区别是什么？
 
-A: `Err()` 返回标准状态错误，通常是 `context.Canceled` 或 `context.DeadlineExceeded`。`Cause()` 返回取消时设置的具体业务原因，适合诊断和跨 goroutine 传播更细的错误。
+> [!question]- 参考答案（点击展开）
+>
+> `Err()` 返回标准状态错误，通常是 `context.Canceled` 或 `context.DeadlineExceeded`。`Cause()` 返回取消时设置的具体业务原因，适合诊断和跨 goroutine 传播更细的错误。
 
 ### Q: 什么时候 context 会额外创建 goroutine？
 
-A: 当 parent 有 Done，但不是标准库能识别的 `cancelCtx`，也不支持 `AfterFunc` 时，`propagateCancel` 会启动 goroutine 等待 parent.Done 或 child.Done。标准库派生的 context 通常通过 children map 传播，不需要每个 child 一个 goroutine。
+> [!question]- 参考答案（点击展开）
+>
+> 当 parent 有 Done，但不是标准库能识别的 `cancelCtx`，也不支持 `AfterFunc` 时，`propagateCancel` 会启动 goroutine 等待 parent.Done 或 child.Done。标准库派生的 context 通常通过 children map 传播，不需要每个 child 一个 goroutine。
 
 ### Q: `WithoutCancel` 有什么风险？
 
-A: 它会切断 parent 的取消和 deadline。适合少数确实要脱离 request 生命周期的后台任务，但必须自己设置新的 deadline 或退出条件，否则容易制造 goroutine 泄漏。
+> [!question]- 参考答案（点击展开）
+>
+> 它会切断 parent 的取消和 deadline。适合少数确实要脱离 request 生命周期的后台任务，但必须自己设置新的 deadline 或退出条件，否则容易制造 goroutine 泄漏。

@@ -48,13 +48,13 @@ flowchart LR
 ```bash
 vllm serve Qwen/Qwen3-0.6B \
   --host 0.0.0.0 \
-  --port 8000
+  --port 38000
 ```
 
 调用服务：
 
 ```bash
-curl http://127.0.0.1:8000/v1/chat/completions \
+curl http://127.0.0.1:38000/v1/chat/completions \
   -H 'Content-Type: application/json' \
   -d '{
     "model": "Qwen/Qwen3-0.6B",
@@ -81,14 +81,14 @@ python3 -m sglang.launch_server \
 
 ## 必须理解的服务指标
 
-| 指标 | 含义 | 主要受什么影响 |
-| --- | --- | --- |
-| TTFT | 从请求到第一个输出 Token 的时间 | 排队、Prefill、Prefix Cache 命中 |
-| TPOT | 首 Token 之后平均每个输出 Token 的耗时 | Decode、Batch、显存带宽 |
-| ITL | 相邻输出 Token 之间的延迟 | Decode 调度与抖动 |
-| Throughput | 单位时间完成的请求数或 Token 数 | Batch、并行、工作负载分布 |
-| Queue Length | 等待执行的请求数 | 到达速率与服务能力是否匹配 |
-| KV Cache Usage | KV Cache 池使用比例 | 上下文长度、并发、精度和模型结构 |
+| 指标             | 含义                         | 主要受什么影响                    |
+| -------------- | -------------------------- | -------------------------- |
+| TTFT           | 从请求到第一个输出 Token 的时间        | 排队、Prefill、Prefix Cache 命中 |
+| TPOT           | 首 Token 之后平均每个输出 Token 的耗时 | Decode、Batch、显存带宽          |
+| ITL            | 相邻输出 Token 之间的延迟           | Decode 调度与抖动               |
+| Throughput     | 单位时间完成的请求数或 Token 数        | Batch、并行、工作负载分布            |
+| Queue Length   | 等待执行的请求数                   | 到达速率与服务能力是否匹配              |
+| KV Cache Usage | KV Cache 池使用比例             | 上下文长度、并发、精度和模型结构           |
 
 > 基础名词：**Latency** 关注一个请求等多久，**Throughput** 关注系统单位时间处理多少。提高 Batch 往往能提升吞吐，但可能增加单个请求的排队延迟。
 
@@ -121,9 +121,24 @@ vLLM 将每个 Sequence 的 KV Cache 组织为可按需分配的 Block，并维�
 学习问题：
 
 - 为什么每个 Sequence 的实际长度不同会产生显存碎片？
+
+  > [!question]- 参考答案（点击展开）
+  > 传统实现若按 `max_seq_len` 为每个 Sequence 预留连续 KV 空间，短请求会留下大量未使用空间；请求结束和增长的时机又不同，连续区域容易形成不能被当前请求利用的空洞。分页式 Block Pool 把分配粒度缩小到 Block，主要减少这种外部碎片和过量预留。
+
 - Block Size 太小或太大分别有什么成本？
+
+  > [!question]- 参考答案（点击展开）
+  > 小 Block 的尾部浪费少、复用粒度细，但 Block Table、分配次数和 Kernel 间接寻址开销更高；大 Block 的元数据和寻址开销低，但尾部碎片更多、Prefix Cache 的命中粒度更粗。最佳值取决于引擎版本、上下文分布和压测结果。
+
 - KV Cache 不足时，Scheduler 如何排队、抢占或重算？
+
+  > [!question]- 参考答案（点击展开）
+  > 新请求先在 waiting queue 等待 admission；运行中的请求若无法再分配 KV Block，Scheduler 可延后调度或抢占较低优先级请求。被抢占请求可以丢弃 KV 后重新 Prefill，也可以把 KV 换到 CPU；选择取决于上下文长度、主存容量、PCIe 带宽和具体引擎版本。
+
 - Prefix Cache 命中为什么受 Block 边界影响？
+
+  > [!question]- 参考答案（点击展开）
+  > Block-based cache 通常按完整 Token Block 计算 key。只有内容和父前缀都一致的完整 Block 才能直接复用；首个不同 Token 所在的 Block 可能整体重算，后续 Block 也会因父 hash 改变而失效。因此 Block Size 同时决定缓存复用的最小粒度。
 
 ## SGLang 的学习重点
 
@@ -186,12 +201,18 @@ SGLang 还提供 JSON/Regex/Grammar 等结构化输出、Reasoning Parser、Spec
 
 ### Q：vLLM 和 SGLang 解决的核心问题是什么？
 
-A：它们把模型 Checkpoint 转换为高性能推理服务，通过动态调度、Batch、KV Cache 管理、并行和优化 Kernel 提高吞吐并控制延迟，同时提供应用可调用的 API。
+> [!question]- 参考答案（点击展开）
+>
+> 它们把模型 Checkpoint 转换为高性能推理服务，通过动态调度、Batch、KV Cache 管理、并行和优化 Kernel 提高吞吐并控制延迟，同时提供应用可调用的 API。
 
 ### Q：为什么不能只看单次请求延迟比较两个引擎？
 
-A：生产推理同时关心 TTFT、TPOT、P99、吞吐、显存和稳定性。单请求结果无法反映并发调度、Prefix Cache 和队列行为，而且模型、精度或输入分布不同会让比较失效。
+> [!question]- 参考答案（点击展开）
+>
+> 生产推理同时关心 TTFT、TPOT、P99、吞吐、显存和稳定性。单请求结果无法反映并发调度、Prefix Cache 和队列行为，而且模型、精度或输入分布不同会让比较失效。
 
 ### Q：PagedAttention 与 RadixAttention 的主要关注点有什么不同？
 
-A：PagedAttention 主要解决 KV Cache 的分页式物理内存管理和碎片问题；RadixAttention 主要解决共享前缀的索引和自动复用。二者处于不同层次，现代实现可能同时具备相似能力。
+> [!question]- 参考答案（点击展开）
+>
+> PagedAttention 主要解决 KV Cache 的分页式物理内存管理和碎片问题；RadixAttention 主要解决共享前缀的索引和自动复用。二者处于不同层次，现代实现可能同时具备相似能力。

@@ -412,20 +412,30 @@ kubectl get --raw /metrics | grep apiserver_request_duration_seconds
 
 ### Q: 为什么说 apiserver 是 Kubernetes 的通信枢纽？
 
-A: 因为所有组件都通过 apiserver 共享状态。scheduler watch Pending Pod，controller-manager watch 各类资源，kubelet watch 绑定到本节点的 Pod，最终都通过 apiserver 读写对象，而不是组件之间互相调用。
+> [!question]- 参考答案（点击展开）
+>
+> 因为所有组件都通过 apiserver 共享状态。scheduler watch Pending Pod，controller-manager watch 各类资源，kubelet watch 绑定到本节点的 Pod，最终都通过 apiserver 读写对象，而不是组件之间互相调用。
 
 ### Q: apiserver 写一个对象经历哪些阶段？
 
-A: 大致是认证、鉴权、Mutating admission、schema/defaulting、Validating admission、storage 写入 etcd，再返回带 `resourceVersion` 的对象。
+> [!question]- 参考答案（点击展开）
+>
+> 大致是认证、鉴权、Mutating admission、schema/defaulting、Validating admission、storage 写入 etcd，再返回带 `resourceVersion` 的对象。
 
 ### Q: 为什么只有 apiserver 直接访问 etcd？
 
-A: 这样可以统一认证鉴权、准入、版本转换、审计和 watch 语义。如果每个组件直接访问 etcd，安全边界和 API 兼容性都会失控。
+> [!question]- 参考答案（点击展开）
+>
+> 这样可以统一认证鉴权、准入、版本转换、审计和 watch 语义。如果每个组件直接访问 etcd，安全边界和 API 兼容性都会失控。
 
 ### Q: CRD 和 aggregated apiserver 怎么选？
 
-A: 大多数声明式资源用 CRD；如果需要自定义存储、复杂子资源、特殊协议转换或非标准 API 行为，才考虑 aggregated apiserver。
+> [!question]- 参考答案（点击展开）
+>
+> 大多数声明式资源用 CRD；如果需要自定义存储、复杂子资源、特殊协议转换或非标准 API 行为，才考虑 aggregated apiserver。
 
 ### Q: apiserver 性能瓶颈通常在哪里？
 
-A: 常见瓶颈是 etcd 延迟、watch 数量、对象体积、慢 admission webhook、apiserver inflight 请求限制和客户端过度 list。
+> [!question]- 参考答案（点击展开）
+>
+> 常见瓶颈是 etcd 延迟、watch 数量、对象体积、慢 admission webhook、apiserver inflight 请求限制和客户端过度 list。

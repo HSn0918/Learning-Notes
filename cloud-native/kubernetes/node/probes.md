@@ -167,31 +167,61 @@ sequenceDiagram
 ## 面试要点
 
 1. **三种探针的区别？**
-   - liveness 失败 → 重启容器；readiness 失败 → 摘出 Endpoint 不重启；startup 用于保护慢启动应用，成功前禁用其他两个。
+
+   > [!question]- 参考答案（点击展开）
+   >
+   > liveness 失败 → 重启容器；readiness 失败 → 摘出 Endpoint 不重启；startup 用于保护慢启动应用，成功前禁用其他两个。
 
 2. **没有 startupProbe 怎么处理慢启动？**
-   - 调大 liveness/readiness 的 `initialDelaySeconds`，但缺点是运行期延迟也大；startupProbe 是更优解。
+
+   > [!question]- 参考答案（点击展开）
+   >
+   > 调大 liveness/readiness 的 `initialDelaySeconds`，但缺点是运行期延迟也大；startupProbe 是更优解。
 
 3. **三种 Handler 怎么选？**
-   - HTTP 服务 → httpGet；TCP 长连接服务 → tcpSocket；脚本/文件检查 → exec；gRPC → grpc（1.24+）。
+
+   > [!question]- 参考答案（点击展开）
+   >
+   > HTTP 服务 → httpGet；TCP 长连接服务 → tcpSocket；脚本/文件检查 → exec；gRPC → grpc（1.24+）。
 
 4. **readiness 失败时容器会重启吗？**
-   - 不会。只是从 Service Endpoint 移除，流量不再调度过来；容器仍在运行。
+
+   > [!question]- 参考答案（点击展开）
+   >
+   > 不会。只是从 Service Endpoint 移除，流量不再调度过来；容器仍在运行。
 
 5. **liveness probe 检查 DB 连接会有什么问题？**
-   - DB 故障会导致所有副本 liveness 失败被重启，引发雪崩。liveness 应只检查自身进程健康。
+
+   > [!question]- 参考答案（点击展开）
+   >
+   > DB 故障会导致所有副本 liveness 失败被重启，引发雪崩。liveness 应只检查自身进程健康。
 
 6. **kubelet 是如何执行探针的？**
-   - prober_manager 给每个 (container, probeType) 启动独立 worker goroutine，按 periodSeconds 周期触发，结果写入 results.Manager，再驱动重启或更新 Pod Ready condition。
+
+   > [!question]- 参考答案（点击展开）
+   >
+   > prober_manager 给每个 (container, probeType) 启动独立 worker goroutine，按 periodSeconds 周期触发，结果写入 results.Manager，再驱动重启或更新 Pod Ready condition。
 
 7. **探针对 Pod restartPolicy 的影响？**
-   - liveness/startup 失败触发 `KillContainer`，是否真的重启取决于 Pod.spec.restartPolicy（Always / OnFailure / Never）。
+
+   > [!question]- 参考答案（点击展开）
+   >
+   > liveness/startup 失败触发 `KillContainer`，是否真的重启取决于 Pod.spec.restartPolicy（Always / OnFailure / Never）。
 
 8. **successThreshold 对 liveness 为什么必须是 1？**
-   - liveness 探测的是"是否存活"，只要一次成功就证明存活；连续多次成功才算成功的语义不合理。
+
+   > [!question]- 参考答案（点击展开）
+   >
+   > liveness 探测的是"是否存活"，只要一次成功就证明存活；连续多次成功才算成功的语义不合理。
 
 9. **failureThreshold = 3 意味着多久才会被判失败？**
-   - 至少 `periodSeconds * failureThreshold` 秒。默认 10s * 3 = 30s 才会触发重启。
+
+   > [!question]- 参考答案（点击展开）
+   >
+   > 至少 `periodSeconds * failureThreshold` 秒。默认 10s * 3 = 30s 才会触发重启。
 
 10. **探针失败的 Pod 会重新调度到其他节点吗？**
-    - 不会。liveness 只是原地重启容器；除非 Pod 被删除（如 Deployment 滚动），调度才介入。
+
+    > [!question]- 参考答案（点击展开）
+    >
+    > 不会。liveness 只是原地重启容器；除非 Pod 被删除（如 Deployment 滚动），调度才介入。

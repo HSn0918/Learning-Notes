@@ -126,12 +126,18 @@ kubectl logs -n kube-system -l k8s-app=calico-node
 
 **Q: Calico 的核心功能是什么？**
 
-A: Calico 是 Kubernetes 中常用的 CNI 插件，负责给 Pod 分配 IP 并建立通信路由。它默认使用 BGP 同步路由，也支持 IPIP 和 VXLAN 隧道，配合 Felix 设置 iptables，实现网络访问控制。
+> [!question]- 参考答案（点击展开）
+>
+> Calico 是 Kubernetes 中常用的 CNI 插件，负责给 Pod 分配 IP 并建立通信路由。它默认使用 BGP 同步路由，也支持 IPIP 和 VXLAN 隧道，配合 Felix 设置 iptables，实现网络访问控制。
 
 **Q: Pod 无法通信时如何排查？**
 
-A: 排查思路是：先确认 Pod 状态，然后测试网络连通性，检查是否跨节点，再看路由表和封装接口是否正常，最后排查是否有 NetworkPolicy 拦截，并查看 calico-node 是否运行正常。
+> [!question]- 参考答案（点击展开）
+>
+> 排查思路是：先确认 Pod 状态，然后测试网络连通性，检查是否跨节点，再看路由表和封装接口是否正常，最后排查是否有 NetworkPolicy 拦截，并查看 calico-node 是否运行正常。
 
 **Q: Calico BGP 模式和 IPIP/VXLAN 模式如何选择？**
 
-A: BGP 模式性能最佳（无封装开销），适合网络环境支持 BGP 的场景；IPIP 适合跨子网但性能开销小于 VXLAN；VXLAN 兼容性最好，适合云厂商环境（不支持 BGP 或 IPIP 的网络）。
+> [!question]- 参考答案（点击展开）
+>
+> BGP 模式性能最佳（无封装开销），适合网络环境支持 BGP 的场景；IPIP 适合跨子网但性能开销小于 VXLAN；VXLAN 兼容性最好，适合云厂商环境（不支持 BGP 或 IPIP 的网络）。

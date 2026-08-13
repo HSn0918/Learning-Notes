@@ -250,20 +250,30 @@ kubectl -n <driver-namespace> logs ds/<csi-node> --tail=300
 
 ### Q: CSI driver 一定要 watch PVC 吗？
 
-A: 不需要。通常 external-provisioner 等 sidecar watch Kubernetes 对象，然后调用 driver 的 CSI RPC。driver 本体只实现 gRPC service。
+> [!question]- 参考答案（点击展开）
+>
+> 不需要。通常 external-provisioner 等 sidecar watch Kubernetes 对象，然后调用 driver 的 CSI RPC。driver 本体只实现 gRPC service。
 
 ### Q: `NodeStageVolume` 和 `NodePublishVolume` 的区别？
 
-A: Stage 是节点级、与 Pod 无关的一次性准备；Publish 是把卷挂载到具体 Pod 目录，可能对同一卷执行多次。
+> [!question]- 参考答案（点击展开）
+>
+> Stage 是节点级、与 Pod 无关的一次性准备；Publish 是把卷挂载到具体 Pod 目录，可能对同一卷执行多次。
 
 ### Q: CSI Controller 和 CSI Node 为什么分开？
 
-A: Controller 处理全局存储生命周期和云/存储 API；Node 处理某个节点上的设备发现、mount、bind mount 等本地操作。
+> [!question]- 参考答案（点击展开）
+>
+> Controller 处理全局存储生命周期和云/存储 API；Node 处理某个节点上的设备发现、mount、bind mount 等本地操作。
 
 ### Q: PVC 一直 Pending 怎么排查？
 
-A: 看 PVC event、StorageClass、external-provisioner 日志、容量/配额、拓扑约束和 `volumeBindingMode`。
+> [!question]- 参考答案（点击展开）
+>
+> 看 PVC event、StorageClass、external-provisioner 日志、容量/配额、拓扑约束和 `volumeBindingMode`。
 
 ### Q: CSI 和 cloud-controller-manager 的存储边界？
 
-A: 现代 Kubernetes 中云盘生命周期和挂载主要由 CSI driver 负责，cloud-controller-manager 更偏 LoadBalancer、Route、Node 等云资源。
+> [!question]- 参考答案（点击展开）
+>
+> 现代 Kubernetes 中云盘生命周期和挂载主要由 CSI driver 负责，cloud-controller-manager 更偏 LoadBalancer、Route、Node 等云资源。

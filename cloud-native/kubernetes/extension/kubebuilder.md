@@ -181,25 +181,46 @@ flowchart TD
 ### 高频问题
 
 **Q: Kubebuilder 和 client-go 裸写 Controller 是什么关系？**
-A: Kubebuilder 是基于 controller-runtime 的脚手架工具，底层依然是 client-go 的 Informer/WorkQueue 那一套机制。它通过 `kubebuilder init` / `create api` 生成项目骨架、CRD 类型、Manager 和 Reconciler，并用 controller-gen 根据 marker 注释生成 CRD YAML（`make manifests`）与 DeepCopy 代码（`make generate`），把 Reflector、Informer、Indexer、缓存这些样板封装起来，开发者只需聚焦实现 Reconcile 业务逻辑。
+
+> [!question]- 参考答案（点击展开）
+>
+> Kubebuilder 是基于 controller-runtime 的脚手架工具，底层依然是 client-go 的 Informer/WorkQueue 那一套机制。它通过 `kubebuilder init` / `create api` 生成项目骨架、CRD 类型、Manager 和 Reconciler，并用 controller-gen 根据 marker 注释生成 CRD YAML（`make manifests`）与 DeepCopy 代码（`make generate`），把 Reflector、Informer、Indexer、缓存这些样板封装起来，开发者只需聚焦实现 Reconcile 业务逻辑。
 
 **Q: 自定义 Controller 的核心组件和数据流是怎样的？**
-A: client-go 侧由 Reflector 通过 ListAndWatch 监听 API Server，把变更对象写入 DeltaFIFO；Informer 从 DeltaFIFO 弹出对象存入 Indexer（线程安全存储，默认 `MetaNamespaceKeyFunc` 按 namespace/name 建索引）并触发 Event Handler。自定义 Controller 侧在回调里把对象的 key 放入 WorkQueue，Process Item 取出 key 后从 Indexer 的本地缓存读取对象执行 Reconcile，避免每次都直接打 API Server。
+
+> [!question]- 参考答案（点击展开）
+>
+> client-go 侧由 Reflector 通过 ListAndWatch 监听 API Server，把变更对象写入 DeltaFIFO；Informer 从 DeltaFIFO 弹出对象存入 Indexer（线程安全存储，默认 `MetaNamespaceKeyFunc` 按 namespace/name 建索引）并触发 Event Handler。自定义 Controller 侧在回调里把对象的 key 放入 WorkQueue，Process Item 取出 key 后从 Indexer 的本地缓存读取对象执行 Reconcile，避免每次都直接打 API Server。
 
 **Q: 为什么 Reconcile 入队的是 key（namespace/name）而不是对象本身？**
-A: 入队 key 有几个好处：WorkQueue 能对相同 key 自动去重与限速，多次抖动只触发一次有效处理；处理时通过 Indexer 重新获取最新对象，避免拿到队列里的过期快照；这也强制 Reconcile 写成幂等的「水平触发」模型，即只关心期望状态与实际状态的差异，而不依赖某次具体事件。
+
+> [!question]- 参考答案（点击展开）
+>
+> 入队 key 有几个好处：WorkQueue 能对相同 key 自动去重与限速，多次抖动只触发一次有效处理；处理时通过 Indexer 重新获取最新对象，避免拿到队列里的过期快照；这也强制 Reconcile 写成幂等的「水平触发」模型，即只关心期望状态与实际状态的差异，而不依赖某次具体事件。
 
 **Q: Reconcile 为什么必须幂等？怎么保证幂等？**
-A: 因为同一对象可能被多次入队、重试或在 Informer resync 时重复触发，Reconcile 不能假设自己只跑一次。幂等的做法是每次都读取当前实际状态（Deployment/Service 是否存在、Spec 是否一致），再决定创建、更新还是无操作；笔记中用 Annotations 记录上一次的 Spec，与当前 Spec 比较，相同就跳过，避免无意义的重复更新。
+
+> [!question]- 参考答案（点击展开）
+>
+> 因为同一对象可能被多次入队、重试或在 Informer resync 时重复触发，Reconcile 不能假设自己只跑一次。幂等的做法是每次都读取当前实际状态（Deployment/Service 是否存在、Spec 是否一致），再决定创建、更新还是无操作；笔记中用 Annotations 记录上一次的 Spec，与当前 Spec 比较，相同就跳过，避免无意义的重复更新。
 
 **Q: Finalizer 是做什么的？和 DeletionTimestamp 如何配合实现优雅删除？**
-A: Finalizer 是对象 metadata 中的一个字符串列表，只要非空，API Server 在收到删除请求时不会真正删掉对象，而是设置 `DeletionTimestamp` 让其进入「删除中」状态。Controller 监测到 DeletionTimestamp 非空且含有自己的 Finalizer 时，执行 `deleteAssociatedResources` 清理关联的 Deployment/Service，成功后移除 Finalizer 并 Patch 更新；当最后一个 Finalizer 被移除时，API Server 才真正删除该对象，从而保证关联资源被可靠清理。
+
+> [!question]- 参考答案（点击展开）
+>
+> Finalizer 是对象 metadata 中的一个字符串列表，只要非空，API Server 在收到删除请求时不会真正删掉对象，而是设置 `DeletionTimestamp` 让其进入「删除中」状态。Controller 监测到 DeletionTimestamp 非空且含有自己的 Finalizer 时，执行 `deleteAssociatedResources` 清理关联的 Deployment/Service，成功后移除 Finalizer 并 Patch 更新；当最后一个 Finalizer 被移除时，API Server 才真正删除该对象，从而保证关联资源被可靠清理。
 
 **Q: status 子资源（subresource:status）有什么用？为什么要单独拆出来？**
-A: 启用 `// +kubebuilder:subresource:status` 后，status 成为独立子资源，对 status 的更新走 `/status` 端点且不会改变 spec，反之更新 spec 也不会动 status。这实现了「用户/控制器写 spec，控制器写 status」的职责分离，避免两边互相覆盖；`/status` 更新同样基于 resourceVersion 做乐观并发控制。
+
+> [!question]- 参考答案（点击展开）
+>
+> 启用 `// +kubebuilder:subresource:status` 后，status 成为独立子资源，对 status 的更新走 `/status` 端点且不会改变 spec，反之更新 spec 也不会动 status。这实现了「用户/控制器写 spec，控制器写 status」的职责分离，避免两边互相覆盖；`/status` 更新同样基于 resourceVersion 做乐观并发控制。
 
 **Q: Kubebuilder 的 marker 注释（如 +kubebuilder:validation、+kubebuilder:default）是怎么生效的？**
-A: 这些注释是给 controller-gen 读取的代码生成指令，并非运行时逻辑。执行 `make manifests` 时，controller-gen 解析 Go 类型上的 marker，生成对应的 CRD OpenAPI v3 schema（Minimum/Maximum/Enum/Pattern 等校验、default 默认值、printcolumn 额外列、resource scope 等），由 API Server 在写入时做 schema 校验和默认值填充（defaulting 需要 structural schema 支持）。
+
+> [!question]- 参考答案（点击展开）
+>
+> 这些注释是给 controller-gen 读取的代码生成指令，并非运行时逻辑。执行 `make manifests` 时，controller-gen 解析 Go 类型上的 marker，生成对应的 CRD OpenAPI v3 schema（Minimum/Maximum/Enum/Pattern 等校验、default 默认值、printcolumn 额外列、resource scope 等），由 API Server 在写入时做 schema 校验和默认值填充（defaulting 需要 structural schema 支持）。
 
 ### 面试加分点
 

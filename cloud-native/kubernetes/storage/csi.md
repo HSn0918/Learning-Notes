@@ -303,33 +303,45 @@ flowchart TD
 
 ### Q1: 什么是 CSI？它解决了什么问题？
 
-CSI 是一套容器存储接口规范，Kubernetes 使用它来动态管理存储卷挂载。它解决了内置插件耦合度高、更新困难的问题，使得第三方可以独立开发和更新存储插件。
+> [!question]- 参考答案（点击展开）
+>
+> CSI 是一套容器存储接口规范，Kubernetes 使用它来动态管理存储卷挂载。它解决了内置插件耦合度高、更新困难的问题，使得第三方可以独立开发和更新存储插件。
 
 ### Q2: Kubernetes 中使用 CSI 的流程是怎样的？
 
-用户通过 PVC 请求存储 -> StorageClass 绑定了 CSI 插件 -> CSI 控制器创建卷 -> 节点插件挂载卷 -> Pod 使用挂载的目录作为持久化存储。
+> [!question]- 参考答案（点击展开）
+>
+> 用户通过 PVC 请求存储 -> StorageClass 绑定了 CSI 插件 -> CSI 控制器创建卷 -> 节点插件挂载卷 -> Pod 使用挂载的目录作为持久化存储。
 
 ### Q3: StorageClass 和 CSI 是什么关系？
 
-StorageClass 是 PVC 和 CSI 插件之间的桥梁，它定义了要用哪个 CSI 插件（provisioner 字段）和存储参数（如 pool、fsType）。PVC 绑定到 StorageClass 后，Kubernetes 会调用对应 CSI 插件来处理存储卷。
+> [!question]- 参考答案（点击展开）
+>
+> StorageClass 是 PVC 和 CSI 插件之间的桥梁，它定义了要用哪个 CSI 插件（provisioner 字段）和存储参数（如 pool、fsType）。PVC 绑定到 StorageClass 后，Kubernetes 会调用对应 CSI 插件来处理存储卷。
 
 ### Q4: 如何调试 PVC 挂载失败的问题？
 
-| 检查点 | 命令 |
-| --- | --- |
-| PVC 状态 | `kubectl describe pvc` |
-| PV 状态 | `kubectl get pv` |
-| CSI 插件日志 | `kubectl logs -n kube-system -l app=ceph-csi-*` |
-| Node 插件状态 | `kubectl get pod -n kube-system -o wide` |
-| 事件 | `kubectl describe pod <pod>` 查看挂载失败错误 |
+> [!question]- 参考答案（点击展开）
+>
+> | 检查点 | 命令 |
+> | --- | --- |
+> | PVC 状态 | `kubectl describe pvc` |
+> | PV 状态 | `kubectl get pv` |
+> | CSI 插件日志 | `kubectl logs -n kube-system -l app=ceph-csi-*` |
+> | Node 插件状态 | `kubectl get pod -n kube-system -o wide` |
+> | 事件 | `kubectl describe pod <pod>` 查看挂载失败错误 |
 
 ### Q5: CSI 的 Controller Plugin 和 Node Plugin 的区别？
 
-Controller Plugin 以 Deployment 方式运行，负责 Volume 的全局管理操作（创建、删除、快照、扩容），与具体节点无关。Node Plugin 以 DaemonSet 方式运行在每个节点上，负责将 Volume 挂载/卸载到该节点上的 Pod 目录。两者通过 gRPC 接口与 Kubernetes 的 sidecar 容器（provisioner、attacher 等）通信。
+> [!question]- 参考答案（点击展开）
+>
+> Controller Plugin 以 Deployment 方式运行，负责 Volume 的全局管理操作（创建、删除、快照、扩容），与具体节点无关。Node Plugin 以 DaemonSet 方式运行在每个节点上，负责将 Volume 挂载/卸载到该节点上的 Pod 目录。两者通过 gRPC 接口与 Kubernetes 的 sidecar 容器（provisioner、attacher 等）通信。
 
 ### Q6: 生产环境如何选择存储方案？
 
-根据场景选择：云上优先用云厂商 CSI（零运维）；自建集群大规模用 Ceph（功能全面），中小规模用 Longhorn（简单易用）；需要极致性能用 OpenEBS Mayastor；需要 RWX 共享用 CephFS 或 NFS CSI。详见上方存储选型决策树。
+> [!question]- 参考答案（点击展开）
+>
+> 根据场景选择：云上优先用云厂商 CSI（零运维）；自建集群大规模用 Ceph（功能全面），中小规模用 Longhorn（简单易用）；需要极致性能用 OpenEBS Mayastor；需要 RWX 共享用 CephFS 或 NFS CSI。详见上方存储选型决策树。
 
 ## 总结
 

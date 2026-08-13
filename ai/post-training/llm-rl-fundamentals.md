@@ -206,16 +206,24 @@ flowchart LR
 
 ### Q：LLM 的 Action 是一个 Token 还是一整段回答？
 
-A：数学建模上通常把每个 Token 视为一步 Action，Policy 给出下一个 Token 的分布；工程与 Reward 设计中常把完整回答或工具调用轨迹当作一个 Rollout 统一评分。两种粒度需要通过 Credit Assignment 连接。
+> [!question]- 参考答案（点击展开）
+>
+> 数学建模上通常把每个 Token 视为一步 Action，Policy 给出下一个 Token 的分布；工程与 Reward 设计中常把完整回答或工具调用轨迹当作一个 Rollout 统一评分。两种粒度需要通过 Credit Assignment 连接。
 
 ### Q：GRPO 为什么可以不依赖独立 Critic？
 
-A：它通过同一 Prompt 下多条回答的组内 Reward 构造相对 Advantage，用组内基线替代独立 Value Estimate。但这依赖足够的组内多样性和有效 Reward，并不自动消除训练不稳定性。
+> [!question]- 参考答案（点击展开）
+>
+> 它通过同一 Prompt 下多条回答的组内 Reward 构造相对 Advantage，用组内基线替代独立 Value Estimate。但这依赖足够的组内多样性和有效 Reward，并不自动消除训练不稳定性。
 
 ### Q：为什么 Online RL 需要推理引擎？
 
-A：训练要不断用当前 Policy 对大量 Prompt 生成多条 Rollout，生成吞吐会成为主要瓶颈。vLLM/SGLang 负责高效 Batch 和 KV Cache 管理，Trainer 再使用 Reward 与 Logprob 更新参数。
+> [!question]- 参考答案（点击展开）
+>
+> 训练要不断用当前 Policy 对大量 Prompt 生成多条 Rollout，生成吞吐会成为主要瓶颈。vLLM/SGLang 负责高效 Batch 和 KV Cache 管理，Trainer 再使用 Reward 与 Logprob 更新参数。
 
 ### Q：Reward Model 分数提高后还要做什么验证？
 
-A：必须在独立测试集上检查真实任务指标、格式、长度、拒答、安全和通用能力回归，并人工分析高 Reward 失败样本，排除 Reward Hacking 和数据泄漏。
+> [!question]- 参考答案（点击展开）
+>
+> 必须在独立测试集上检查真实任务指标、格式、长度、拒答、安全和通用能力回归，并人工分析高 Reward 失败样本，排除 Reward Hacking 和数据泄漏。

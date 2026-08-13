@@ -270,28 +270,42 @@ go tool trace trace.out
 
 ### Q: Green Tea GC 是什么？
 
-A: Green Tea 是 Go 源码中的一个 GC 标记扫描实现实验，目标是提升 mark/scan locality。它通过延迟扫描，把同一 span 内被发现的对象积累起来，再批量扫描，并使用 marks/scans 两套 bitset 和 FIFO span queue。
+> [!question]- 参考答案（点击展开）
+>
+> Green Tea 是 Go 源码中的一个 GC 标记扫描实现实验，目标是提升 mark/scan locality。它通过延迟扫描，把同一 span 内被发现的对象积累起来，再批量扫描，并使用 marks/scans 两套 bitset 和 FIFO span queue。
 
 ### Q: Green Tea 是否意味着 Go 变成分代 GC？
 
-A: 不是。Green Tea 不等于 generational GC，也不是 moving GC。Go GC 的主框架仍是并发、非分代、非移动 mark-sweep。
+> [!question]- 参考答案（点击展开）
+>
+> 不是。Green Tea 不等于 generational GC，也不是 moving GC。Go GC 的主框架仍是并发、非分代、非移动 mark-sweep。
 
 ### Q: 传统 mark path 和 Green Tea 的核心差异是什么？
 
-A: 传统 path 更偏对象级 workbuf 扫描，发现对象后放入 work queue，worker 取对象扫描。Green Tea 把对象归到 span，发现对象时先 mark 并 enqueue span，后续按 span 批量扫描，改善局部性。
+> [!question]- 参考答案（点击展开）
+>
+> 传统 path 更偏对象级 workbuf 扫描，发现对象后放入 work queue，worker 取对象扫描。Green Tea 把对象归到 span，发现对象时先 mark 并 enqueue span，后续按 span 批量扫描，改善局部性。
 
 ### Q: Green Tea 为什么可能降低 GC CPU？
 
-A: 批量扫描同一 span 中的对象可以提高 cache locality，减少重复访问对象元数据的成本，也为 prefetch 和 size-class-specific 优化提供机会。尤其是小对象、指针密集 workload 更可能受益。
+> [!question]- 参考答案（点击展开）
+>
+> 批量扫描同一 span 中的对象可以提高 cache locality，减少重复访问对象元数据的成本，也为 prefetch 和 size-class-specific 优化提供机会。尤其是小对象、指针密集 workload 更可能受益。
 
 ### Q: Green Tea 会消除 STW 吗？
 
-A: 不会。Go GC 仍有 sweep termination 和 mark termination 等 STW 边界。Green Tea 主要影响并发标记扫描路径，不是取消 STW。
+> [!question]- 参考答案（点击展开）
+>
+> 不会。Go GC 仍有 sweep termination 和 mark termination 等 STW 边界。Green Tea 主要影响并发标记扫描路径，不是取消 STW。
 
 ### Q: 怎么判断是否应该尝试 Green Tea？
 
-A: 先确认瓶颈确实在 GC mark/assist，而不是业务 CPU、锁、I/O 或内存泄漏。然后用同一 workload A/B 对比 `gctrace`、runtime/metrics、pprof、trace 和业务 p99。实验特性上线必须可回滚。
+> [!question]- 参考答案（点击展开）
+>
+> 先确认瓶颈确实在 GC mark/assist，而不是业务 CPU、锁、I/O 或内存泄漏。然后用同一 workload A/B 对比 `gctrace`、runtime/metrics、pprof、trace 和业务 p99。实验特性上线必须可回滚。
 
 ### Q: 如果 heap live 持续增长，Green Tea 有帮助吗？
 
-A: 没有本质帮助。heap live 增长说明对象仍然可达，需要找 retention root，例如 map/cache、slice backing array、goroutine leak、context value。GC 实现优化不能替代生命周期治理。
+> [!question]- 参考答案（点击展开）
+>
+> 没有本质帮助。heap live 增长说明对象仍然可达，需要找 retention root，例如 map/cache、slice backing array、goroutine leak、context value。GC 实现优化不能替代生命周期治理。

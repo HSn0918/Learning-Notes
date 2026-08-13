@@ -154,19 +154,37 @@ profiles:
 ## 八、面试要点
 
 **Q1：自定义 Score 插件最少要实现哪几个方法？**
+
+> [!question]- 参考答案（点击展开）
+>
 > `Name() string`（来自 `framework.Plugin`）+ `Score(ctx, state, pod, nodeName) (int64, *Status)` + `ScoreExtensions() framework.ScoreExtensions`。如果原始分已经在 `[0, MaxNodeScore]` 区间且不需要归一化，`ScoreExtensions()` 可以返回 `nil`；否则就实现 `NormalizeScore` 并让 `ScoreExtensions()` 返回自己（或一个单独的 normalize 类型）。
 
 **Q2：`PluginFactory.New` 签名长什么样？参数都用来干嘛？**
+
+> [!question]- 参考答案（点击展开）
+>
 > `func(ctx context.Context, args runtime.Object, handle framework.Handle) (framework.Plugin, error)`。`args` 是 `KubeSchedulerConfiguration.pluginConfig[].args`，用来给插件传配置；`handle` 是插件访问调度器能力（snapshot lister、clientset、informer factory、event recorder）的入口。返回值是构造好的 plugin 实例。
 
 **Q3：插件里能直接 `clientset.CoreV1().Nodes().List(...)` 读节点吗？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 能但不该。`Score` 阶段必须读 `handle.SnapshotSharedLister()`，它是本次调度周期的不可变快照，与 Filter 阶段看到的状态一致；直接读 Informer 或 apiserver 会和 snapshot 不一致，可能让"过了 Filter 的节点 Score 阶段读到不同状态"，调度决策会出现行为漂移。
 
 **Q4：`app.WithPlugin` 和"把插件加进 in-tree registry"有什么区别？**
+
+> [!question]- 参考答案（点击展开）
+>
 > `app.WithPlugin` 把工厂注入 **out-of-tree registry**——只对本进程生效，不需要改 kubernetes/kubernetes 主仓代码。插件名空间和 in-tree 平起平坐，所以 KubeSchedulerConfiguration 写法完全一样。In-tree 改法需要给 kubernetes 主仓提 PR、合进 `pkg/scheduler/framework/plugins/`，对个人使用太重，社区也劝退（KEP "no new in-tree plugins"）。
 
 **Q5：第二调度器为什么必须用不同的 `leaderElection.resourceName`？**
+
+> [!question]- 参考答案（点击展开）
+>
 > leader election 本质是一把 Kubernetes Lease 锁。如果两个调度器进程用同一个 resourceName，它们会去抢同一把锁——只有一个能当 leader，另一个被锁住一直 standby，结果就是你的自定义调度器看起来"启动了但什么都不做"。换不同的 resourceName 后两边各有各的 leader，互不相干。
 
 **Q6：业务 Pod 怎么决定走哪个调度器？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 完全靠 `pod.spec.schedulerName`。这个字段默认值是 `default-scheduler`，你也可以写成 `learning-notes-scheduler`。`Scheduler.ScheduleOne` 在 `frameworkForPod` 里按这个字段选 profile，**找不到对应 profile 的 Pod 会被该调度器忽略**（不是失败，是直接不处理，留给其他调度器）。这样多个 scheduler 之间天然不会争抢同一个 Pod。

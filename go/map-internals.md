@@ -223,28 +223,52 @@ map 中的元素不可取地址（`&m[key]` 编译错误），因为扩容可能
 ### 高频问题
 
 **Q: Go 的 map 底层是怎么实现的？**
-A: 基于 hash table，核心结构是 `hmap`（header），其 `buckets` 指向一个 bucket 数组，数组长度为 `2^B`。每个 bucket（`bmap`）最多存 8 个 key-value，通过**拉链法**（overflow 溢出桶）解决哈希冲突。`hmap` 中 `count` 记录元素个数，`len(map)` 直接返回它。（注：Go 1.24 起底层已改为 Swiss Table 实现，见加分点，但这套 hmap/bmap 模型仍是理解 map 的基础。）
+
+> [!question]- 参考答案（点击展开）
+>
+> 基于 hash table，核心结构是 `hmap`（header），其 `buckets` 指向一个 bucket 数组，数组长度为 `2^B`。每个 bucket（`bmap`）最多存 8 个 key-value，通过**拉链法**（overflow 溢出桶）解决哈希冲突。`hmap` 中 `count` 记录元素个数，`len(map)` 直接返回它。（注：Go 1.24 起底层已改为 Swiss Table 实现，见加分点，但这套 hmap/bmap 模型仍是理解 map 的基础。）
 
 **Q: 一次 key 查找的完整过程是怎样的？**
-A: 先对 key 计算 hash，用 hash 的**低 B 位**确定 bucket 编号（`hash & (2^B - 1)`），用**高 8 位**作为 tophash 在 bucket 的 `tophash[0..7]` 中快速比对；tophash 命中后再比较完整 key 是否相等，避免直接做开销大的全 key 比较。当前 bucket 找不到则沿 overflow 链继续查找；若处于扩容中，还需到 `oldbuckets` 对应的旧桶查找。
+
+> [!question]- 参考答案（点击展开）
+>
+> 先对 key 计算 hash，用 hash 的**低 B 位**确定 bucket 编号（`hash & (2^B - 1)`），用**高 8 位**作为 tophash 在 bucket 的 `tophash[0..7]` 中快速比对；tophash 命中后再比较完整 key 是否相等，避免直接做开销大的全 key 比较。当前 bucket 找不到则沿 overflow 链继续查找；若处于扩容中，还需到 `oldbuckets` 对应的旧桶查找。
 
 **Q: 为什么 bmap 里要单独存一个 tophash（hash 高 8 位）？**
-A: tophash 是一个快速过滤器。查找时先逐个比对 8 个 uint8 的 tophash，只有高位匹配才进一步比较完整 key，能跳过绝大多数不匹配的槽位，显著减少昂贵的 key 比较次数。tophash 还会复用一段特殊低值（`emptyRest`/`emptyOne` 表示槽位空闲，`evacuatedX`/`evacuatedY`/`evacuatedEmpty` 表示该槽已迁移）来标记槽位状态。
+
+> [!question]- 参考答案（点击展开）
+>
+> tophash 是一个快速过滤器。查找时先逐个比对 8 个 uint8 的 tophash，只有高位匹配才进一步比较完整 key，能跳过绝大多数不匹配的槽位，显著减少昂贵的 key 比较次数。tophash 还会复用一段特殊低值（`emptyRest`/`emptyOne` 表示槽位空闲，`evacuatedX`/`evacuatedY`/`evacuatedEmpty` 表示该槽已迁移）来标记槽位状态。
 
 **Q: map 什么时候扩容？有哪两种扩容？**
-A: 两种触发条件：（1）**装载因子 > 6.5**（`count / 2^B`），说明元素过多、桶不够，触发**翻倍扩容**，`B += 1`，bucket 数量翻倍；（2）**overflow bucket 过多**（B<15 时数量 > `2^B`，B>=15 时 > `2^15`），说明频繁增删导致数据稀疏分散，触发**等量扩容**，B 不变、重新紧凑排列以提高利用率。
+
+> [!question]- 参考答案（点击展开）
+>
+> 两种触发条件：（1）**装载因子 > 6.5**（`count / 2^B`），说明元素过多、桶不够，触发**翻倍扩容**，`B += 1`，bucket 数量翻倍；（2）**overflow bucket 过多**（B<15 时数量 > `2^B`，B>=15 时 > `2^15`），说明频繁增删导致数据稀疏分散，触发**等量扩容**，B 不变、重新紧凑排列以提高利用率。
 
 **Q: 什么是渐进式扩容（incremental evacuation）？为什么要这样设计？**
-A: 扩容时不一次性搬迁全部数据，而是把搬迁分摊到后续的每次写/删操作中，每次 `growWork` 最多搬迁 2 个 bucket（当前命中的桶 + `nevacuate` 处的一个桶）。这样避免一次性 rehash 造成的延迟尖峰（latency spike）。注意 map 搬迁并不触发 STW，它只是把单次大开销均摊成多次小开销。`oldbuckets` 指向旧桶，`nevacuate` 记录进度；扩容未完成时，读操作要同时检查新旧桶。
+
+> [!question]- 参考答案（点击展开）
+>
+> 扩容时不一次性搬迁全部数据，而是把搬迁分摊到后续的每次写/删操作中，每次 `growWork` 最多搬迁 2 个 bucket（当前命中的桶 + `nevacuate` 处的一个桶）。这样避免一次性 rehash 造成的延迟尖峰（latency spike）。注意 map 搬迁并不触发 STW，它只是把单次大开销均摊成多次小开销。`oldbuckets` 指向旧桶，`nevacuate` 记录进度；扩容未完成时，读操作要同时检查新旧桶。
 
 **Q: 为什么 map 元素不可取地址（`&m[key]` 报错）？**
-A: 因为扩容时会发生渐进式搬迁，元素的内存位置会改变，如果允许取址，搬迁后该指针就会悬空指向旧位置。Go 在编译期直接禁止对 map 元素取址来杜绝这个问题；如需可变的元素，可用 `map[K]*V` 存指针，或先取值修改再写回。
+
+> [!question]- 参考答案（点击展开）
+>
+> 因为扩容时会发生渐进式搬迁，元素的内存位置会改变，如果允许取址，搬迁后该指针就会悬空指向旧位置。Go 在编译期直接禁止对 map 元素取址来杜绝这个问题；如需可变的元素，可用 `map[K]*V` 存指针，或先取值修改再写回。
 
 **Q: map 是并发安全的吗？并发读写会发生什么？**
-A: 不安全。运行时通过 `hmap.flags` 做并发读写检测，一旦检测到会直接 `fatal error: concurrent map read and map write`，注意这是 fatal error，**无法被 recover 捕获**。解决方案：读写都加 `sync.Mutex/RWMutex`，或在读多写少场景用 `sync.Map`。
+
+> [!question]- 参考答案（点击展开）
+>
+> 不安全。运行时通过 `hmap.flags` 做并发读写检测，一旦检测到会直接 `fatal error: concurrent map read and map write`，注意这是 fatal error，**无法被 recover 捕获**。解决方案：读写都加 `sync.Mutex/RWMutex`，或在读多写少场景用 `sync.Map`。
 
 **Q: 为什么 map 的遍历是无序的？**
-A: Go 故意在遍历时引入随机性——每次 `range` 会随机选择起始 bucket 和起始槽位。这样做是为了防止开发者依赖某个固定遍历顺序而写出脆弱代码（同时扩容搬迁本身也会改变物理顺序）。需要有序输出时应把 key 取出单独排序。
+
+> [!question]- 参考答案（点击展开）
+>
+> Go 故意在遍历时引入随机性——每次 `range` 会随机选择起始 bucket 和起始槽位。这样做是为了防止开发者依赖某个固定遍历顺序而写出脆弱代码（同时扩容搬迁本身也会改变物理顺序）。需要有序输出时应把 key 取出单独排序。
 
 ### 面试加分点
 

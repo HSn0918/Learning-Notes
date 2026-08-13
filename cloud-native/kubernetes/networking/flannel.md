@@ -60,8 +60,12 @@ cat /run/flannel/subnet.env
 
 **Q: 什么场景下应该选择 Flannel 而不是 Calico 或 Cilium？**
 
-A: Flannel 适用于小规模集群（< 100 节点）、不需要 NetworkPolicy、追求简单部署的场景。它的优势是配置极简、资源占用低、易于理解和排查。但它不支持网络策略，功能上远不如 Calico 和 Cilium。
+> [!question]- 参考答案（点击展开）
+>
+> Flannel 适用于小规模集群（< 100 节点）、不需要 NetworkPolicy、追求简单部署的场景。它的优势是配置极简、资源占用低、易于理解和排查。但它不支持网络策略，功能上远不如 Calico 和 Cilium。
 
 **Q: Flannel 的 VXLAN 和 host-gw 模式有什么区别？**
 
-A: VXLAN 通过 UDP 封装实现跨子网通信，兼容性好但有封装开销；host-gw 直接修改路由表，性能接近裸机但要求节点在同一 L2 网段。
+> [!question]- 参考答案（点击展开）
+>
+> VXLAN 通过 UDP 封装实现跨子网通信，兼容性好但有封装开销；host-gw 直接修改路由表，性能接近裸机但要求节点在同一 L2 网段。

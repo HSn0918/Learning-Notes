@@ -119,13 +119,18 @@ PV 的 `persistentVolumeReclaimPolicy` 决定 PVC 删除后的处理：
 
 ### Q: PVC、PV、StorageClass 分别解决什么问题？
 
-A: PVC 是用户声明需求，PV 是集群里的实际卷，StorageClass 描述动态供给参数和 driver。PVC 通过 StorageClass 找到 provisioner，provisioner 创建后端卷并生成 PV，再绑定 PVC。
+> [!question]- 参考答案（点击展开）
+>
+> PVC 是用户声明需求，PV 是集群里的实际卷，StorageClass 描述动态供给参数和 driver。PVC 通过 StorageClass 找到 provisioner，provisioner 创建后端卷并生成 PV，再绑定 PVC。
 
 ### Q: WaitForFirstConsumer 为什么重要？
 
-A: 它让 PV 创建延后到 Pod 调度后，存储系统可以在 Pod 所在 zone/rack 创建卷，避免云盘或本地盘因为拓扑不匹配而无法 attach。
+> [!question]- 参考答案（点击展开）
+>
+> 它让 PV 创建延后到 Pod 调度后，存储系统可以在 Pod 所在 zone/rack 创建卷，避免云盘或本地盘因为拓扑不匹配而无法 attach。
 
 ### Q: NodeStageVolume 和 NodePublishVolume 的区别？
 
-A: Stage 是节点级、与 Pod 无关的一次性准备；Publish 是把已经 stage 的卷挂到具体 Pod 目录。Stage 通常做重操作，Publish 通常做 bind mount。
-
+> [!question]- 参考答案（点击展开）
+>
+> Stage 是节点级、与 Pod 无关的一次性准备；Publish 是把已经 stage 的卷挂到具体 Pod 目录。Stage 通常做重操作，Publish 通常做 bind mount。

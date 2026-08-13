@@ -461,47 +461,61 @@ func main() {
 
 ### Q1：JetStream Stream 和 Kafka Topic 的本质区别？
 
-**A**：Kafka Topic 是物理分片的，并发消费能力由 Partition 数量决定，Consumer 数量不能超过 Partition 数量（超出的 Consumer 空闲）。JetStream Stream 是逻辑流，没有分区概念，Pull Consumer 数量不受限制，多个 Consumer 可以同时拉取，Server 按 Consumer 的消费进度独立管理。Kafka 的顺序保证在 Partition 级别，JetStream 的顺序保证在 Stream 级别（全局有序）。
+> [!question]- 参考答案（点击展开）
+>
+> Kafka Topic 是物理分片的，并发消费能力由 Partition 数量决定，Consumer 数量不能超过 Partition 数量（超出的 Consumer 空闲）。JetStream Stream 是逻辑流，没有分区概念，Pull Consumer 数量不受限制，多个 Consumer 可以同时拉取，Server 按 Consumer 的消费进度独立管理。Kafka 的顺序保证在 Partition 级别，JetStream 的顺序保证在 Stream 级别（全局有序）。
 
 ### Q2：JetStream 的三种 Retention Policy 分别用在什么场景？
 
-**A**：
-- `LimitsPolicy`：最常用，按数量/大小/时间淘汰旧消息，适合日志、事件流（消费方可能错过部分消息）。
-- `InterestPolicy`：所有 Durable Consumer 都 Ack 才删除消息，确保每个消费方都处理过，适合审计日志、多消费方通知。
-- `WorkQueuePolicy`：任意一个 Consumer Ack 即删除，适合任务队列（确保任务只被处理一次，类似 RabbitMQ 队列）。
+> [!question]- 参考答案（点击展开）
+>
+> - `LimitsPolicy`：最常用，按数量/大小/时间淘汰旧消息，适合日志、事件流（消费方可能错过部分消息）。
+> - `InterestPolicy`：所有 Durable Consumer 都 Ack 才删除消息，确保每个消费方都处理过，适合审计日志、多消费方通知。
+> - `WorkQueuePolicy`：任意一个 Consumer Ack 即删除，适合任务队列（确保任务只被处理一次，类似 RabbitMQ 队列）。
 
 ### Q3：Push Consumer 和 Pull Consumer 如何选择？
 
-**A**：生产环境推荐 **Pull Consumer**。Pull Consumer 由客户端控制拉取速度，天然支持背压，处理能力不足时不会被消息淹没。Push Consumer 由 Server 推送，速度由 Server 决定，客户端需要额外实现背压逻辑（`FlowControl`、`RateLimit`）。唯一适合 Push 的场景是需要极低延迟且消费者处理能力充足的情况。
+> [!question]- 参考答案（点击展开）
+>
+> 生产环境推荐 **Pull Consumer**。Pull Consumer 由客户端控制拉取速度，天然支持背压，处理能力不足时不会被消息淹没。Push Consumer 由 Server 推送，速度由 Server 决定，客户端需要额外实现背压逻辑（`FlowControl`、`RateLimit`）。唯一适合 Push 的场景是需要极低延迟且消费者处理能力充足的情况。
 
 ### Q4：如何实现 Exactly-once？
 
-**A**：两步保证：
-1. **发布端去重**：每条消息携带唯一 `Nats-Msg-Id` Header，JetStream 在 `Duplicates` 时间窗口内拒绝相同 ID 的消息（即使 Publisher 重试也不会重复存储）。
-2. **消费端精确确认**：使用 `AckSync()` 替代 `Ack()`，等待 Server 确认 Ack 已持久化，避免网络丢失 Ack 后 Server 重复投递。
+> [!question]- 参考答案（点击展开）
+>
+> 两步保证：
+> 1. **发布端去重**：每条消息携带唯一 `Nats-Msg-Id` Header，JetStream 在 `Duplicates` 时间窗口内拒绝相同 ID 的消息（即使 Publisher 重试也不会重复存储）。
+> 2. **消费端精确确认**：使用 `AckSync()` 替代 `Ack()`，等待 Server 确认 Ack 已持久化，避免网络丢失 Ack 后 Server 重复投递。
 
 ### Q5：JetStream KV Store 和 etcd / Redis 的适用场景区别？
 
-**A**：JetStream KV 基于 NATS JetStream 实现，优势是不引入额外组件（如果已经使用 NATS），支持 Watch 键变更、历史版本、TTL。适合配置下发、特性开关等场景。etcd 提供更强的一致性保证（线性化读）和更完善的 Watch 语义，Kubernetes 依赖它。Redis 单机性能极高，支持丰富数据结构。选择原则：已有 NATS 基础设施时优先 JetStream KV；需要强一致性分布式协调选 etcd；需要高性能缓存选 Redis。
+> [!question]- 参考答案（点击展开）
+>
+> JetStream KV 基于 NATS JetStream 实现，优势是不引入额外组件（如果已经使用 NATS），支持 Watch 键变更、历史版本、TTL。适合配置下发、特性开关等场景。etcd 提供更强的一致性保证（线性化读）和更完善的 Watch 语义，Kubernetes 依赖它。Redis 单机性能极高，支持丰富数据结构。选择原则：已有 NATS 基础设施时优先 JetStream KV；需要强一致性分布式协调选 etcd；需要高性能缓存选 Redis。
 
 ### Q6：JetStream 的消息去重窗口（Duplicates）有什么限制？
 
-**A**：去重窗口是时间范围（如 5 分钟），Server 在内存中维护这段时间内所有消息的 Msg-Id 哈希表。超过时间窗口的消息 ID 不再去重，如果 Publisher 在窗口期外重试，可能产生重复。因此发布端需要保证在窗口期内的重试使用相同 Msg-Id，窗口期的长短需要根据发布端最大重试时间来设置。
+> [!question]- 参考答案（点击展开）
+>
+> 去重窗口是时间范围（如 5 分钟），Server 在内存中维护这段时间内所有消息的 Msg-Id 哈希表。超过时间窗口的消息 ID 不再去重，如果 Publisher 在窗口期外重试，可能产生重复。因此发布端需要保证在窗口期内的重试使用相同 Msg-Id，窗口期的长短需要根据发布端最大重试时间来设置。
 
 ### Q7：JetStream 的 DeliverPolicy 有哪些选项？
 
-**A**：
-- `DeliverAllPolicy`：从 Stream 的第一条消息开始消费（默认）
-- `DeliverLastPolicy`：只消费最新的一条消息
-- `DeliverNewPolicy`：只消费 Consumer 创建之后的新消息
-- `DeliverByStartSequencePolicy`：从指定 Sequence 开始消费
-- `DeliverByStartTimePolicy`：从指定时间点开始消费
-- `DeliverLastPerSubjectPolicy`：每个 Subject 各取最后一条消息
+> [!question]- 参考答案（点击展开）
+>
+> - `DeliverAllPolicy`：从 Stream 的第一条消息开始消费（默认）
+> - `DeliverLastPolicy`：只消费最新的一条消息
+> - `DeliverNewPolicy`：只消费 Consumer 创建之后的新消息
+> - `DeliverByStartSequencePolicy`：从指定 Sequence 开始消费
+> - `DeliverByStartTimePolicy`：从指定时间点开始消费
+> - `DeliverLastPerSubjectPolicy`：每个 Subject 各取最后一条消息
 
 ### Q8：JetStream 适合替代 Kafka 吗？什么情况下不建议替换？
 
-**A**：JetStream 在大多数中小规模场景可以替代 Kafka：部署更简单、延迟更低、运维成本低。但以下场景**不建议替换**：
-1. **超大规模数据**：日均数百 GB 甚至 TB 级日志，Kafka 的 Partition 机制和 Log Compaction 更成熟。
-2. **依赖 Kafka 生态**：已使用 Kafka Connect、Kafka Streams、ksqlDB，迁移成本极高。
-3. **精确 Partition 顺序**：某些场景依赖同一 key 的消息严格顺序路由到固定 Partition，JetStream 无 Partition 概念。
-4. **监控体系**：Kafka 的 Prometheus 指标、Kafka UI 工具链更完善。
+> [!question]- 参考答案（点击展开）
+>
+> JetStream 在大多数中小规模场景可以替代 Kafka：部署更简单、延迟更低、运维成本低。但以下场景**不建议替换**：
+> 1. **超大规模数据**：日均数百 GB 甚至 TB 级日志，Kafka 的 Partition 机制和 Log Compaction 更成熟。
+> 2. **依赖 Kafka 生态**：已使用 Kafka Connect、Kafka Streams、ksqlDB，迁移成本极高。
+> 3. **精确 Partition 顺序**：某些场景依赖同一 key 的消息严格顺序路由到固定 Partition，JetStream 无 Partition 概念。
+> 4. **监控体系**：Kafka 的 Prometheus 指标、Kafka UI 工具链更完善。

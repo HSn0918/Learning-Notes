@@ -317,28 +317,42 @@ go tool pprof -inuse_space http://127.0.0.1:6060/debug/pprof/heap
 
 ### Q: 当前 Go map 的底层还是 hmap/bmap 吗？
 
-A: Go 1.24+ 当前实现主线已经迁到 `internal/runtime/maps`，使用 Swiss Table 风格的 `Map/Table/Group/Control word/Directory`。`runtime/map.go` 更多是 wrapper 和 linkname 入口。旧的 `hmap/bmap/overflow bucket` 是 Go 1.23 及更早的经典实现模型。
+> [!question]- 参考答案（点击展开）
+>
+> Go 1.24+ 当前实现主线已经迁到 `internal/runtime/maps`，使用 Swiss Table 风格的 `Map/Table/Group/Control word/Directory`。`runtime/map.go` 更多是 wrapper 和 linkname 入口。旧的 `hmap/bmap/overflow bucket` 是 Go 1.23 及更早的经典实现模型。
 
 ### Q: Swiss Table 的核心优化是什么？
 
-A: 每个 group 有 8 个 slot 和 8 字节 control word。control byte 保存 slot 状态和 hash 低 7 位 H2。lookup 时先用位运算在一个 group 内并行比较 8 个 H2，快速筛候选 slot，再做真正 key equality，减少随机访问和无谓 key 比较。
+> [!question]- 参考答案（点击展开）
+>
+> 每个 group 有 8 个 slot 和 8 字节 control word。control byte 保存 slot 状态和 hash 低 7 位 H2。lookup 时先用位运算在一个 group 内并行比较 8 个 H2，快速筛候选 slot，再做真正 key equality，减少随机访问和无谓 key 比较。
 
 ### Q: 新 map 为什么还需要 directory 和多个 table？
 
-A: 单个 Swiss Table 扩容时要重排整个 table。为了控制单次 grow 成本，Go 把大 map 拆成多个 table，并用 extendible hashing 的 directory 选择 table。这样可以按 table 局部 grow 或 split，降低尾延迟。
+> [!question]- 参考答案（点击展开）
+>
+> 单个 Swiss Table 扩容时要重排整个 table。为了控制单次 grow 成本，Go 把大 map 拆成多个 table，并用 extendible hashing 的 directory 选择 table。这样可以按 table 局部 grow 或 split，降低尾延迟。
 
 ### Q: map 删除为什么需要 tombstone？
 
-A: 开放寻址 probe 遇到 empty 就停止。如果删除中间 slot 时直接置 empty，后续冲突链上的 key 会查不到。tombstone 表示这里曾经有元素，probe 需要继续；插入可复用 tombstone，rehash/grow 时清理。
+> [!question]- 参考答案（点击展开）
+>
+> 开放寻址 probe 遇到 empty 就停止。如果删除中间 slot 时直接置 empty，后续冲突链上的 key 会查不到。tombstone 表示这里曾经有元素，probe 需要继续；插入可复用 tombstone，rehash/grow 时清理。
 
 ### Q: 为什么不能取 map value 的地址？
 
-A: map 内部 slot 可能因为 grow、split、rehash 移动；runtime 只在 `mapassign` 返回时短暂暴露 elem pointer 给赋值路径。语言层禁止对 `m[k]` 取地址，避免持有悬空内部指针。
+> [!question]- 参考答案（点击展开）
+>
+> map 内部 slot 可能因为 grow、split、rehash 移动；runtime 只在 `mapassign` 返回时短暂暴露 elem pointer 给赋值路径。语言层禁止对 `m[k]` 取地址，避免持有悬空内部指针。
 
 ### Q: map 并发读写为什么危险？
 
-A: 普通 map 没有并发同步。写入期间可能改变控制字、slot、table/directory、grow 状态；并发读写会破坏这些不变量。runtime 会检测部分并发写并 fatal，但这不是数据竞争保护，正确做法是加锁、串行 owner 或换并发容器。
+> [!question]- 参考答案（点击展开）
+>
+> 普通 map 没有并发同步。写入期间可能改变控制字、slot、table/directory、grow 状态；并发读写会破坏这些不变量。runtime 会检测部分并发写并 fatal，但这不是数据竞争保护，正确做法是加锁、串行 owner 或换并发容器。
 
 ### Q: 删除大量 key 后 map 会自动缩容吗？
 
-A: 普通 map 不会因为 delete 自动缩容。容量、table、tombstone 和持有的 key/value 对象可能继续保留。长生命周期大 map 需要重建或设计 eviction。
+> [!question]- 参考答案（点击展开）
+>
+> 普通 map 不会因为 delete 自动缩容。容量、table、tombstone 和持有的 key/value 对象可能继续保留。长生命周期大 map 需要重建或设计 eviction。

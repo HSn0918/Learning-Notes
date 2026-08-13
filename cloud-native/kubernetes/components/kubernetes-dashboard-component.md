@@ -233,24 +233,36 @@ kubectl get apiservice v1beta1.metrics.k8s.io
 
 ### Q: Dashboard 是 Kubernetes 必需组件吗？
 
-A: 不是。它是可选 addon，没有 Dashboard 集群也能正常工作。
+> [!question]- 参考答案（点击展开）
+>
+> 不是。它是可选 addon，没有 Dashboard 集群也能正常工作。
 
 ### Q: 2026 年还建议新装 Kubernetes Dashboard 吗？
 
-A: 不建议作为新系统默认选择。原项目已经归档，缺少持续维护和安全更新；新项目应优先评估 Headlamp 或其他仍维护的平台 UI。
+> [!question]- 参考答案（点击展开）
+>
+> 不建议作为新系统默认选择。原项目已经归档，缺少持续维护和安全更新；新项目应优先评估 Headlamp 或其他仍维护的平台 UI。
 
 ### Q: Dashboard 的权限来自哪里？
 
-A: 来自访问它时使用的用户身份或 service account，再由 apiserver 的 RBAC 鉴权决定能做什么。
+> [!question]- 参考答案（点击展开）
+>
+> 来自访问它时使用的用户身份或 service account，再由 apiserver 的 RBAC 鉴权决定能做什么。
 
 ### Q: 为什么不建议给 Dashboard cluster-admin？
 
-A: Dashboard 是 Web 入口，暴露面大。cluster-admin 会让任何入口漏洞或 token 泄漏直接变成集群最高权限。
+> [!question]- 参考答案（点击展开）
+>
+> Dashboard 是 Web 入口，暴露面大。cluster-admin 会让任何入口漏洞或 token 泄漏直接变成集群最高权限。
 
 ### Q: Dashboard 能否绕过 apiserver？
 
-A: 不能。它通过 apiserver 读写资源，仍然经过认证、鉴权、审计和准入控制。
+> [!question]- 参考答案（点击展开）
+>
+> 不能。它通过 apiserver 读写资源，仍然经过认证、鉴权、审计和准入控制。
 
 ### Q: Dashboard 和平台控制台的区别？
 
-A: Dashboard 是通用资源 UI；生产平台控制台通常还会做租户、审计、审批、成本、模板和多集群治理。
+> [!question]- 参考答案（点击展开）
+>
+> Dashboard 是通用资源 UI；生产平台控制台通常还会做租户、审计、审批、成本、模板和多集群治理。

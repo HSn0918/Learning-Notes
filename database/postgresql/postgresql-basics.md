@@ -402,37 +402,49 @@ CREATE INDEX idx_users_profile  ON ecom.users  USING GIN (profile);
 
 ### 1. PostgreSQL 的多进程模型有什么优缺点？
 
-**优点**：进程隔离，单个连接崩溃不影响其他连接；安全性高。  
-**缺点**：每个连接消耗独立内存（约 5-10 MB），高并发时进程数多、内存压力大，需要使用 **PgBouncer** 等连接池。
+> [!question]- 参考答案（点击展开）
+>
+> **优点**：进程隔离，单个连接崩溃不影响其他连接；安全性高。
+> **缺点**：每个连接消耗独立内存（约 5-10 MB），高并发时进程数多、内存压力大，需要使用 **PgBouncer** 等连接池。
 
 ### 2. MVCC 中 xmin/xmax 如何判断行的可见性？
 
-事务启动时获取 snapshot（记录当前活跃事务 ID 集合）。对于一行数据：
-- `xmin` 已提交 且 `xmin` < 当前事务 ID 且 `xmin` 不在 snapshot 的活跃列表 → 插入对当前事务可见
-- `xmax` 为 0 或 `xmax` 未提交 或 `xmax` >= 当前事务 ID → 该行未被删除，对当前事务可见
+> [!question]- 参考答案（点击展开）
+>
+> 事务启动时获取 snapshot（记录当前活跃事务 ID 集合）。对于一行数据：
+> - `xmin` 已提交 且 `xmin` < 当前事务 ID 且 `xmin` 不在 snapshot 的活跃列表 → 插入对当前事务可见
+> - `xmax` 为 0 或 `xmax` 未提交 或 `xmax` >= 当前事务 ID → 该行未被删除，对当前事务可见
 
 ### 3. JSONB 和 JSON 有什么区别？
 
-|         | JSON     | JSONB      |
-| ------- | -------- | ---------- |
-| 存储格式    | 原始文本     | 二进制（解析后存储） |
-| 写入速度    | 快（直接存文本） | 稍慢（需解析）    |
-| 读取速度    | 慢（每次解析）  | 快（已解析）     |
-| 索引支持    | 不支持 GIN  | 支持 GIN 索引  |
-| 空白/顺序保留 | 保留       | 不保留        |
-| 推荐场景    | 只存不查     | 需要查询、过滤    |
+> [!question]- 参考答案（点击展开）
+>
+> |         | JSON     | JSONB      |
+> | ------- | -------- | ---------- |
+> | 存储格式    | 原始文本     | 二进制（解析后存储） |
+> | 写入速度    | 快（直接存文本） | 稍慢（需解析）    |
+> | 读取速度    | 慢（每次解析）  | 快（已解析）     |
+> | 索引支持    | 不支持 GIN  | 支持 GIN 索引  |
+> | 空白/顺序保留 | 保留       | 不保留        |
+> | 推荐场景    | 只存不查     | 需要查询、过滤    |
 
 ### 4. GIN 和 GiST 索引的区别？
 
-- **GIN（Generalized Inverted Index）**：倒排索引，适合数组、JSONB、全文检索等多值列，查询快但构建慢、更新开销大。
-- **GiST（Generalized Search Tree）**：通用搜索树框架，适合几何、范围、全文检索，支持有损存储，查询比 GIN 稍慢但更新快。
+> [!question]- 参考答案（点击展开）
+>
+> - **GIN（Generalized Inverted Index）**：倒排索引，适合数组、JSONB、全文检索等多值列，查询快但构建慢、更新开销大。
+> - **GiST（Generalized Search Tree）**：通用搜索树框架，适合几何、范围、全文检索，支持有损存储，查询比 GIN 稍慢但更新快。
 
 ### 5. 为什么 PostgreSQL 需要 VACUUM？
 
-因为 MVCC 机制下，UPDATE/DELETE 不会立即删除旧行版本，而是留下 **dead tuple**（已失效行）。若不清理：表文件持续膨胀（table bloat）、查询需要扫描更多 page、vacuum freeze 不推进会导致 **transaction ID wraparound** 风险。
+> [!question]- 参考答案（点击展开）
+>
+> 因为 MVCC 机制下，UPDATE/DELETE 不会立即删除旧行版本，而是留下 **dead tuple**（已失效行）。若不清理：表文件持续膨胀（table bloat）、查询需要扫描更多 page、vacuum freeze 不推进会导致 **transaction ID wraparound** 风险。
 
 ### 6. B-Tree 和 BRIN 索引如何选择？
 
-- 数据**物理顺序**与逻辑顺序高度相关（如时序日志、自增 ID）→ 优选 **BRIN**，极小体积。
-- 数据随机分布或需要随机访问 → 优选 **B-Tree**。
-- BRIN 不能精确定位，只能过滤 page 范围，假阳性由 heap 扫描再次过滤。
+> [!question]- 参考答案（点击展开）
+>
+> - 数据**物理顺序**与逻辑顺序高度相关（如时序日志、自增 ID）→ 优选 **BRIN**，极小体积。
+> - 数据随机分布或需要随机访问 → 优选 **B-Tree**。
+> - BRIN 不能精确定位，只能过滤 page 范围，假阳性由 heap 扫描再次过滤。

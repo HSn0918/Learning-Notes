@@ -116,15 +116,21 @@ graph TD
 
 **Q: CNI 是什么？它解决什么问题？**
 
-A: CNI 是容器网络接口规范，定义了 kubelet 与网络插件之间的标准接口。CNI 插件负责给 Pod 分配 IP、创建网络接口（veth pair）、设置路由，确保 Pod 间可以通信。
+> [!question]- 参考答案（点击展开）
+>
+> CNI 是容器网络接口规范，定义了 kubelet 与网络插件之间的标准接口。CNI 插件负责给 Pod 分配 IP、创建网络接口（veth pair）、设置路由，确保 Pod 间可以通信。
 
 **Q: 常见 CNI 插件如何选型？**
 
-A: 小规模/学习用 Flannel；生产通用选 Calico（BGP + NetworkPolicy）；大规模高性能选 Cilium（eBPF）；需要多网卡选 Multus；需要加密选 Weave Net 或开启 Calico/Cilium 的 WireGuard。
+> [!question]- 参考答案（点击展开）
+>
+> 小规模/学习用 Flannel；生产通用选 Calico（BGP + NetworkPolicy）；大规模高性能选 Cilium（eBPF）；需要多网卡选 Multus；需要加密选 Weave Net 或开启 Calico/Cilium 的 WireGuard。
 
 **Q: eBPF 相比 iptables 有什么优势？**
 
-A: iptables 逐条匹配规则（O(n)），规则随 Service 数量线性增长；eBPF 使用 hash map 查找（O(1)），在内核最早的处理点拦截数据包，支持 JIT 编译为机器码，性能接近 native。详见 [[cilium]]。
+> [!question]- 参考答案（点击展开）
+>
+> iptables 逐条匹配规则（O(n)），规则随 Service 数量线性增长；eBPF 使用 hash map 查找（O(1)），在内核最早的处理点拦截数据包，支持 JIT 编译为机器码，性能接近 native。详见 [[cilium]]。
 
 ## 深入学习
 

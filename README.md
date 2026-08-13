@@ -50,6 +50,7 @@ Token/Transformer → 推理完整链路 → vLLM/SGLang → LoRA/QLoRA → SFT/
 - 每个知识文件只有一个 canonical 归属；路线、源码、Demo 和题库通过领域内子目录表达。
 - 普通知识笔记使用全局唯一的英文 kebab-case 文件名，保证 `[[wikilink]]` 能唯一解析。
 - MOC、知识笔记、源码导读、学习路线、Demo 手册和题库使用不同模板，不强迫所有文档都包含相同章节。
+- 所有正式学习题都提供默认折叠的参考答案，便于先主动回忆再展开核对；任务清单不伪装成题目。
 - 结构检查运行：`python3 scripts/validate_notes.py`。
 
 完整目录职责与写作规范见 [仓库架构](docs/architecture.md) 和 [AGENTS.md](AGENTS.md)。

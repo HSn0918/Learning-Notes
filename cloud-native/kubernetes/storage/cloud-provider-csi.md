@@ -276,19 +276,27 @@ flowchart TD
 
 ### Q1: 为什么云上推荐 WaitForFirstConsumer？
 
-WaitForFirstConsumer 会延迟 PV 的创建和绑定，等 Pod 被调度到具体节点后，再在该节点所在的 AZ 创建 PV。这避免了 PV 在 AZ-a 创建而 Pod 被调度到 AZ-b 导致挂载失败的问题。所有云厂商的块存储（EBS、ESSD、PD）都有 AZ 亲和性限制。
+> [!question]- 参考答案（点击展开）
+>
+> WaitForFirstConsumer 会延迟 PV 的创建和绑定，等 Pod 被调度到具体节点后，再在该节点所在的 AZ 创建 PV。这避免了 PV 在 AZ-a 创建而 Pod 被调度到 AZ-b 导致挂载失败的问题。所有云厂商的块存储（EBS、ESSD、PD）都有 AZ 亲和性限制。
 
 ### Q2: AWS EBS gp3 和 io2 如何选择？
 
-gp3 是通用 SSD，基线 3000 IOPS + 125 MB/s 吞吐，可按需额外付费提升，适合大多数工作负载。io2 是高性能 SSD，最高 256K IOPS，适合需要稳定高 IOPS 的数据库（如 Oracle、SAP HANA）。一般先用 gp3，监控 IOPS 不足时再升级 io2。
+> [!question]- 参考答案（点击展开）
+>
+> gp3 是通用 SSD，基线 3000 IOPS + 125 MB/s 吞吐，可按需额外付费提升，适合大多数工作负载。io2 是高性能 SSD，最高 256K IOPS，适合需要稳定高 IOPS 的数据库（如 Oracle、SAP HANA）。一般先用 gp3，监控 IOPS 不足时再升级 io2。
 
 ### Q3: 云厂商的块存储和文件存储分别对应什么 Access Mode？
 
-块存储（EBS/ESSD/PD）对应 ReadWriteOnce（RWO），一个 PV 只能挂载到一个 Node。文件存储（EFS/NAS/Filestore）对应 ReadWriteMany（RWX），多个 Pod 可以同时读写。选择时根据应用是否需要多 Pod 共享来决定。
+> [!question]- 参考答案（点击展开）
+>
+> 块存储（EBS/ESSD/PD）对应 ReadWriteOnce（RWO），一个 PV 只能挂载到一个 Node。文件存储（EFS/NAS/Filestore）对应 ReadWriteMany（RWX），多个 Pod 可以同时读写。选择时根据应用是否需要多 Pod 共享来决定。
 
 ### Q4: 如何避免云厂商锁定？
 
-1. 使用 Kubernetes 原生 PVC/StorageClass 抽象，应用层不直接引用云厂商 API
-2. 将 StorageClass 定义与应用 YAML 分离，迁移时只改 StorageClass
-3. 对于自建集群，考虑 Ceph 或 Longhorn 等开源方案
-4. 使用 Crossplane 等工具做基础设施抽象
+> [!question]- 参考答案（点击展开）
+>
+> 1. 使用 Kubernetes 原生 PVC/StorageClass 抽象，应用层不直接引用云厂商 API
+> 2. 将 StorageClass 定义与应用 YAML 分离，迁移时只改 StorageClass
+> 3. 对于自建集群，考虑 Ceph 或 Longhorn 等开源方案
+> 4. 使用 Crossplane 等工具做基础设施抽象

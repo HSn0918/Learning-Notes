@@ -360,26 +360,105 @@
 
 ## 高阶自检题（8 周后应该全部能答）
 
-1. PagedAttention 为什么用 16 token 的 block？改小改大各有什么权衡？
-2. BlockManager 三个队列的转换条件，preemption 时 recompute 和 swap 怎么选
-3. continuous batching 的 iteration-level scheduling 和传统 batching 在 GPU 利用率上差几倍
-4. chunked prefill 解决了什么 P99 ITL 抖动，max_num_batched_tokens 怎么定
-5. vLLM block hash 命中和 SGLang radix tree 命中的本质差异，哪些场景后者明显赢
-6. Prefix Cache 在多 LoRA / 多模型版本场景怎么处理
-7. KV cache 大小怎么算，128k context 一个 sequence 多大显存
-8. CPU offload 的 PCIe 瓶颈，GPU↔CPU 实际带宽
-9. Mooncake 为什么必须用 RDMA，CPU 之间走 TCP 不行吗
-10. DistServe 的 phase-disaggregated 和 Mooncake 的 KV-centric 的核心差异
-11. PD 分离不适合哪些场景，1P:N D 比例怎么定
-12. KV transfer 怎么和 decode 下一层计算重叠（layer-wise streaming）
-13. LLM Router 跟 HTTP LB 的 4 个本质不同
-14. Prefix-aware routing：router 怎么知道哪个实例有哪个 prefix
-15. KV-aware autoscaler 跟 HPA 的差异，KV stateful 怎么缩容
-16. GIE 的 InferenceModel / InferencePool 是什么，epp 怎么决策
-17. AIBrix / Dynamo / llm-d 三家差异化定位
-18. 一次推理服务 P99 TTFT 突然变高，你怎么诊断（6 步排查路径）
-19. speculative decoding 怎么用，drafter 模型怎么选
-20. 一张 H100 80GB 跑 Qwen 7B，理论最大并发是多少（block 池算账）
+1. **PagedAttention 为什么常见为 16 token 的 block？改小改大各有什么权衡？**
+
+   > [!question]- 参考答案（点击展开）
+   > 它折中 KV 尾部碎片与 block table/分配开销：小 block 复用更细、元数据更多；大 block 相反。`16` 不是通用常数，按引擎版本、上下文分布和压测选取。深入见 [[llm-inference-learning-path#阶段 2：源码 1 — PagedAttention 与 Block Manager（5-7 天）]]。
+
+2. **BlockManager 三个队列如何转换？preemption 时 recompute 和 swap 怎么选？**
+
+   > [!question]- 参考答案（点击展开）
+   > `waiting` 等 admission，`running` 持有 GPU KV，`swapped` 等待从 CPU 恢复；具体转换依版本而变。重算适合短/便宜上下文，swap 适合重算昂贵但会增加主存和传输延迟。
+
+3. **continuous batching 的 iteration-level scheduling 和传统 batching 在 GPU 利用率上差几倍？**
+
+   > [!question]- 参考答案（点击展开）
+   > 没有固定倍数：收益来自完成的请求立即离开、空位立即补入，而不是等整批结束。应在固定模型、输入输出长度、并发和 SLO 下比较吞吐、TTFT、TPOT 与 P99，不能引用脱离负载的倍数。
+
+4. **chunked prefill 解决什么 P99 ITL 抖动？`max_num_batched_tokens` 怎么定？**
+
+   > [!question]- 参考答案（点击展开）
+   > 它限制单轮长 prefill 占用，使 decode 能穿插执行，从而减少流式请求的 ITL 毛刺。token budget 由 TTFT、ITL、吞吐和显存压测共同确定，没有静态最优值。深入见 [[llm-inference-learning-path#阶段 3：源码 2 — Continuous Batching 与 Scheduler（3-5 天）]]。
+
+5. **vLLM block hash 与 SGLang radix tree 的本质差异，哪些场景后者更有利？**
+
+   > [!question]- 参考答案（点击展开）
+   > 前者倾向复用完整固定 block，后者可按任意前缀边界找最长匹配；多轮对话、长共同前缀和频繁分叉时后者通常更灵活。命中率仍由 token 一致性、淘汰和并发驻留决定。
+
+6. **Prefix Cache 在多 LoRA / 多模型版本场景怎么处理？**
+
+   > [!question]- 参考答案（点击展开）
+   > cache key/namespace 必须隔离 base model、adapter 权重版本、tokenizer 和关键运行配置；版本变化即失效。不能仅凭 token 相同跨模型或 adapter 复用。
+
+7. **KV cache 大小怎么算？128k context 一个 sequence 多大显存？**
+
+   > [!question]- 参考答案（点击展开）
+   > 近似为 `layers × tokens × 2(K,V) × kv_heads × head_dim × bytes_per_element`，再加 block 对齐、元数据和运行时余量。128k 的具体值依模型 GQA/MQA、KV dtype、tensor parallel 与引擎实现变化，必须带入指定模型配置计算。
+
+8. **CPU offload 的 PCIe 瓶颈，GPU↔CPU 实际带宽怎么看？**
+
+   > [!question]- 参考答案（点击展开）
+   > 关注实际 DMA 带宽、延迟、NUMA、copy/compute 重叠与链路竞争，不要直接使用标称 PCIe 峰值。恢复被换出 KV 的等待常比平均带宽更影响请求 P99。
+
+9. **Mooncake 为什么使用 RDMA？CPU 之间走 TCP 不行吗？**
+
+   > [!question]- 参考答案（点击展开）
+   > RDMA 可减少 CPU/拷贝开销并提高远端 KV 的吞吐和延迟稳定性；TCP 在功能上可行，但高频大 KV 传输通常更难达到相同性能。具体差距取决于网卡、拓扑和拥塞。
+
+10. **DistServe 的 phase-disaggregated 和 Mooncake 的 KV-centric 核心差异？**
+
+   > [!question]- 参考答案（点击展开）
+   > DistServe 的中心是将 Prefill/Decode 资源池按阶段拆分并优化配比；Mooncake 更把 KV 当作跨节点共享、调度和传输的第一等资源。两者可以组合，不能简单视为互斥产品。
+
+11. **PD 分离不适合哪些场景？1P:N D 比例怎么定？**
+
+   > [!question]- 参考答案（点击展开）
+   > 低流量、短上下文、慢互连或无法承受额外运维/故障面时不一定值得拆。比例应根据输入输出 token 分布、各池服务率、KV 带宽和 TTFT/TPOT SLO 动态估算，而非固定为某个 N。
+
+12. **KV transfer 怎么和 decode 下一层计算重叠（layer-wise streaming）？**
+
+   > [!question]- 参考答案（点击展开）
+   > 在消费者计算当前已到达层的 KV 时，传输后续层的 KV，并用异步 stream、分层就绪信号和双缓冲隐藏部分通信。实际能否重叠取决于依赖关系、DMA/compute 资源和网络抖动；未及时到达必须 fallback 或等待。
+
+13. **LLM Router 跟 HTTP LB 的四个本质不同是什么？**
+
+   > [!question]- 参考答案（点击展开）
+   > LLM 请求的 token 大小和时长高度不均匀，实例还持有 KV、LoRA、模型版本等状态，路由还要理解 Prefill/Decode 阶段。因此它需按模型、prefix、负载和缓存状态决策，而非只轮询 URL/连接。见 [[llm-inference-learning-path#阶段 7：Inference Router 与 K8s 平台层（7-10 天）]]。
+
+14. **Prefix-aware routing：router 怎么知道哪个实例有哪个 prefix？**
+
+   > [!question]- 参考答案（点击展开）
+   > 实例上报 prefix 摘要/目录，router 用周期同步、事件推送或二者结合维护近似视图。目录会陈旧，必须接受 cache miss，并在错误路由后确定地回退到本地 prefill 或兼容实例。
+
+15. **KV-aware autoscaler 跟 HPA 的差异，KV stateful 怎么缩容？**
+
+   > [!question]- 参考答案（点击展开）
+   > 它除 CPU/QPS 外还看 queue、TTFT/TPOT、token rate、KV 占用和可回收空间。缩容前要停止分流、等待/迁移活跃会话，明确驱逐可失效 cache，并用滞后窗口避免频繁扩缩。
+
+16. **GIE 的 `InferenceModel` / `InferencePool` 是什么，EPP 怎么决策？**
+
+   > [!question]- 参考答案（点击展开）
+   > `InferenceModel` 表达被路由的模型/adapter 语义，`InferencePool` 表达承载它的一组 endpoint；EPP 在候选 endpoint 上按实现提供的筛选/评分策略选择目标。CRD/接口仍在演进，补写时应标注所依据的 GIE 版本。
+
+17. **AIBrix / Dynamo / llm-d 的差异化定位？**
+
+   > [!question]- 参考答案（点击展开）
+   > AIBrix 偏 Kubernetes 上的 vLLM Gateway、LoRA 与 KV 管理；Dynamo 偏 NVIDIA 的高性能 runtime、NIXL 和动态 PD planner；llm-d 偏 Gateway API Inference Extension 驱动的 K8s 互操作平台。项目演进快，具体能力须以当前 release 文档复核。
+
+18. **一次推理服务 P99 TTFT 突然变高，怎么按 6 步排查？**
+
+   > [!question]- 参考答案（点击展开）
+   > 1）确认范围和变更；2）分解 queue、prefill、网络、首 token 指标；3）比较输入长度/模型/adapter 分布；4）查 prefix hit、KV 容量、swap/preemption；5）查 GPU、CPU、网络与下游饱和；6）用受控请求复现并验证缓解措施。先区分队列问题和单请求 prefill 变慢。
+
+19. **speculative decoding 怎么用，drafter 模型怎么选？**
+
+   > [!question]- 参考答案（点击展开）
+   > drafter 先提出若干 token，target model 并行验证并保持采样等价性；收益取决于接受率、验证成本和额外显存/调度开销。选择与 target 分布接近、延迟低且能取得足够接受率的 drafter，并以真实请求的 E2E TPOT 验证。
+
+20. **一张 H100 80GB 跑 Qwen 7B，理论最大并发是多少（block 池算账）？**
+
+   > [!question]- 参考答案（点击展开）
+   > 先扣除模型权重、CUDA/engine workspace 与安全余量，剩余显存除以每 token KV 大小得到总 token block 池，再按并发请求的实际 prompt+生成 token 分布折算。结果依 Qwen 具体版本、权重量化、KV dtype、max context、并行方式和预留比例变化；不能只用“7B/H100”给唯一数字。
 
 ---
 

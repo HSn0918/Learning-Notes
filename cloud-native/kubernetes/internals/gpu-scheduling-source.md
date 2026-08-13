@@ -386,13 +386,15 @@ func (p *NvidiaPlugin) Allocate(_ context.Context, req *pluginapi.AllocateReques
 
 ### 关键设计：为什么 Allocate 不直接 mount /dev/nvidiaX？
 
-如果让插件直接返回 `DeviceSpec{HostPath:/dev/nvidia0, ContainerPath:/dev/nvidia0, Permissions:"rwm"}`，看起来更直观。NVIDIA 不这么做的原因有三个：
-
-1. **Driver 库版本耦合**：容器内的 CUDA toolkit 必须匹配宿主机驱动版本。把 driver 库（`libnvidia-ml.so.535.x`、`libcuda.so` 等）也挂进去，路径数量、版本号每次都不同——固定写在 `Allocate` 里维护性差。`nvidia-container-runtime` 的 prestart hook 用 `libnvidia-container.so` 动态读宿主机 driver 版本，把对应库一次性 bind-mount 进容器，这套机制独立于 K8s。
-2. **DeviceSpec 的 permissions 是 cgroup 设备权限位**：写错了会导致容器无法访问；让 runtime 来处理更稳。
-3. **支持 MIG / vGPU 这类「虚拟设备」**：MIG instance 在宿主机表现为 `/dev/nvidia-caps/nvidia-cap*` 一组节点，纯靠 plugin 静态列举容易漏。runtime hook 按 env 中的 MIG UUID 动态解析更可靠。
-
-代价：依赖 container runtime 链路里有 `nvidia-container-runtime` 这个二进制，containerd 必须配 `runtimes.nvidia` 段。GPU Operator 自动改写这段配置，否则需要运维手动 `nvidia-ctk runtime configure --runtime=containerd`。
+> [!question]- 参考答案（点击展开）
+>
+> 如果让插件直接返回 `DeviceSpec{HostPath:/dev/nvidia0, ContainerPath:/dev/nvidia0, Permissions:"rwm"}`，看起来更直观。NVIDIA 不这么做的原因有三个：
+>
+> 1. **Driver 库版本耦合**：容器内的 CUDA toolkit 必须匹配宿主机驱动版本。把 driver 库（`libnvidia-ml.so.535.x`、`libcuda.so` 等）也挂进去，路径数量、版本号每次都不同——固定写在 `Allocate` 里维护性差。`nvidia-container-runtime` 的 prestart hook 用 `libnvidia-container.so` 动态读宿主机 driver 版本，把对应库一次性 bind-mount 进容器，这套机制独立于 K8s。
+> 2. **DeviceSpec 的 permissions 是 cgroup 设备权限位**：写错了会导致容器无法访问；让 runtime 来处理更稳。
+> 3. **支持 MIG / vGPU 这类「虚拟设备」**：MIG instance 在宿主机表现为 `/dev/nvidia-caps/nvidia-cap*` 一组节点，纯靠 plugin 静态列举容易漏。runtime hook 按 env 中的 MIG UUID 动态解析更可靠。
+>
+> 代价：依赖 container runtime 链路里有 `nvidia-container-runtime` 这个二进制，containerd 必须配 `runtimes.nvidia` 段。GPU Operator 自动改写这段配置，否则需要运维手动 `nvidia-ctk runtime configure --runtime=containerd`。
 
 ## GPU 共享方案对比
 
@@ -687,48 +689,67 @@ resources:
 
 **Q1: GPU 调度链路里 Scheduler 和 kubelet 各负责什么？**
 
-A: Scheduler 只做**数量级调度**——通过 NodeResourcesFit 插件的 Filter 阶段比对「Pod.requests.nvidia.com/gpu」与「Node.allocatable.nvidia.com/gpu - 已用」，把 Pod 绑定到数量够的 Node。**具体哪块 GPU 给哪个容器**完全由 kubelet 侧 DeviceManager + Device Plugin 决定：DeviceManager 从 `healthyDevices - allocatedDevices` 算出空闲池，可选调用插件 `GetPreferredAllocation` 拿拓扑建议，最后调插件 `Allocate` 拿到 envs/mounts/devices 合并进 CRI `CreateContainer`。Scheduler 完全不知道 NVLink、PCIe、MIG profile 这些概念。
+> [!question]- 参考答案（点击展开）
+>
+> Scheduler 只做**数量级调度**——通过 NodeResourcesFit 插件的 Filter 阶段比对「Pod.requests.nvidia.com/gpu」与「Node.allocatable.nvidia.com/gpu - 已用」，把 Pod 绑定到数量够的 Node。**具体哪块 GPU 给哪个容器**完全由 kubelet 侧 DeviceManager + Device Plugin 决定：DeviceManager 从 `healthyDevices - allocatedDevices` 算出空闲池，可选调用插件 `GetPreferredAllocation` 拿拓扑建议，最后调插件 `Allocate` 拿到 envs/mounts/devices 合并进 CRI `CreateContainer`。Scheduler 完全不知道 NVLink、PCIe、MIG profile 这些概念。
 
 **Q2: GPU 是不可压缩资源意味着什么？为什么 requests 必须等于 limits？**
 
-A: 「不可压缩」指资源被分配后无法在运行时动态收回——CPU 可以靠 CFS 调度切片、Memory 可以靠 OOM kill 收回，但一块 GPU 在原生模式下只能整卡分配给一个容器（除非走 MIG / MPS / Time-Slicing）。K8s 对 Extended Resource 强制 `requests == limits`，因为：(1) 不能像 CPU 那样 burstable，超 limits 没有意义；(2) admission 与调度阶段必须知道确切的占用数，否则 capacity 账目对不上。具体校验在 apiserver 的 `LimitRanger` / `Validation` 阶段。
+> [!question]- 参考答案（点击展开）
+>
+> 「不可压缩」指资源被分配后无法在运行时动态收回——CPU 可以靠 CFS 调度切片、Memory 可以靠 OOM kill 收回，但一块 GPU 在原生模式下只能整卡分配给一个容器（除非走 MIG / MPS / Time-Slicing）。K8s 对 Extended Resource 强制 `requests == limits`，因为：(1) 不能像 CPU 那样 burstable，超 limits 没有意义；(2) admission 与调度阶段必须知道确切的占用数，否则 capacity 账目对不上。具体校验在 apiserver 的 `LimitRanger` / `Validation` 阶段。
 
 **Q3: 为什么 NVIDIA Device Plugin 的 Allocate 一般只返回 envs，不直接 mount /dev/nvidiaX？**
 
-A: 三个原因：(1) 驱动版本耦合——容器内 CUDA 必须匹配宿主 driver 版本，要挂的 `.so` 文件路径和名字每次都不同，交给 `nvidia-container-runtime` 的 prestart hook 动态处理更稳；(2) cgroup 设备权限位（`DeviceSpec.Permissions`）写错会导致访问失败，由 runtime 统一处理更安全；(3) MIG / vGPU 这类虚拟设备节点动态生成，静态列举容易遗漏。代价是部署链路里必须有 `nvidia-container-runtime`，containerd 配置里得有 `runtimes.nvidia` 段——这是 GPU Operator 帮你做的事。
+> [!question]- 参考答案（点击展开）
+>
+> 三个原因：(1) 驱动版本耦合——容器内 CUDA 必须匹配宿主 driver 版本，要挂的 `.so` 文件路径和名字每次都不同，交给 `nvidia-container-runtime` 的 prestart hook 动态处理更稳；(2) cgroup 设备权限位（`DeviceSpec.Permissions`）写错会导致访问失败，由 runtime 统一处理更安全；(3) MIG / vGPU 这类虚拟设备节点动态生成，静态列举容易遗漏。代价是部署链路里必须有 `nvidia-container-runtime`，containerd 配置里得有 `runtimes.nvidia` 段——这是 GPU Operator 帮你做的事。
 
 **Q4: Time-Slicing、MPS、MIG 在调度模型上有什么区别？**
 
-A: **Time-Slicing** 和 **MPS** 在 K8s 调度器看来一样——plugin 把 1 张物理卡上报为 N 个 `nvidia.com/gpu`，调度器以为有 N 张，实际 N 个容器共享同一卡（无显存隔离，OOM 互相影响）。两者差别在 CUDA 层：Time-Slicing 是 driver 自带的时间片轮转，MPS 需要起 `nvidia-cuda-mps-control` daemon、进程级合并 CUDA context、有一定空间隔离。**MIG** 完全不同：硬件级把 GPU 切成多个独立 instance，每个有专属 SM 和显存，每个 instance 上报为独立资源名（如 `nvidia.com/mig-3g.40gb`），调度器看到的是「多种 ER」，没有共享语义、不能跨 profile 调度。
+> [!question]- 参考答案（点击展开）
+>
+> **Time-Slicing** 和 **MPS** 在 K8s 调度器看来一样——plugin 把 1 张物理卡上报为 N 个 `nvidia.com/gpu`，调度器以为有 N 张，实际 N 个容器共享同一卡（无显存隔离，OOM 互相影响）。两者差别在 CUDA 层：Time-Slicing 是 driver 自带的时间片轮转，MPS 需要起 `nvidia-cuda-mps-control` daemon、进程级合并 CUDA context、有一定空间隔离。**MIG** 完全不同：硬件级把 GPU 切成多个独立 instance，每个有专属 SM 和显存，每个 instance 上报为独立资源名（如 `nvidia.com/mig-3g.40gb`），调度器看到的是「多种 ER」，没有共享语义、不能跨 profile 调度。
 
 **Q5: DRA 解决了 Device Plugin 哪些问题？**
 
-A: 三个核心：(1) **拓扑感知**——设备从 scalar number 变成带 attributes / capacity 的 `ResourceSlice.Device`，调度器能用 CEL 表达式选「同 NVLink 域的 4 张 H100」；(2) **共享语义**——一个 `ResourceClaim` 可被多个 Pod / 容器引用，原生表达 MPS / MIG / Time-Slicing；(3) **结构化参数**——参数走 K8s API 对象（DeviceClass / ResourceClaim）而非 plugin 内部黑盒，调度器/admission 可解析校验。代价：driver 实现复杂度高，从老 Device Plugin 迁移需要厂商重新开发 DRA driver（实现 `NodePrepareResources` + 维护 ResourceSlice）。
+> [!question]- 参考答案（点击展开）
+>
+> 三个核心：(1) **拓扑感知**——设备从 scalar number 变成带 attributes / capacity 的 `ResourceSlice.Device`，调度器能用 CEL 表达式选「同 NVLink 域的 4 张 H100」；(2) **共享语义**——一个 `ResourceClaim` 可被多个 Pod / 容器引用，原生表达 MPS / MIG / Time-Slicing；(3) **结构化参数**——参数走 K8s API 对象（DeviceClass / ResourceClaim）而非 plugin 内部黑盒，调度器/admission 可解析校验。代价：driver 实现复杂度高，从老 Device Plugin 迁移需要厂商重新开发 DRA driver（实现 `NodePrepareResources` + 维护 ResourceSlice）。
 
 **Q6: kubelet 重启后已分配的 GPU 怎么不丢？**
 
-A: DeviceManager 在每次 Allocate 之后把 `<podUID, containerName, resource> -> {deviceIDs, allocResp}` 序列化到 `/var/lib/kubelet/device-plugins/kubelet_internal_checkpoint`（见 `podDevices.toCheckpointData`）。重启时从 checkpoint 恢复 `podDevices`，容器无需重新 Allocate 就能继续运行。注意大坑：plugin 升级若改了设备 ID 命名规则（如 minor number → UUID），checkpoint 里的旧 ID 在新 `healthyDevices` 里找不到，会触发 `previously allocated devices are no longer healthy` 把所有 GPU 容器 evict——所以 NVIDIA 文档要求升级前先 drain 节点。
+> [!question]- 参考答案（点击展开）
+>
+> DeviceManager 在每次 Allocate 之后把 `<podUID, containerName, resource> -> {deviceIDs, allocResp}` 序列化到 `/var/lib/kubelet/device-plugins/kubelet_internal_checkpoint`（见 `podDevices.toCheckpointData`）。重启时从 checkpoint 恢复 `podDevices`，容器无需重新 Allocate 就能继续运行。注意大坑：plugin 升级若改了设备 ID 命名规则（如 minor number → UUID），checkpoint 里的旧 ID 在新 `healthyDevices` 里找不到，会触发 `previously allocated devices are no longer healthy` 把所有 GPU 容器 evict——所以 NVIDIA 文档要求升级前先 drain 节点。
 
 **Q7: GetPreferredAllocation 是干什么的？为什么 NVIDIA plugin 必须支持？**
 
-A: DeviceManager 选具体设备 ID 时，可以先把候选池 + 需要的数量打包给 plugin，让 plugin 按拓扑给出最优组合——这就是 `GetPreferredAllocation` RPC。NVIDIA plugin 据此把同一 NVLink 域的卡尽量分配给同一 Pod，因为跨 NVLink 域的卡走 PCIe 通信，NCCL 性能差几倍。开启条件：plugin `GetDevicePluginOptions` 返回 `GetPreferredAllocationAvailable=true`，DeviceManager 才会调。但要注意这只在「调度后单 Node 内部」生效，跨 Node 拓扑 Scheduler 看不到，所以单机 8 卡场景可能依然碎片化。
+> [!question]- 参考答案（点击展开）
+>
+> DeviceManager 选具体设备 ID 时，可以先把候选池 + 需要的数量打包给 plugin，让 plugin 按拓扑给出最优组合——这就是 `GetPreferredAllocation` RPC。NVIDIA plugin 据此把同一 NVLink 域的卡尽量分配给同一 Pod，因为跨 NVLink 域的卡走 PCIe 通信，NCCL 性能差几倍。开启条件：plugin `GetDevicePluginOptions` 返回 `GetPreferredAllocationAvailable=true`，DeviceManager 才会调。但要注意这只在「调度后单 Node 内部」生效，跨 Node 拓扑 Scheduler 看不到，所以单机 8 卡场景可能依然碎片化。
 
 **Q8: 描述一个 Pod 请求 `nvidia.com/gpu: 2` 后从 apply 到 nvidia-smi 看到设备的完整链路。**
 
-A:
-1. apply Pod → apiserver；
-2. Scheduler watch 到 Pod，NodeResourcesFit Filter 找到 `allocatable - requested >= 2` 的 Node，Score 阶段按各 Resource weight 打分，绑定；
-3. kubelet `syncPod` → `containerManager.Allocate` → `DeviceManager.Allocate(pod, container)`；
-4. DeviceManager 从 `healthyDevices - allocatedDevices` 算空闲池，可选调 `GetPreferredAllocation`，最终挑 2 个 UUID，调 plugin `Allocate`；
-5. plugin 返回 `Envs: {NVIDIA_VISIBLE_DEVICES: "GPU-aaa,GPU-bbb", NVIDIA_DRIVER_CAPABILITIES: "compute,utility"}`，DeviceManager 把它存到 `podDevices` 并 dump checkpoint；
-6. kuberuntime `startContainer` 把 envs 合并进 CRI `CreateContainerRequest.Config`；
-7. containerd CRI plugin 用 nvidia runtime 拉起容器，`nvidia-container-runtime` 的 prestart hook 读 env 把 `/dev/nvidia{0,1}` + driver 库 bind-mount 进 rootfs；
-8. 容器进程 execve 用户 entrypoint，`nvidia-smi` 通过 `/dev/nvidiactl` + `libnvidia-ml.so` 查询 GPU。
+> [!question]- 参考答案（点击展开）
+>
+> 1. apply Pod → apiserver；
+> 2. Scheduler watch 到 Pod，NodeResourcesFit Filter 找到 `allocatable - requested >= 2` 的 Node，Score 阶段按各 Resource weight 打分，绑定；
+> 3. kubelet `syncPod` → `containerManager.Allocate` → `DeviceManager.Allocate(pod, container)`；
+> 4. DeviceManager 从 `healthyDevices - allocatedDevices` 算空闲池，可选调 `GetPreferredAllocation`，最终挑 2 个 UUID，调 plugin `Allocate`；
+> 5. plugin 返回 `Envs: {NVIDIA_VISIBLE_DEVICES: "GPU-aaa,GPU-bbb", NVIDIA_DRIVER_CAPABILITIES: "compute,utility"}`，DeviceManager 把它存到 `podDevices` 并 dump checkpoint；
+> 6. kuberuntime `startContainer` 把 envs 合并进 CRI `CreateContainerRequest.Config`；
+> 7. containerd CRI plugin 用 nvidia runtime 拉起容器，`nvidia-container-runtime` 的 prestart hook 读 env 把 `/dev/nvidia{0,1}` + driver 库 bind-mount 进 rootfs；
+> 8. 容器进程 execve 用户 entrypoint，`nvidia-smi` 通过 `/dev/nvidiactl` + `libnvidia-ml.so` 查询 GPU。
 
 **Q9: Topology Manager 在 GPU 场景做了什么？**
 
-A: 协调 CPU Manager、Memory Manager、DeviceManager 三个 `HintProvider`，按策略（`none` / `best-effort` / `restricted` / `single-numa-node`）把它们的 NUMA 亲和方案合并成一个共识 hint。GPU 物理上挂在某个 CPU socket 的 PCIe Root Complex 下，跨 NUMA 访问会显著降低吞吐。`restricted` 策略下若无法满足共识就 admission 失败；`single-numa-node` 强制所有资源在同一 NUMA。生效前提：DeviceManager 能从 plugin 拿到 `Device.Topology.Nodes` 信息，NVIDIA plugin 从 v0.10 起会读 sysfs 填上 NUMA Node ID。
+> [!question]- 参考答案（点击展开）
+>
+> 协调 CPU Manager、Memory Manager、DeviceManager 三个 `HintProvider`，按策略（`none` / `best-effort` / `restricted` / `single-numa-node`）把它们的 NUMA 亲和方案合并成一个共识 hint。GPU 物理上挂在某个 CPU socket 的 PCIe Root Complex 下，跨 NUMA 访问会显著降低吞吐。`restricted` 策略下若无法满足共识就 admission 失败；`single-numa-node` 强制所有资源在同一 NUMA。生效前提：DeviceManager 能从 plugin 拿到 `Device.Topology.Nodes` 信息，NVIDIA plugin 从 v0.10 起会读 sysfs 填上 NUMA Node ID。
 
 **Q10: 为什么要给 GPU 节点打 taint？**
 
-A: GPU 节点贵且专用，必须避免被普通 CPU/Memory 任务占据。标准做法：节点打 `taint: nvidia.com/gpu=true:NoSchedule`，GPU 工作负载在 Pod spec 里写 `tolerations: [{key: nvidia.com/gpu, operator: Exists, effect: NoSchedule}]` 才能调度过来。配合 `nodeSelector: {nvidia.com/gpu.product: ...}`（由 NVIDIA GFD 自动打的 label）可以进一步选 GPU 型号。结合 PriorityClass，确保高优先级训练任务能抢占低优先级推理任务。
+> [!question]- 参考答案（点击展开）
+>
+> GPU 节点贵且专用，必须避免被普通 CPU/Memory 任务占据。标准做法：节点打 `taint: nvidia.com/gpu=true:NoSchedule`，GPU 工作负载在 Pod spec 里写 `tolerations: [{key: nvidia.com/gpu, operator: Exists, effect: NoSchedule}]` 才能调度过来。配合 `nodeSelector: {nvidia.com/gpu.product: ...}`（由 NVIDIA GFD 自动打的 label）可以进一步选 GPU 型号。结合 PriorityClass，确保高优先级训练任务能抢占低优先级推理任务。

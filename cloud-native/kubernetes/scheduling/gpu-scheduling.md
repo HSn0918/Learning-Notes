@@ -521,35 +521,49 @@ spec:
 
 **Q1: Kubernetes 如何感知 GPU 资源？**
 
-A: 通过 Device Plugin 机制。NVIDIA Device Plugin 以 DaemonSet 部署在 GPU 节点上，通过 gRPC 向 kubelet 注册 `nvidia.com/gpu` 这个 Extended Resource。kubelet 将 GPU 数量上报到 Node 的 `status.capacity` 和 `status.allocatable`。Scheduler 基于这些数量做调度决策。
+> [!question]- 参考答案（点击展开）
+>
+> 通过 Device Plugin 机制。NVIDIA Device Plugin 以 DaemonSet 部署在 GPU 节点上，通过 gRPC 向 kubelet 注册 `nvidia.com/gpu` 这个 Extended Resource。kubelet 将 GPU 数量上报到 Node 的 `status.capacity` 和 `status.allocatable`。Scheduler 基于这些数量做调度决策。
 
 **Q2: GPU 调度过程中，Scheduler 和 kubelet 各自负责什么？**
 
-A: Scheduler 只负责 **数量级别** 的调度——判断哪个 Node 有足够的 GPU 资源，然后把 Pod 绑定到该 Node。具体 **哪块 GPU** 分配给容器，由 kubelet 侧的 Device Plugin 的 `Allocate` RPC 决定。
+> [!question]- 参考答案（点击展开）
+>
+> Scheduler 只负责 **数量级别** 的调度——判断哪个 Node 有足够的 GPU 资源，然后把 Pod 绑定到该 Node。具体 **哪块 GPU** 分配给容器，由 kubelet 侧的 Device Plugin 的 `Allocate` RPC 决定。
 
 **Q3: 为什么 GPU requests 必须等于 limits？**
 
-A: GPU 是 Extended Resource，Kubernetes 对 Extended Resource 的约束是 requests 必须等于 limits，不支持 overcommit。这是因为 GPU 不像 CPU 可以被内核分时调度，一块 GPU 在原生模式下只能独占分配给一个容器。
+> [!question]- 参考答案（点击展开）
+>
+> GPU 是 Extended Resource，Kubernetes 对 Extended Resource 的约束是 requests 必须等于 limits，不支持 overcommit。这是因为 GPU 不像 CPU 可以被内核分时调度，一块 GPU 在原生模式下只能独占分配给一个容器。
 
 **Q4: Time-Slicing 和 MIG 怎么选？**
 
-A: 如果硬件支持 MIG（A100/H100），且需要硬件级隔离（如多租户场景），选 MIG。如果是开发测试环境或轻量推理，GPU 型号不支持 MIG，用 Time-Slicing。Time-Slicing 没有显存隔离，一个容器 OOM 会影响同卡的所有容器。
+> [!question]- 参考答案（点击展开）
+>
+> 如果硬件支持 MIG（A100/H100），且需要硬件级隔离（如多租户场景），选 MIG。如果是开发测试环境或轻量推理，GPU 型号不支持 MIG，用 Time-Slicing。Time-Slicing 没有显存隔离，一个容器 OOM 会影响同卡的所有容器。
 
 **Q5: 分布式训练为什么需要 Gang Scheduling？**
 
-A: 分布式训练（如 DDP）要求所有 Worker 同时在线，任何一个 Worker 未就绪都无法开始训练。如果用默认 Scheduler，可能只调度了一部分 Pod，剩余 Pod 因资源不足 Pending，已调度的 Pod 空耗 GPU 资源。Gang Scheduling（如 Volcano）确保要么全部 Pod 同时调度成功，要么全部不调度，避免资源浪费。
+> [!question]- 参考答案（点击展开）
+>
+> 分布式训练（如 DDP）要求所有 Worker 同时在线，任何一个 Worker 未就绪都无法开始训练。如果用默认 Scheduler，可能只调度了一部分 Pod，剩余 Pod 因资源不足 Pending，已调度的 Pod 空耗 GPU 资源。Gang Scheduling（如 Volcano）确保要么全部 Pod 同时调度成功，要么全部不调度，避免资源浪费。
 
 **Q6: GPU Operator 解决了什么问题？**
 
-A: GPU Operator 自动化管理 GPU 节点的整个软件栈（驱动、Container Toolkit、Device Plugin、监控、MIG 配置等），无需手动逐节点安装配置。新 GPU 节点加入集群后，Operator 自动完成所有初始化。这对大规模 GPU 集群运维尤为重要。
+> [!question]- 参考答案（点击展开）
+>
+> GPU Operator 自动化管理 GPU 节点的整个软件栈（驱动、Container Toolkit、Device Plugin、监控、MIG 配置等），无需手动逐节点安装配置。新 GPU 节点加入集群后，Operator 自动完成所有初始化。这对大规模 GPU 集群运维尤为重要。
 
 **Q7: 如何监控 GPU 使用情况？**
 
-A: 使用 DCGM Exporter 暴露 GPU metrics（利用率、显存使用、温度、功耗等），接入 Prometheus + Grafana 做可视化。关键指标：
-- `DCGM_FI_DEV_GPU_UTIL`：GPU 计算利用率
-- `DCGM_FI_DEV_FB_USED`：已用显存
-- `DCGM_FI_DEV_FB_FREE`：可用显存
-- `DCGM_FI_DEV_POWER_USAGE`：功耗
+> [!question]- 参考答案（点击展开）
+>
+> 使用 DCGM Exporter 暴露 GPU metrics（利用率、显存使用、温度、功耗等），接入 Prometheus + Grafana 做可视化。关键指标：
+> - `DCGM_FI_DEV_GPU_UTIL`：GPU 计算利用率
+> - `DCGM_FI_DEV_FB_USED`：已用显存
+> - `DCGM_FI_DEV_FB_FREE`：可用显存
+> - `DCGM_FI_DEV_POWER_USAGE`：功耗
 
 ### 面试加分项
 

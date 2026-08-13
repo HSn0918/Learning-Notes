@@ -435,22 +435,43 @@ kubelet → CRI → containerd → runc
 ### 高频问题
 
 **Q: OCI 是什么？包含哪些规范？**
-A: OCI 是容器行业的开放标准，包含 image-spec（定义镜像格式）和 runtime-spec（定义如何运行容器）。确保不同厂商的实现可以互操作。
+
+> [!question]- 参考答案（点击展开）
+>
+> OCI 是容器行业的开放标准，包含 image-spec（定义镜像格式）和 runtime-spec（定义如何运行容器）。确保不同厂商的实现可以互操作。
 
 **Q: CRI 的作用是什么？**
-A: CRI 是 Kubernetes 定义的 gRPC 接口标准，使 kubelet 能以统一方式与不同容器运行时交互，实现运行时的可插拔。包含 RuntimeService 和 ImageService 两组接口。
+
+> [!question]- 参考答案（点击展开）
+>
+> CRI 是 Kubernetes 定义的 gRPC 接口标准，使 kubelet 能以统一方式与不同容器运行时交互，实现运行时的可插拔。包含 RuntimeService 和 ImageService 两组接口。
 
 **Q: containerd 和 Docker 的关系？**
-A: containerd 最初是 Docker 拆分出来的核心组件。Docker Engine = dockerd（高层管理）+ containerd（容器运行时）+ runc（OCI runtime）。K8s 场景下可以直接使用 containerd，跳过 dockerd 这一层。
+
+> [!question]- 参考答案（点击展开）
+>
+> containerd 最初是 Docker 拆分出来的核心组件。Docker Engine = dockerd（高层管理）+ containerd（容器运行时）+ runc（OCI runtime）。K8s 场景下可以直接使用 containerd，跳过 dockerd 这一层。
 
 **Q: 为什么 K8s 1.24 移除了 dockershim？**
-A: 核心原因是减少不必要的抽象层。Docker 是一个完整的平台，K8s 只需要其中的容器运行时能力。通过 CRI 直连 containerd，调用链更短、性能更好、故障面更小、维护成本更低。Docker 构建的 OCI 标准镜像不受影响。
+
+> [!question]- 参考答案（点击展开）
+>
+> 核心原因是减少不必要的抽象层。Docker 是一个完整的平台，K8s 只需要其中的容器运行时能力。通过 CRI 直连 containerd，调用链更短、性能更好、故障面更小、维护成本更低。Docker 构建的 OCI 标准镜像不受影响。
 
 **Q: containerd-shim 的作用？**
-A: shim 作为容器进程的父进程，(1) 使 containerd 可以独立重启而不影响容器运行，(2) 回收容器的 exit status 避免 zombie process，(3) 维持容器的 stdio 流。
+
+> [!question]- 参考答案（点击展开）
+>
+> shim 作为容器进程的父进程，(1) 使 containerd 可以独立重启而不影响容器运行，(2) 回收容器的 exit status 避免 zombie process，(3) 维持容器的 stdio 流。
 
 **Q: runc 底层用了哪些 Linux 技术？**
-A: 主要三个：Namespaces（PID/Network/Mount/UTS/IPC/User/Cgroup 七种，提供隔离）、Cgroups（CPU/Memory/IO 等资源限制）、Union Filesystem（层叠式文件系统如 OverlayFS，实现镜像的分层存储）。
+
+> [!question]- 参考答案（点击展开）
+>
+> 主要三个：Namespaces（PID/Network/Mount/UTS/IPC/User/Cgroup 七种，提供隔离）、Cgroups（CPU/Memory/IO 等资源限制）、Union Filesystem（层叠式文件系统如 OverlayFS，实现镜像的分层存储）。
 
 **Q: containerd 和 CRI-O 怎么选？**
-A: containerd 是通用容器运行时，生态更丰富（如 buildkit、nerdctl），是大多数 K8s 发行版的默认选择。CRI-O 专为 K8s 设计，更轻量，是 OpenShift 的默认 runtime。两者都是 CNCF 毕业项目，生产环境都可靠。
+
+> [!question]- 参考答案（点击展开）
+>
+> containerd 是通用容器运行时，生态更丰富（如 buildkit、nerdctl），是大多数 K8s 发行版的默认选择。CRI-O 专为 K8s 设计，更轻量，是 OpenShift 的默认 runtime。两者都是 CNCF 毕业项目，生产环境都可靠。

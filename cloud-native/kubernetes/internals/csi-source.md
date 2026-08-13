@@ -739,25 +739,49 @@ Migration 的最终目标：K8s 主干仓库里所有 in-tree volume plugin 都�
 ## 九、面试要点
 
 **Q1：CSI 三大 service 各自的职责？**
+
+> [!question]- 参考答案（点击展开）
+>
 > Identity 是自我描述：返回 driver name / 版本 / capabilities，Controller 和 Node Pod 都必须实现。Controller 管卷的生命周期：CreateVolume / DeleteVolume / ControllerPublishVolume（挂到节点）/ ControllerUnpublishVolume / ControllerExpandVolume / CreateSnapshot 等，跑在 StatefulSet 里全集群一份。Node 管节点上的挂载：NodeStageVolume / NodeUnstageVolume / NodePublishVolume / NodeUnpublishVolume / NodeGetInfo，必须以 DaemonSet 跑在**所有可能用该卷的节点**上。
 
 **Q2：为什么需要 sidecar？K8s 不能直接调插件吗？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 能调但代价大。CSI spec 本身是编排器无关的——它只规定 gRPC 接口，不规定 PVC / VolumeAttachment 这些 K8s 对象。如果让插件作者直接 watch K8s 对象，每个驱动都要内置 client-go、要懂 PVC controller、要懂 VolumeAttachment 状态机——驱动作者会被淹没。Sidecar 把"K8s 对象事件 → CSI RPC"这层翻译写一遍，所有驱动复用——插件作者只需要专心实现 gRPC 接口，不 import client-go 也能跑在 K8s 上。
 
 **Q3：NodeStageVolume vs NodePublishVolume 区别？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 一个卷整体 vs 单个 Pod。NodeStage 在节点上为整个卷做"一次性"准备：mkfs、把块设备 mount 到 stagingPath（全节点共享）。NodePublish 把 stagingPath bind mount 到具体 Pod 的 targetPath，每个使用该卷的 Pod 调一次。RWX 卷下 stage 只一次、publish N 次。如果驱动 NodeGetCapabilities 不声明 STAGE_UNSTAGE_VOLUME，K8s 跳过 stage 直接 publish——简单场景这样足够。
 
 **Q4：Node service 为什么必须以 DaemonSet 跑？Controller 为什么不用？**
+
+> [!question]- 参考答案（点击展开）
+>
 > Node service 操作"该节点的 mount 命名空间"——必须本地执行，不能远程，因此每个节点一份。Controller service 操作的是"存储后端的管理 API"（EC2 API / Ceph monitor / NFS server），跟它跑在哪个节点无关，所以一个 StatefulSet 就够。事实上 EBS driver 的 Controller Pod 直接跑在 master 上调 AWS API，对节点完全没有依赖。
 
 **Q5：PVC 从创建到 Pod 容器看到挂载，中间发生了什么？**
+
+> [!question]- 参考答案（点击展开）
+>
 > ① PV controller 看到 PVC 触发 dynamic provisioning。② external-provisioner sidecar watch 到 PVC（match 自己的 provisioner name），调 driver Controller 的 CreateVolume，把返回的 volume_id 写进新创建的 PV。③ PVC.status=Bound。④ Pod 被调度后，AD controller 创建 VolumeAttachment 对象。⑤ external-attacher 看到 VA，调 driver Controller 的 ControllerPublishVolume，写回 status.attached=true。⑥ kubelet 在节点上调 NodeStageVolume 把卷 mount 到 stagingPath。⑦ kubelet 调 NodePublishVolume bind mount 到 Pod targetPath。⑧ kubelet 把 targetPath 挂进容器。
 
 **Q6：CSI Migration 是什么？为什么要做？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 早期 K8s 把 AWS EBS、GCE PD、Cinder 等存储驱动以 in-tree plugin 形式直接编译进主干（`pkg/volume/awsebs/` 等）。这让存储 bug 必须等 K8s 发版才能修、SIG-Storage 维护负担巨大。Migration 把它们逐个搬到外部 CSI driver，但**用户的老 PV / StorageClass 不需要改**——靠 `staging/src/k8s.io/csi-translation-lib` 在内存里把老对象翻译成 CSI 格式，配合 `CSIMigration<X>` feature gate 把读写操作重定向到 CSI driver。1.30+ 主流 cloud provider 都默认开启，目标是 1.32 前删光 in-tree 代码。
 
 **Q7：CSI driver 怎么向 kubelet 注册？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 通过 node-driver-registrar sidecar。它读到 driver 的 GetPluginInfo 拿到 driverName，在 `/var/lib/kubelet/plugins_registry/<driver>-reg.sock` 起一个注册 socket。kubelet 用 fsnotify watch 这个目录，发现新 socket 后调用 `pkg/volume/csi/csi_plugin.go` 的 `RegistrationHandler.RegisterPlugin`：先 `ValidatePlugin` 验证版本，再调 driver 的 `NodeGetInfo` 拿 nodeID + topology，最后 `nodeinfomanager.InstallCSIDriver` 把信息写进 Node annotation + CSINode 对象。
 
 **Q8：插件作者为什么要保证幂等？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 因为 sidecar 用 client-go 的 work queue 驱动调度——任何 RPC 失败都会被指数退避重新入队再调一次。如果 `CreateVolume(name=foo)` 不幂等，可能为同一个 PVC 在后端创建出多个孤儿卷。CSI spec 把幂等定义为契约：相同参数任意次调用 = 一次调用的效果。具体到 driver 实现，CreateVolume 要按 `req.Name` 在后端做查重，NodePublish/Stage 要先看 mount table 跳过已挂载的情况。

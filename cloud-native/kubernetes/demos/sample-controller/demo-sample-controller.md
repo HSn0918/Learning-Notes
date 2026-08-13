@@ -85,13 +85,50 @@ reconciled default/demo (deleted)
 
 ## 面试要点
 
-| 问题 | 回答要点 |
-| --- | --- |
-| **demo 里为什么选 ConfigMap 而不是 CRD？** | ConfigMap 是内置资源，无需 CRD/Operator 注册、无需 RBAC 改动，本地集群即开即用，让重点落在 sample-controller 模式本身。 |
-| **EventHandler 为什么只做 enqueue？** | EventHandler 同步执行于 `processDeltas` 链路，DeltaFIFO 持锁；EventHandler 阻塞会卡住整个队列。所以业务交给异步 Worker 的 syncHandler。 |
-| **入队 key 而不是对象的好处？** | 1) 字符串可去重；2) Worker 处理时通过 Lister 取最新对象，避免处理过期数据；3) Workqueue 不持有对象指针，便于 GC。 |
-| **WaitForCacheSync 不等会怎样？** | Lister 基于本地 Indexer，未同步前缓存不完整，`cmLister.Get` 可能误返 NotFound，syncHandler 会把存在的对象当成「已删除」。 |
-| **syncHandler 失败为什么调 AddRateLimited 而不是 Add？** | `Add` 会立即重入队，热失败下 1ms 内重试上千次会打爆 API Server。`AddRateLimited` 按指数退避（默认 5ms→1000s）+ 全局令牌桶（10QPS）限速。 |
-| **NumRequeues 超限后调 Forget 而不是 Add？** | Forget 清空该 key 的失败计数。如果只是不再入队但不清计数，下次该 key 真正出问题时退避会从超高值继续累加。 |
-| **Resync 在 demo 里表现是什么？** | factory 设了 30s Resync，每 30s Indexer 中全部 ConfigMap 会以 Sync Delta 重新入队，触发 UpdateFunc。demo 中按 `oldRV == newRV` 过滤掉了 Resync，避免重复日志。 |
-| **泛型 Workqueue 相比旧 API 的差别？** | 旧 `workqueue.RateLimitingInterface` 的 Add/Get 入参/出参是 `interface{}`，需要 type assertion。`TypedRateLimitingInterface[T]` 在编译期固定类型，省去断言并避免运行时类型错误。 |
+### Q：demo 里为什么选 ConfigMap 而不是 CRD？
+
+> [!question]- 参考答案（点击展开）
+>
+> ConfigMap 是内置资源，无需 CRD/Operator 注册、无需 RBAC 改动，本地集群即开即用，让重点落在 sample-controller 模式本身。
+
+### Q：EventHandler 为什么只做 enqueue？
+
+> [!question]- 参考答案（点击展开）
+>
+> EventHandler 同步执行于 `processDeltas` 链路，DeltaFIFO 持锁；EventHandler 阻塞会卡住整个队列。所以业务交给异步 Worker 的 syncHandler。
+
+### Q：入队 key 而不是对象的好处？
+
+> [!question]- 参考答案（点击展开）
+>
+> 1) 字符串可去重；2) Worker 处理时通过 Lister 取最新对象，避免处理过期数据；3) Workqueue 不持有对象指针，便于 GC。
+
+### Q：WaitForCacheSync 不等会怎样？
+
+> [!question]- 参考答案（点击展开）
+>
+> Lister 基于本地 Indexer，未同步前缓存不完整，`cmLister.Get` 可能误返 NotFound，syncHandler 会把存在的对象当成「已删除」。
+
+### Q：syncHandler 失败为什么调 AddRateLimited 而不是 Add？
+
+> [!question]- 参考答案（点击展开）
+>
+> `Add` 会立即重入队，热失败下 1ms 内重试上千次会打爆 API Server。`AddRateLimited` 按指数退避（默认 5ms→1000s）+ 全局令牌桶（10QPS）限速。
+
+### Q：NumRequeues 超限后调 Forget 而不是 Add？
+
+> [!question]- 参考答案（点击展开）
+>
+> Forget 清空该 key 的失败计数。如果只是不再入队但不清计数，下次该 key 真正出问题时退避会从超高值继续累加。
+
+### Q：Resync 在 demo 里表现是什么？
+
+> [!question]- 参考答案（点击展开）
+>
+> factory 设了 30s Resync，每 30s Indexer 中全部 ConfigMap 会以 Sync Delta 重新入队，触发 UpdateFunc。demo 中按 `oldRV == newRV` 过滤掉了 Resync，避免重复日志。
+
+### Q：泛型 Workqueue 相比旧 API 的差别？
+
+> [!question]- 参考答案（点击展开）
+>
+> 旧 `workqueue.RateLimitingInterface` 的 Add/Get 入参/出参是 `interface{}`，需要 type assertion。`TypedRateLimitingInterface[T]` 在编译期固定类型，省去断言并避免运行时类型错误。

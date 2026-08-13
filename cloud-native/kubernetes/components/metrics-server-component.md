@@ -241,20 +241,30 @@ kubectl get pod <pod> -n <namespace> -o jsonpath='{.spec.containers[*].resources
 
 ### Q: metrics-server 和 Prometheus 的区别？
 
-A: metrics-server 提供短期资源指标给 HPA 和 `kubectl top`，不做长期存储和复杂查询；Prometheus 是完整监控系统，负责采集、存储、查询和告警。
+> [!question]- 参考答案（点击展开）
+>
+> metrics-server 提供短期资源指标给 HPA 和 `kubectl top`，不做长期存储和复杂查询；Prometheus 是完整监控系统，负责采集、存储、查询和告警。
 
 ### Q: HPA 为什么显示 unknown？
 
-A: 常见原因是 metrics API 不可用、Pod 没有设置 CPU/Memory requests、metrics-server 无法拉 kubelet 指标。
+> [!question]- 参考答案（点击展开）
+>
+> 常见原因是 metrics API 不可用、Pod 没有设置 CPU/Memory requests、metrics-server 无法拉 kubelet 指标。
 
 ### Q: metrics-server 数据从哪里来？
 
-A: 从各节点 kubelet 暴露的资源指标接口拉取，再通过 aggregated API 暴露给 apiserver。
+> [!question]- 参考答案（点击展开）
+>
+> 从各节点 kubelet 暴露的资源指标接口拉取，再通过 aggregated API 暴露给 apiserver。
 
 ### Q: metrics-server 是否经过 etcd 存储指标？
 
-A: 不作为 Kubernetes API 对象长期写入 etcd。它聚合并临时提供 metrics API。
+> [!question]- 参考答案（点击展开）
+>
+> 不作为 Kubernetes API 对象长期写入 etcd。它聚合并临时提供 metrics API。
 
 ### Q: 为什么 `kubectl top` 不能替代监控？
 
-A: 它只提供近实时资源使用快照，没有长期历史、告警规则、标签查询和业务指标能力。
+> [!question]- 参考答案（点击展开）
+>
+> 它只提供近实时资源使用快照，没有长期历史、告警规则、标签查询和业务指标能力。

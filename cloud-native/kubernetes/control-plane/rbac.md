@@ -164,25 +164,46 @@ kubectl auth can-i get pods -n prod --as=system:serviceaccount:staging:qa-sa
 ### 高频问题
 
 **Q: RBAC 中的四种核心对象分别是什么？它们的关系是怎样的？**
-A: 四种对象是 Role、ClusterRole、RoleBinding、ClusterRoleBinding。前两者负责"定义权限"（一组 rules），后两者负责"绑定主体"（把权限授予 User/Group/ServiceAccount）。Role/RoleBinding 作用于单个 Namespace，ClusterRole/ClusterRoleBinding 作用于整个集群。绑定关系通过 Binding 的 `roleRef` 引用角色、`subjects` 指定主体来建立。
+
+> [!question]- 参考答案（点击展开）
+>
+> 四种对象是 Role、ClusterRole、RoleBinding、ClusterRoleBinding。前两者负责"定义权限"（一组 rules），后两者负责"绑定主体"（把权限授予 User/Group/ServiceAccount）。Role/RoleBinding 作用于单个 Namespace，ClusterRole/ClusterRoleBinding 作用于整个集群。绑定关系通过 Binding 的 `roleRef` 引用角色、`subjects` 指定主体来建立。
 
 **Q: Role 和 ClusterRole 有什么区别？**
-A: Role 是 Namespace 级别的，必须指定 `namespace`，只能定义该命名空间内的资源权限；ClusterRole 是集群级别的，没有命名空间字段。ClusterRole 还能授予 Role 无法表达的权限，比如集群范围资源（nodes、PV）、非资源型 URL（如 `/healthz`）以及跨所有命名空间的命名空间级资源。
+
+> [!question]- 参考答案（点击展开）
+>
+> Role 是 Namespace 级别的，必须指定 `namespace`，只能定义该命名空间内的资源权限；ClusterRole 是集群级别的，没有命名空间字段。ClusterRole 还能授予 Role 无法表达的权限，比如集群范围资源（nodes、PV）、非资源型 URL（如 `/healthz`）以及跨所有命名空间的命名空间级资源。
 
 **Q: RoleBinding 能引用 ClusterRole 吗？这样做有什么意义？**
-A: 可以。RoleBinding 既能引用同命名空间的 Role，也能引用一个 ClusterRole，此时该 ClusterRole 的权限被限定在 RoleBinding 所在的命名空间内生效。这种模式非常实用：定义一套通用 ClusterRole（如只读权限），然后在多个命名空间用 RoleBinding 复用，避免在每个命名空间重复定义相同的 Role。
+
+> [!question]- 参考答案（点击展开）
+>
+> 可以。RoleBinding 既能引用同命名空间的 Role，也能引用一个 ClusterRole，此时该 ClusterRole 的权限被限定在 RoleBinding 所在的命名空间内生效。这种模式非常实用：定义一套通用 ClusterRole（如只读权限），然后在多个命名空间用 RoleBinding 复用，避免在每个命名空间重复定义相同的 Role。
 
 **Q: RBAC 的 Subject（主体）有哪几种？ServiceAccount 的标识格式是什么？**
-A: 三种主体：User、Group、ServiceAccount。其中 User 和 Group 由外部认证系统（证书、OIDC、Token 等）提供，K8s 本身不存储它们；ServiceAccount 是 K8s 原生对象，存储在 etcd 中。ServiceAccount 在鉴权时的用户名格式为 `system:serviceaccount:<namespace>:<name>`，例如 `system:serviceaccount:staging:qa-sa`。
+
+> [!question]- 参考答案（点击展开）
+>
+> 三种主体：User、Group、ServiceAccount。其中 User 和 Group 由外部认证系统（证书、OIDC、Token 等）提供，K8s 本身不存储它们；ServiceAccount 是 K8s 原生对象，存储在 etcd 中。ServiceAccount 在鉴权时的用户名格式为 `system:serviceaccount:<namespace>:<name>`，例如 `system:serviceaccount:staging:qa-sa`。
 
 **Q: RBAC 的权限模型是默认拒绝还是默认允许？权限可以叠加吗？**
-A: RBAC 是纯增量（additive）、默认拒绝（deny by default）模型，不存在 "deny" 规则。一个主体最终拥有的权限是它通过所有绑定获得的权限的并集，没有任何规则授予的操作一律被拒绝。要收回权限只能删除或修改对应的 Binding/Role，无法通过显式 deny 覆盖。
+
+> [!question]- 参考答案（点击展开）
+>
+> RBAC 是纯增量（additive）、默认拒绝（deny by default）模型，不存在 "deny" 规则。一个主体最终拥有的权限是它通过所有绑定获得的权限的并集，没有任何规则授予的操作一律被拒绝。要收回权限只能删除或修改对应的 Binding/Role，无法通过显式 deny 覆盖。
 
 **Q: 如何验证某个主体是否拥有某项权限？**
-A: 用 `kubectl auth can-i` 命令，结合 `--as` 模拟主体身份。例如 `kubectl auth can-i get pods -n staging --as=system:serviceaccount:staging:qa-sa`，有权限返回 `yes`，无权限返回 `no`。这是排查 RBAC 配置最直接的手段，无需真正切换身份。
+
+> [!question]- 参考答案（点击展开）
+>
+> 用 `kubectl auth can-i` 命令，结合 `--as` 模拟主体身份。例如 `kubectl auth can-i get pods -n staging --as=system:serviceaccount:staging:qa-sa`，有权限返回 `yes`，无权限返回 `no`。这是排查 RBAC 配置最直接的手段，无需真正切换身份。
 
 **Q: rules 中的 apiGroups、resources、verbs 各代表什么？空字符串 apiGroup 指什么？**
-A: apiGroups 指定 API 组，`""`（空字符串）代表核心组（core group，如 pods、services、configmaps）；resources 指定资源类型，还可以是子资源如 `pods/log`、`pods/exec`；verbs 指定允许的操作动词，如 get、list、watch、create、update、patch、delete。三者共同构成一条权限规则。
+
+> [!question]- 参考答案（点击展开）
+>
+> apiGroups 指定 API 组，`""`（空字符串）代表核心组（core group，如 pods、services、configmaps）；resources 指定资源类型，还可以是子资源如 `pods/log`、`pods/exec`；verbs 指定允许的操作动词，如 get、list、watch、create、update、patch、delete。三者共同构成一条权限规则。
 
 ### 面试加分点
 

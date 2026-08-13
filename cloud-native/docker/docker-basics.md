@@ -223,28 +223,52 @@ CMD ["--help"]
 ### 高频问题
 
 **Q: Docker 容器和虚拟机（VM）的本质区别是什么？**
-A: VM 通过 Hypervisor 虚拟化出完整硬件并运行独立的 Guest OS kernel，隔离强但启动慢、镜像 GB 级、占用资源多。Docker 是 OS 层虚拟化，所有容器共享宿主机 kernel，仅通过 namespace 做资源视图隔离、cgroup 做资源限额，因此秒级启动、镜像通常 MB 级。代价是隔离性弱于 VM，且容器无法运行与宿主机不同的 kernel（只能共享宿主 kernel）。
+
+> [!question]- 参考答案（点击展开）
+>
+> VM 通过 Hypervisor 虚拟化出完整硬件并运行独立的 Guest OS kernel，隔离强但启动慢、镜像 GB 级、占用资源多。Docker 是 OS 层虚拟化，所有容器共享宿主机 kernel，仅通过 namespace 做资源视图隔离、cgroup 做资源限额，因此秒级启动、镜像通常 MB 级。代价是隔离性弱于 VM，且容器无法运行与宿主机不同的 kernel（只能共享宿主 kernel）。
 
 **Q: Docker 依赖哪些 Linux 内核技术实现隔离？**
-A: 主要是 namespace（隔离视图，如 PID/Net/Mount/UTS/IPC/User namespace）、cgroup（限制 CPU/内存/IO 等资源）和 union FS（联合文件系统，实现分层镜像与写时复制）。namespace 解决"看不见"，cgroup 解决"用不超"，union FS 解决"镜像分层共享"。
+
+> [!question]- 参考答案（点击展开）
+>
+> 主要是 namespace（隔离视图，如 PID/Net/Mount/UTS/IPC/User namespace）、cgroup（限制 CPU/内存/IO 等资源）和 union FS（联合文件系统，实现分层镜像与写时复制）。namespace 解决"看不见"，cgroup 解决"用不超"，union FS 解决"镜像分层共享"。
 
 **Q: Docker 镜像为什么要分层（layer）？写时复制是怎么工作的？**
-A: 镜像由多个 readonly 层叠加，相同的基础层可被多个镜像/容器共享，节省存储并支持增量分发（只传缺失层）。容器启动时在只读层之上挂载一个 readwrite 层。当容器修改某个文件时，触发写时复制（Copy-on-Write）：先把文件从底层 readonly 层复制到容器可写层再修改，原镜像文件不变，不同容器互不影响；新建文件则走用时分配（Allocate-on-Demand），文件被创建出来时才分配空间。
+
+> [!question]- 参考答案（点击展开）
+>
+> 镜像由多个 readonly 层叠加，相同的基础层可被多个镜像/容器共享，节省存储并支持增量分发（只传缺失层）。容器启动时在只读层之上挂载一个 readwrite 层。当容器修改某个文件时，触发写时复制（Copy-on-Write）：先把文件从底层 readonly 层复制到容器可写层再修改，原镜像文件不变，不同容器互不影响；新建文件则走用时分配（Allocate-on-Demand），文件被创建出来时才分配空间。
 
 **Q: OverlayFS（overlay2）的 lower、upper、merged 各代表什么？**
-A: lower 层是只读的镜像层，upper 层是容器可写层，merged 是用户实际看到的合并视图。读取时先查 upper 层，命中就直接用，否则回到 lower 层拉取；写入和删除都在 upper 层完成（删除通过 whiteout 文件在 upper 层标记，使下层文件在 merged 视图中"消失"）。早期的 overlay 只支持单个 lower 层，overlay2 支持多个 lower 层、更稳定，是当前主流存储驱动。
+
+> [!question]- 参考答案（点击展开）
+>
+> lower 层是只读的镜像层，upper 层是容器可写层，merged 是用户实际看到的合并视图。读取时先查 upper 层，命中就直接用，否则回到 lower 层拉取；写入和删除都在 upper 层完成（删除通过 whiteout 文件在 upper 层标记，使下层文件在 merged 视图中"消失"）。早期的 overlay 只支持单个 lower 层，overlay2 支持多个 lower 层、更稳定，是当前主流存储驱动。
 
 **Q: ADD 和 COPY 有什么区别，生产中如何选择？**
-A: COPY 只做本地文件/目录的复制，语义直白；ADD 额外支持远程 URL 下载和本地 tar 压缩包的自动解压。由于 ADD 行为隐式、容易踩坑，最佳实践是复制本地文件一律用 COPY，只有确实需要自动解压本地压缩包时才用 ADD。下载远程文件更推荐用 RUN curl/wget，便于在同一层校验与清理。
+
+> [!question]- 参考答案（点击展开）
+>
+> COPY 只做本地文件/目录的复制，语义直白；ADD 额外支持远程 URL 下载和本地 tar 压缩包的自动解压。由于 ADD 行为隐式、容易踩坑，最佳实践是复制本地文件一律用 COPY，只有确实需要自动解压本地压缩包时才用 ADD。下载远程文件更推荐用 RUN curl/wget，便于在同一层校验与清理。
 
 **Q: Docker 的 build cache 如何命中？为什么调整 Dockerfile 指令顺序能加速构建？**
-A: 构建时逐条执行指令，每条先判断缓存中是否有匹配的已存镜像层。对 ADD/COPY 会计算文件内容 checksum 再比较，其余指令（如 RUN）只比较指令字符串是否一致。关键规则是：一旦某一层 cache 失效，其后所有层 cache 全部失效并重新构建。因此应把不常变动的内容（如依赖安装）放前面、频繁变动的源码 COPY 放后面，最大化缓存复用。
+
+> [!question]- 参考答案（点击展开）
+>
+> 构建时逐条执行指令，每条先判断缓存中是否有匹配的已存镜像层。对 ADD/COPY 会计算文件内容 checksum 再比较，其余指令（如 RUN）只比较指令字符串是否一致。关键规则是：一旦某一层 cache 失效，其后所有层 cache 全部失效并重新构建。因此应把不常变动的内容（如依赖安装）放前面、频繁变动的源码 COPY 放后面，最大化缓存复用。
 
 **Q: 多阶段构建（multi-stage build）解决了什么问题？**
-A: 把"编译环境"和"运行环境"拆成多个 FROM 阶段，最终镜像只用 `COPY --from=<stage>` 拷贝产物（如 Go 二进制），编译器、源码、依赖统统不进最终镜像。这样既大幅缩小镜像体积（如 golang 编译镜像 ~800MB → 基于 scratch 的运行镜像 ~10MB），又减小攻击面，避免了过去用单层脚本拼命压缩镜像的繁琐做法。
+
+> [!question]- 参考答案（点击展开）
+>
+> 把"编译环境"和"运行环境"拆成多个 FROM 阶段，最终镜像只用 `COPY --from=<stage>` 拷贝产物（如 Go 二进制），编译器、源码、依赖统统不进最终镜像。这样既大幅缩小镜像体积（如 golang 编译镜像 ~800MB → 基于 scratch 的运行镜像 ~10MB），又减小攻击面，避免了过去用单层脚本拼命压缩镜像的繁琐做法。
 
 **Q: 什么是 build context，为什么 .dockerignore 很重要？**
-A: 执行 `docker build` 时，当前目录（context）会被整体打包发送给 docker daemon。如果目录里有 .git、node_modules、日志等无用文件，会拖慢传输、浪费资源，还可能因被 ADD/COPY 误带入而增大镜像。通过 .dockerignore 排除无关文件，并把 Dockerfile 放在专门的干净目录中构建，是推荐做法。
+
+> [!question]- 参考答案（点击展开）
+>
+> 执行 `docker build` 时，当前目录（context）会被整体打包发送给 docker daemon。如果目录里有 .git、node_modules、日志等无用文件，会拖慢传输、浪费资源，还可能因被 ADD/COPY 误带入而增大镜像。通过 .dockerignore 排除无关文件，并把 Dockerfile 放在专门的干净目录中构建，是推荐做法。
 
 ### 面试加分点
 

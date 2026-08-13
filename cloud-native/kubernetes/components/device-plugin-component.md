@@ -283,20 +283,30 @@ crictl inspect <container-id>
 
 ### Q: Device Plugin 如何把 GPU 暴露给 scheduler？
 
-A: 插件向 kubelet 注册并通过 `ListAndWatch` 上报设备，kubelet 更新 Node capacity/allocatable，scheduler 看到 extended resource 后才能调度请求 GPU 的 Pod。
+> [!question]- 参考答案（点击展开）
+>
+> 插件向 kubelet 注册并通过 `ListAndWatch` 上报设备，kubelet 更新 Node capacity/allocatable，scheduler 看到 extended resource 后才能调度请求 GPU 的 Pod。
 
 ### Q: scheduler 会选择具体哪块 GPU 吗？
 
-A: 传统 Device Plugin 模式下不会。scheduler 只选择 Node；具体设备 ID 通常由 kubelet DeviceManager 在节点上分配。
+> [!question]- 参考答案（点击展开）
+>
+> 传统 Device Plugin 模式下不会。scheduler 只选择 Node；具体设备 ID 通常由 kubelet DeviceManager 在节点上分配。
 
 ### Q: Allocate RPC 什么时候调用？
 
-A: Pod 已经调度到节点、kubelet 准备创建容器时调用，用于返回设备文件、env、mount、annotation 等运行时配置。
+> [!question]- 参考答案（点击展开）
+>
+> Pod 已经调度到节点、kubelet 准备创建容器时调用，用于返回设备文件、env、mount、annotation 等运行时配置。
 
 ### Q: Device Plugin 和 DRA 的关系？
 
-A: Device Plugin 简单稳定，但表达能力有限。DRA 把资源声明和分配模型前移，支持更复杂的设备属性、共享和拓扑约束。
+> [!question]- 参考答案（点击展开）
+>
+> Device Plugin 简单稳定，但表达能力有限。DRA 把资源声明和分配模型前移，支持更复杂的设备属性、共享和拓扑约束。
 
 ### Q: GPU Pod Pending 先看什么？
 
-A: 先看 Pod event 和 Node allocatable 中是否有对应 extended resource，再看 Device Plugin Pod 和 kubelet 日志。
+> [!question]- 参考答案（点击展开）
+>
+> 先看 Pod event 和 Node allocatable 中是否有对应 extended resource，再看 Device Plugin Pod 和 kubelet 日志。

@@ -10,6 +10,7 @@ ai/
   inference/        推理链路、vLLM、SGLang 与进阶路线
   post-training/    LoRA、SFT、DPO、RLHF、PPO、GRPO
   agents/           Agent 路线、源码与生产化
+  experiments/      可运行的采样、Prefix、LoRA、RL 与推理基准实验
 
 cloud-native/
   docker/           容器、镜像、隔离与网络

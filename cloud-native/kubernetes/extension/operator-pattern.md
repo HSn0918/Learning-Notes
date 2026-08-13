@@ -466,22 +466,40 @@ Reconcile 函数可能被反复调用（事件重复、重试等），**必须�
 ### 高频问题
 
 **Q: Operator Pattern 的核心思想是什么？**
-A: CRD 定义期望状态，Controller 通过 Reconcile Loop 持续驱动实际状态向期望状态收敛。本质是将运维知识编码为声明式 API + 自动化控制循环。
+
+> [!question]- 参考答案（点击展开）
+>
+> CRD 定义期望状态，Controller 通过 Reconcile Loop 持续驱动实际状态向期望状态收敛。本质是将运维知识编码为声明式 API + 自动化控制循环。
 
 **Q: Reconcile 函数为什么必须是幂等的？**
-A: 因为同一个资源的 Reconcile 可能被多次触发（Watch 事件重复、手动 Requeue、informer resync 等）。非幂等操作会导致资源重复创建或状态错乱。
+
+> [!question]- 参考答案（点击展开）
+>
+> 因为同一个资源的 Reconcile 可能被多次触发（Watch 事件重复、手动 Requeue、informer resync 等）。非幂等操作会导致资源重复创建或状态错乱。
 
 **Q: Informer 的 List-Watch 机制如何减轻 API Server 压力？**
-A: 首次 List 全量数据缓存到本地，之后通过 Watch 长连接只接收增量事件。所有读操作走本地缓存（Lister），不请求 API Server。SharedInformerFactory 让多个 Controller 共享连接。
+
+> [!question]- 参考答案（点击展开）
+>
+> 首次 List 全量数据缓存到本地，之后通过 Watch 长连接只接收增量事件。所有读操作走本地缓存（Lister），不请求 API Server。SharedInformerFactory 让多个 Controller 共享连接。
 
 **Q: Mutating Webhook 和 Validating Webhook 的执行顺序？**
-A: 先 Mutating 后 Validating。Mutating 可以修改请求内容（如注入默认值），Validating 只做校验。这样 Validating 校验的是 Mutating 修改后的最终对象。
+
+> [!question]- 参考答案（点击展开）
+>
+> 先 Mutating 后 Validating。Mutating 可以修改请求内容（如注入默认值），Validating 只做校验。这样 Validating 校验的是 Mutating 修改后的最终对象。
 
 **Q: Controller 处理失败时的重试策略是什么？**
-A: 返回 error 后由 RateLimitingQueue 自动重试，默认指数退避（5ms → 10ms → 20ms → ... → 最大 1000s）。也可以通过 `RequeueAfter` 指定固定延迟重试。永久性错误不应返回 error，而是记录到 Status Condition。
+
+> [!question]- 参考答案（点击展开）
+>
+> 返回 error 后由 RateLimitingQueue 自动重试，默认指数退避（5ms → 10ms → 20ms → ... → 最大 1000s）。也可以通过 `RequeueAfter` 指定固定延迟重试。永久性错误不应返回 error，而是记录到 Status Condition。
 
 **Q: 如何处理 CR 删除时的外部资源清理？**
-A: 使用 Finalizer 机制。创建 CR 时添加 Finalizer，删除 CR 时 Kubernetes 不会立即删除而是设置 `DeletionTimestamp`。Controller 检测到后执行清理逻辑，完成后移除 Finalizer，资源才真正被删除。
+
+> [!question]- 参考答案（点击展开）
+>
+> 使用 Finalizer 机制。创建 CR 时添加 Finalizer，删除 CR 时 Kubernetes 不会立即删除而是设置 `DeletionTimestamp`。Controller 检测到后执行清理逻辑，完成后移除 Finalizer，资源才真正被删除。
 
 ### 面试加分点
 

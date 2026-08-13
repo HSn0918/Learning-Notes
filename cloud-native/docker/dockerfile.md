@@ -94,25 +94,46 @@ graph LR
 ### 高频问题
 
 **Q: Dockerfile 中哪些指令会创建新的镜像层 (layer)？**
-A: 在较新版本的 Docker 中只有 `RUN`、`COPY`、`ADD` 会创建新的只读层 (read-only layer) 并增加镜像体积，`ENV`、`LABEL`、`WORKDIR`、`CMD`、`ENTRYPOINT`、`EXPOSE` 等只创建临时元数据层 (metadata)，不增加镜像大小。注意镜像层都是只读的，真正的可写层 (writable layer) 是容器运行时叠加在镜像之上的容器层。每一层都是相对上一层的差异 (diff)，最终通过 UnionFS 叠加成完整文件系统。
+
+> [!question]- 参考答案（点击展开）
+>
+> 在较新版本的 Docker 中只有 `RUN`、`COPY`、`ADD` 会创建新的只读层 (read-only layer) 并增加镜像体积，`ENV`、`LABEL`、`WORKDIR`、`CMD`、`ENTRYPOINT`、`EXPOSE` 等只创建临时元数据层 (metadata)，不增加镜像大小。注意镜像层都是只读的，真正的可写层 (writable layer) 是容器运行时叠加在镜像之上的容器层。每一层都是相对上一层的差异 (diff)，最终通过 UnionFS 叠加成完整文件系统。
 
 **Q: 什么是多段构建 (multi-stage build)？它解决了什么问题？**
-A: 多段构建在一个 Dockerfile 中用多个 `FROM` 定义多个 build stage，前面的 stage 负责编译，最后的 stage 通过 `COPY --from=builder` 只拷贝产物到一个精简的 base image。它的核心价值是把编译器、源码、依赖等构建期工具排除在最终镜像之外，从而大幅减小体积、缩小攻击面，典型场景是 Go 编译后只把二进制拷进 alpine 或 distroless。
+
+> [!question]- 参考答案（点击展开）
+>
+> 多段构建在一个 Dockerfile 中用多个 `FROM` 定义多个 build stage，前面的 stage 负责编译，最后的 stage 通过 `COPY --from=builder` 只拷贝产物到一个精简的 base image。它的核心价值是把编译器、源码、依赖等构建期工具排除在最终镜像之外，从而大幅减小体积、缩小攻击面，典型场景是 Go 编译后只把二进制拷进 alpine 或 distroless。
 
 **Q: Docker build cache 是怎么工作的？如何最大化缓存命中率？**
-A: Docker 逐条执行指令，每条指令的结果会缓存，只要指令文本和上下文（如 `COPY` 的文件内容校验和）未变就复用缓存层；一旦某层失效，其后所有层都会重建。因此应把变更频率低的指令放前面（如 base image、系统依赖），把频繁变更的源码 `COPY` 放后面。Go 项目的经典做法是先 `COPY go.mod go.sum` 再 `go mod download`，最后才 `COPY . .`，这样源码改动不会让依赖下载层失效。
+
+> [!question]- 参考答案（点击展开）
+>
+> Docker 逐条执行指令，每条指令的结果会缓存，只要指令文本和上下文（如 `COPY` 的文件内容校验和）未变就复用缓存层；一旦某层失效，其后所有层都会重建。因此应把变更频率低的指令放前面（如 base image、系统依赖），把频繁变更的源码 `COPY` 放后面。Go 项目的经典做法是先 `COPY go.mod go.sum` 再 `go mod download`，最后才 `COPY . .`，这样源码改动不会让依赖下载层失效。
 
 **Q: 为什么要把多条 `RUN apt-get install` 合并成一条？**
-A: 每条 `RUN` 都会创建一层，分开写会产生多余层级，且各层间的缓存容易出问题——比如 `RUN apt-get update` 单独成层后被缓存，后续 install 可能基于过期的包索引拿到旧版本。合并成 `RUN apt-get update && apt-get install -y ... && rm -rf /var/lib/apt/lists/*` 既减少层数，又能在同一层清理 apt 缓存避免残留撑大镜像（分层清理无效，删除的文件仍占据之前层的空间）。
+
+> [!question]- 参考答案（点击展开）
+>
+> 每条 `RUN` 都会创建一层，分开写会产生多余层级，且各层间的缓存容易出问题——比如 `RUN apt-get update` 单独成层后被缓存，后续 install 可能基于过期的包索引拿到旧版本。合并成 `RUN apt-get update && apt-get install -y ... && rm -rf /var/lib/apt/lists/*` 既减少层数，又能在同一层清理 apt 缓存避免残留撑大镜像（分层清理无效，删除的文件仍占据之前层的空间）。
 
 **Q: 容器里为什么推荐每个镜像只运行一个进程？无法避免多进程时怎么办？**
-A: 单进程符合容器"一个容器一个职责"的设计哲学，便于独立扩缩容、日志收集和生命周期管理，也让 Docker/K8s 能正确感知主进程的存活状态。当确实需要多进程时，应引入一个轻量 init process（如 `tini` 或 `dumb-init`）作为 PID 1，负责转发信号 (signal forwarding) 和回收僵尸进程 (zombie reaping)，否则子进程退出后会变成僵尸进程无人回收。
+
+> [!question]- 参考答案（点击展开）
+>
+> 单进程符合容器"一个容器一个职责"的设计哲学，便于独立扩缩容、日志收集和生命周期管理，也让 Docker/K8s 能正确感知主进程的存活状态。当确实需要多进程时，应引入一个轻量 init process（如 `tini` 或 `dumb-init`）作为 PID 1，负责转发信号 (signal forwarding) 和回收僵尸进程 (zombie reaping)，否则子进程退出后会变成僵尸进程无人回收。
 
 **Q: `ADD` 和 `COPY` 有什么区别？该用哪个？**
-A: `COPY` 只做本地文件/目录的拷贝，行为简单可预期；`ADD` 额外支持自动解压本地 tar 归档（注意仅本地 tar 会自动解压，远程 URL 下载的文件不会）和从远程 URL 下载。最佳实践是默认用 `COPY`，仅在需要解压本地归档时才用 `ADD`，远程文件建议用 `RUN curl/wget` 以便在同一层更可控地清理临时文件和缓存。
+
+> [!question]- 参考答案（点击展开）
+>
+> `COPY` 只做本地文件/目录的拷贝，行为简单可预期；`ADD` 额外支持自动解压本地 tar 归档（注意仅本地 tar 会自动解压，远程 URL 下载的文件不会）和从远程 URL 下载。最佳实践是默认用 `COPY`，仅在需要解压本地归档时才用 `ADD`，远程文件建议用 `RUN curl/wget` 以便在同一层更可控地清理临时文件和缓存。
 
 **Q: `ENTRYPOINT` 和 `CMD` 有什么区别？为什么推荐用 exec 格式？**
-A: `ENTRYPOINT` 定义容器启动时固定执行的主程序，`CMD` 提供默认参数且可在 `docker run` 时被覆盖，两者常配合使用（`ENTRYPOINT` 定命令、`CMD` 给默认参数）。推荐用 exec 格式 `ENTRYPOINT ["server"]` 而非 shell 格式，因为 exec 格式让进程直接成为 PID 1，能正确接收 `SIGTERM` 等信号实现优雅退出；shell 格式会被 `/bin/sh -c` 包一层，导致 sh 占据 PID 1、信号无法透传到实际进程。
+
+> [!question]- 参考答案（点击展开）
+>
+> `ENTRYPOINT` 定义容器启动时固定执行的主程序，`CMD` 提供默认参数且可在 `docker run` 时被覆盖，两者常配合使用（`ENTRYPOINT` 定命令、`CMD` 给默认参数）。推荐用 exec 格式 `ENTRYPOINT ["server"]` 而非 shell 格式，因为 exec 格式让进程直接成为 PID 1，能正确接收 `SIGTERM` 等信号实现优雅退出；shell 格式会被 `/bin/sh -c` 包一层，导致 sh 占据 PID 1、信号无法透传到实际进程。
 
 ### 面试加分点
 

@@ -155,25 +155,46 @@ graph TB
 ### 高频问题
 
 **Q: Kafka 如何保证消息不丢失？**
-A: 需要 Producer、Broker、Consumer 三端协同配置，缺一不可。Producer 端用 `acks=all` 并带 callback 发送、开启 `enable.idempotence`；Broker 端 `replication.factor>=3`、`min.insync.replicas>=2`、关闭 `unclean.leader.election`；Consumer 端关闭自动提交、先处理再手动 commit。注意 Kafka 只对**已提交（committed）消息**在「至少一个保存该消息的 Broker 存活」时提供持久化保证。
+
+> [!question]- 参考答案（点击展开）
+>
+> 需要 Producer、Broker、Consumer 三端协同配置，缺一不可。Producer 端用 `acks=all` 并带 callback 发送、开启 `enable.idempotence`；Broker 端 `replication.factor>=3`、`min.insync.replicas>=2`、关闭 `unclean.leader.election`；Consumer 端关闭自动提交、先处理再手动 commit。注意 Kafka 只对**已提交（committed）消息**在「至少一个保存该消息的 Broker 存活」时提供持久化保证。
 
 **Q: `acks` 三种取值的区别是什么？**
-A: `acks=0` 不等任何确认，吞吐最高但最易丢；`acks=1` 只等 Leader 写入本地日志，Leader 宕机且未同步给 Follower 时会丢；`acks=all`（即 `-1`）等 ISR 中所有副本确认，配合 `min.insync.replicas` 才有真正的持久化保证。注意默认值与版本相关：Kafka 3.0 之前 Producer 默认 `acks=1`，3.0+ 因 `enable.idempotence` 默认开启，`acks` 默认变为 `all`。
+
+> [!question]- 参考答案（点击展开）
+>
+> `acks=0` 不等任何确认，吞吐最高但最易丢；`acks=1` 只等 Leader 写入本地日志，Leader 宕机且未同步给 Follower 时会丢；`acks=all`（即 `-1`）等 ISR 中所有副本确认，配合 `min.insync.replicas` 才有真正的持久化保证。注意默认值与版本相关：Kafka 3.0 之前 Producer 默认 `acks=1`，3.0+ 因 `enable.idempotence` 默认开启，`acks` 默认变为 `all`。
 
 **Q: 为什么只配 `acks=all` 还不够，必须配 `min.insync.replicas`？**
-A: `acks=all` 只要求 ISR 中所有副本确认，但若 ISR 因 Follower 掉队收缩到只剩 Leader 一个，`acks=all` 就退化成 `acks=1`。`min.insync.replicas=2` 强制 ISR 至少有 2 个副本在线才接受写入，否则 Producer 收到 `NotEnoughReplicasException`，从而堵住单副本写入的丢失漏洞。
+
+> [!question]- 参考答案（点击展开）
+>
+> `acks=all` 只要求 ISR 中所有副本确认，但若 ISR 因 Follower 掉队收缩到只剩 Leader 一个，`acks=all` 就退化成 `acks=1`。`min.insync.replicas=2` 强制 ISR 至少有 2 个副本在线才接受写入，否则 Producer 收到 `NotEnoughReplicasException`，从而堵住单副本写入的丢失漏洞。
 
 **Q: 为什么要求 `replication.factor > min.insync.replicas`？**
-A: 若两者相等（如都为 3），那么只要挂掉一个副本，存活副本数就低于 `min.insync.replicas`，分区立即不可写，可用性骤降。常见组合是 `replication.factor=3` + `min.insync.replicas=2`，允许容忍 1 个副本故障仍可读写，在可靠性和可用性间取得平衡。
+
+> [!question]- 参考答案（点击展开）
+>
+> 若两者相等（如都为 3），那么只要挂掉一个副本，存活副本数就低于 `min.insync.replicas`，分区立即不可写，可用性骤降。常见组合是 `replication.factor=3` + `min.insync.replicas=2`，允许容忍 1 个副本故障仍可读写，在可靠性和可用性间取得平衡。
 
 **Q: Consumer 端消息丢失的根因是什么，怎么解决？**
-A: 根因是自动提交 offset（`enable.auto.commit=true`）会按 `auto.commit.interval.ms` 周期性提交，可能在消息还没处理完时就提交了，Consumer 崩溃后从新 offset 拉取，未处理消息永久丢失。解决方案是关闭自动提交，遵循「先处理消息、再手动 commitSync/commitAsync」的顺序。
+
+> [!question]- 参考答案（点击展开）
+>
+> 根因是自动提交 offset（`enable.auto.commit=true`）会按 `auto.commit.interval.ms` 周期性提交，可能在消息还没处理完时就提交了，Consumer 崩溃后从新 offset 拉取，未处理消息永久丢失。解决方案是关闭自动提交，遵循「先处理消息、再手动 commitSync/commitAsync」的顺序。
 
 **Q: 手动提交 offset 会不会导致重复消费？如何保证 Exactly-Once？**
-A: 会。先处理后提交意味着处理完但 commit 前崩溃，重启会重复消费，这是 At-Least-Once 语义。要做到端到端 Exactly-Once，需要 Consumer 侧业务幂等（如唯一键去重），或使用 Kafka Transactions（`read-process-write` 配合 `isolation.level=read_committed`）将消费与下游写入放在同一事务中。
+
+> [!question]- 参考答案（点击展开）
+>
+> 会。先处理后提交意味着处理完但 commit 前崩溃，重启会重复消费，这是 At-Least-Once 语义。要做到端到端 Exactly-Once，需要 Consumer 侧业务幂等（如唯一键去重），或使用 Kafka Transactions（`read-process-write` 配合 `isolation.level=read_committed`）将消费与下游写入放在同一事务中。
 
 **Q: `enable.idempotence=true` 解决了什么问题，原理是什么？**
-A: 解决 Producer 因重试导致的单分区消息重复。Broker 为每个 Producer 分配 PID（Producer ID），每条消息带单调递增的 sequence number，Broker 按 `<PID, partition, seq>` 去重，保证单分区单会话内消息不重不乱序。开启幂等要求 `acks=all`、`retries>0` 且 `max.in.flight.requests.per.connection<=5`（Kafka 会校验，不满足则启动报错）。Kafka 3.0+ 该项默认即为 `true`。
+
+> [!question]- 参考答案（点击展开）
+>
+> 解决 Producer 因重试导致的单分区消息重复。Broker 为每个 Producer 分配 PID（Producer ID），每条消息带单调递增的 sequence number，Broker 按 `<PID, partition, seq>` 去重，保证单分区单会话内消息不重不乱序。开启幂等要求 `acks=all`、`retries>0` 且 `max.in.flight.requests.per.connection<=5`（Kafka 会校验，不满足则启动报错）。Kafka 3.0+ 该项默认即为 `true`。
 
 ### 面试加分点
 

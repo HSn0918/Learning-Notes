@@ -514,22 +514,40 @@ HAMi 的定位：**零硬件依赖、零驱动改动、对应用透明**的软�
 ## 七、几个深入问题
 
 **Q1：extender 多副本时，怎么避免两个副本同时把同一张卡分给两个 Pod？**
-leader election。只有 leader 处理 filter/bind。即便如此，Bind 后写 annotation 和更新 cache 之间有窗口——HAMi 靠「Bind 成功后立刻 `cache += used`」+「下次启动从 Pod annotation 回放」保证最终一致。
+
+> [!question]- 参考答案（点击展开）
+>
+> leader election。只有 leader 处理 filter/bind。即便如此，Bind 后写 annotation 和更新 cache 之间有窗口——HAMi 靠「Bind 成功后立刻 `cache += used`」+「下次启动从 Pod annotation 回放」保证最终一致。
 
 **Q2：kubelet 重启会不会丢账？**
-不会。账本 ground truth 是 Pod annotation（存在 etcd）。device-plugin 重启后重新 `ListAndWatch`，extender 重启后重新 list Pod 回放 cache。内存态都是可重建的派生数据。
+
+> [!question]- 参考答案（点击展开）
+>
+> 不会。账本 ground truth 是 Pod annotation（存在 etcd）。device-plugin 重启后重新 `ListAndWatch`，extender 重启后重新 list Pod 回放 cache。内存态都是可重建的派生数据。
 
 **Q3：Pod 没声明 `nvidia.com/gpumem` 只写了 `nvidia.com/gpu: 1` 会怎样？**
-看配置。HAMi 有 `defaultMem` / `defaultCores` 兜底（webhook 或 device-plugin 侧补默认值）；也可配成「不写 gpumem 就当整卡」。[[demo-hami-mac]] 用进程环境变量 `HAMI_MAC_DEFAULT_MEM` 模拟了这个兜底。
+
+> [!question]- 参考答案（点击展开）
+>
+> 看配置。HAMi 有 `defaultMem` / `defaultCores` 兜底（webhook 或 device-plugin 侧补默认值）；也可配成「不写 gpumem 就当整卡」。[[demo-hami-mac]] 用进程环境变量 `HAMI_MAC_DEFAULT_MEM` 模拟了这个兜底。
 
 **Q4：为什么 device-plugin 不能信 kubelet 传给 Allocate 的 deviceID？**
-因为 device-plugin 上报的是「伪 vGPU ID」（`UUID-0..9`），kubelet 的 DeviceManager 从池子里随便挑——挑中的伪 ID 里的物理 UUID 不一定等于 extender 选的卡。真实分配方案只在 Pod annotation 里，所以 Allocate 必须去读 annotation。
+
+> [!question]- 参考答案（点击展开）
+>
+> 因为 device-plugin 上报的是「伪 vGPU ID」（`UUID-0..9`），kubelet 的 DeviceManager 从池子里随便挑——挑中的伪 ID 里的物理 UUID 不一定等于 extender 选的卡。真实分配方案只在 Pod annotation 里，所以 Allocate 必须去读 annotation。
 
 **Q5：HAMi 的「虚拟调度」和原生 GPU 调度的本质区别？**
-原生：scheduler 只看 `nvidia.com/gpu` 整数，kubelet DeviceManager 整卡分配。HAMi：调度粒度细化到「物理卡 UUID + 显存 MiB + 算力 %」，且这个细粒度决策发生在 extender（控制面），通过 annotation 下发给 device-plugin（节点面）执行，再由 libvgpu（容器内）强制配额。**一句话：把「整数计数调度」升级成「多维资源向量 + 设备级 binpack」。**
+
+> [!question]- 参考答案（点击展开）
+>
+> 原生：scheduler 只看 `nvidia.com/gpu` 整数，kubelet DeviceManager 整卡分配。HAMi：调度粒度细化到「物理卡 UUID + 显存 MiB + 算力 %」，且这个细粒度决策发生在 extender（控制面），通过 annotation 下发给 device-plugin（节点面）执行，再由 libvgpu（容器内）强制配额。**一句话：把「整数计数调度」升级成「多维资源向量 + 设备级 binpack」。**
 
 **Q6：DRA（Dynamic Resource Allocation）出来后 HAMi 会被取代吗？**
-DRA 解决的是「资源建模和申请的 API 形态」（用 ResourceClaim 代替 Extended Resource），它让「怎么描述/申请一块 vGPU」更标准。但「怎么真的把卡切开」还是要厂商提供 driver——HAMi 的 libvgpu hook 这套机制可以平移到 DRA driver 之上。所以 DRA 更可能是 HAMi 的「新上层 API」，而非替代品。详见 [[gpu-scheduling-source]] 的 DRA 章节。
+
+> [!question]- 参考答案（点击展开）
+>
+> DRA 解决的是「资源建模和申请的 API 形态」（用 ResourceClaim 代替 Extended Resource），它让「怎么描述/申请一块 vGPU」更标准。但「怎么真的把卡切开」还是要厂商提供 driver——HAMi 的 libvgpu hook 这套机制可以平移到 DRA driver 之上。所以 DRA 更可能是 HAMi 的「新上层 API」，而非替代品。详见 [[gpu-scheduling-source]] 的 DRA 章节。
 
 ---
 
@@ -542,16 +560,68 @@ DRA 解决的是「资源建模和申请的 API 形态」（用 ResourceClaim �
 
 ## 面试要点
 
-| 问题 | 回答要点 |
-| :--- | :--- |
-| **HAMi 怎么实现 GPU 虚拟调度？** | 四组件协同：webhook 把 GPU Pod 的 schedulerName 改成 hami-scheduler；extender 在 Filter/Bind 阶段按「物理卡 UUID + 显存 + 算力」做设备级 binpack，结论写进 Pod annotation；device-plugin 把 1 卡上报为 N 份、Allocate 时读 annotation 注入配额 env + LD_PRELOAD；libvgpu.so 在容器内 hook CUDA API 强制配额。 |
-| **HAMi 为什么用 Extender 而不是 Framework Plugin？** | 不用重编译 kube-scheduler、可独立部署升级；GPU Pod 创建不频繁，多一次 HTTP RTT 可接受。代价是扩展点少（只有 Filter/Bind），但 GPU 调度够用。 |
-| **HAMi 的 vGPU 占用状态存在哪？extender 重启会丢吗？** | 两层：ground truth 是 Pod annotation（`hami.io/vgpu-devices-allocated`，存 etcd）+ Node annotation（节点 GPU 清单）；extender 进程内存里有 DeviceUsage cache。重启不丢——启动时 list 全部 HAMi Pod 回放重建 cache。 |
-| **为什么 HAMi 不复用 kube-scheduler 的 Cache？** | extender 是独立进程，碰不到 kube-scheduler 的内存 Cache。所以自己用 annotation + in-memory cache 维护「飞行中状态」。 |
-| **device-plugin 怎么把 1 张卡变 N 份？** | ListAndWatch 里把同一物理卡的 UUID 加后缀上报 deviceSplitCount 次（默认 10）。kubelet 看到的 capacity = 物理卡数 × 10。显存/算力维度不在这个数字里。 |
-| **device-plugin 的 Allocate 为什么要读 Pod annotation？** | kubelet 传给 Allocate 的是「伪 vGPU ID」，里面的物理 UUID 不一定是 extender 选中的卡。真实分配方案（哪块卡、多少显存）只在 extender 写的 Pod annotation 里。 |
-| **HAMi 怎么让容器看到「假的」显存上限？** | LD_PRELOAD 加载 libvgpu.so，hook `cuMemAlloc`（超配额返回 CUDA_ERROR_OUT_OF_MEMORY）和 `nvmlDeviceGetMemoryInfo`（让 nvidia-smi 看到配额后的假值）。 |
-| **HAMi 的算力隔离是物理切分吗？** | 不是。物理切分要 MIG。HAMi 在 `cuLaunchKernel` 前按当前利用率 sleep，做时间片软限流，多容器通过共享内存协调。 |
-| **HAMi vs MIG vs MPS vs vGPU？** | HAMi=软件 hook，零硬件依赖、弱隔离；MIG=硬件分区，强隔离但要 A100+；MPS=NVIDIA 合并 context，算力可分但显存隔离弱；vGPU=商业 hypervisor 方案，强隔离要 license。 |
-| **HAMi 的隔离边界在哪？有什么风险？** | 拦的是用户态 CUDA API，可信工作负载场景够用；但应用若绕过 LD_PRELOAD 或直接调 ioctl 就能突破配额——不适合多租户强安全隔离。另外超配额是返回 OOM 错误而非 SIGKILL，应用要自己处理。 |
-| **DRA 出来 HAMi 还有意义吗？** | DRA 解决资源建模/申请的 API 形态，但「怎么切卡」仍需厂商 driver。HAMi 的 libvgpu hook 机制可平移到 DRA 之上，DRA 更像 HAMi 的新上层 API 而非替代品。 |
+### Q：HAMi 怎么实现 GPU 虚拟调度？
+
+> [!question]- 参考答案（点击展开）
+>
+> 四组件协同：webhook 把 GPU Pod 的 schedulerName 改成 hami-scheduler；extender 在 Filter/Bind 阶段按「物理卡 UUID + 显存 + 算力」做设备级 binpack，结论写进 Pod annotation；device-plugin 把 1 卡上报为 N 份、Allocate 时读 annotation 注入配额 env + LD_PRELOAD；libvgpu.so 在容器内 hook CUDA API 强制配额。
+
+### Q：HAMi 为什么用 Extender 而不是 Framework Plugin？
+
+> [!question]- 参考答案（点击展开）
+>
+> 不用重编译 kube-scheduler、可独立部署升级；GPU Pod 创建不频繁，多一次 HTTP RTT 可接受。代价是扩展点少（只有 Filter/Bind），但 GPU 调度够用。
+
+### Q：HAMi 的 vGPU 占用状态存在哪？extender 重启会丢吗？
+
+> [!question]- 参考答案（点击展开）
+>
+> 两层：ground truth 是 Pod annotation（`hami.io/vgpu-devices-allocated`，存 etcd）+ Node annotation（节点 GPU 清单）；extender 进程内存里有 DeviceUsage cache。重启不丢——启动时 list 全部 HAMi Pod 回放重建 cache。
+
+### Q：为什么 HAMi 不复用 kube-scheduler 的 Cache？
+
+> [!question]- 参考答案（点击展开）
+>
+> extender 是独立进程，碰不到 kube-scheduler 的内存 Cache。所以自己用 annotation + in-memory cache 维护「飞行中状态」。
+
+### Q：device-plugin 怎么把 1 张卡变 N 份？
+
+> [!question]- 参考答案（点击展开）
+>
+> ListAndWatch 里把同一物理卡的 UUID 加后缀上报 deviceSplitCount 次（默认 10）。kubelet 看到的 capacity = 物理卡数 × 10。显存/算力维度不在这个数字里。
+
+### Q：device-plugin 的 Allocate 为什么要读 Pod annotation？
+
+> [!question]- 参考答案（点击展开）
+>
+> kubelet 传给 Allocate 的是「伪 vGPU ID」，里面的物理 UUID 不一定是 extender 选中的卡。真实分配方案（哪块卡、多少显存）只在 extender 写的 Pod annotation 里。
+
+### Q：HAMi 怎么让容器看到「假的」显存上限？
+
+> [!question]- 参考答案（点击展开）
+>
+> LD_PRELOAD 加载 libvgpu.so，hook `cuMemAlloc`（超配额返回 CUDA_ERROR_OUT_OF_MEMORY）和 `nvmlDeviceGetMemoryInfo`（让 nvidia-smi 看到配额后的假值）。
+
+### Q：HAMi 的算力隔离是物理切分吗？
+
+> [!question]- 参考答案（点击展开）
+>
+> 不是。物理切分要 MIG。HAMi 在 `cuLaunchKernel` 前按当前利用率 sleep，做时间片软限流，多容器通过共享内存协调。
+
+### Q：HAMi vs MIG vs MPS vs vGPU？
+
+> [!question]- 参考答案（点击展开）
+>
+> HAMi=软件 hook，零硬件依赖、弱隔离；MIG=硬件分区，强隔离但要 A100+；MPS=NVIDIA 合并 context，算力可分但显存隔离弱；vGPU=商业 hypervisor 方案，强隔离要 license。
+
+### Q：HAMi 的隔离边界在哪？有什么风险？
+
+> [!question]- 参考答案（点击展开）
+>
+> 拦的是用户态 CUDA API，可信工作负载场景够用；但应用若绕过 LD_PRELOAD 或直接调 ioctl 就能突破配额——不适合多租户强安全隔离。另外超配额是返回 OOM 错误而非 SIGKILL，应用要自己处理。
+
+### Q：DRA 出来 HAMi 还有意义吗？
+
+> [!question]- 参考答案（点击展开）
+>
+> DRA 解决资源建模/申请的 API 形态，但「怎么切卡」仍需厂商 driver。HAMi 的 libvgpu hook 机制可平移到 DRA 之上，DRA 更像 HAMi 的新上层 API 而非替代品。

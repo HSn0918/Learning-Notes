@@ -304,27 +304,39 @@ def verify(state: State) -> State:
 
 ### Q: LangGraph 源码最该先读哪里？
 
-A: 先读 `graph/` 里的 `StateGraph`，理解用户如何声明 state、node、edge、conditional edge；再读 `pregel/` 看 compile 后的 step runtime；最后读 checkpoint / interrupt，理解长任务如何暂停和恢复。不要一开始陷进所有内部实现，先抓住“显式状态图”这个主线。
+> [!question]- 参考答案（点击展开）
+>
+> 先读 `graph/` 里的 `StateGraph`，理解用户如何声明 state、node、edge、conditional edge；再读 `pregel/` 看 compile 后的 step runtime；最后读 checkpoint / interrupt，理解长任务如何暂停和恢复。不要一开始陷进所有内部实现，先抓住“显式状态图”这个主线。
 
 ### Q: OpenAI Agents SDK 和 LangGraph 的源码关注点有什么不同？
 
-A: OpenAI Agents SDK 更适合看轻量 Agent runtime：Agent 配置、Runner 循环、tool call、handoff、guardrail、tracing 怎么串起来。LangGraph 更适合看复杂工作流：状态图、条件边、checkpoint、人审中断、恢复执行。前者偏“模型工具运行时”，后者偏“可控状态机”。
+> [!question]- 参考答案（点击展开）
+>
+> OpenAI Agents SDK 更适合看轻量 Agent runtime：Agent 配置、Runner 循环、tool call、handoff、guardrail、tracing 怎么串起来。LangGraph 更适合看复杂工作流：状态图、条件边、checkpoint、人审中断、恢复执行。前者偏“模型工具运行时”，后者偏“可控状态机”。
 
 ### Q: 为什么 LlamaIndex 要先读 RAG 数据链路，再读 Agent？
 
-A: 因为 LlamaIndex 的核心优势是 data / RAG。Agent 只是把 retriever、query engine、tool 包装进决策循环。如果不先理解 Document、Node、Index、Retriever、QueryEngine，直接看 Agent 会看不到它真正解决的问题。
+> [!question]- 参考答案（点击展开）
+>
+> 因为 LlamaIndex 的核心优势是 data / RAG。Agent 只是把 retriever、query engine、tool 包装进决策循环。如果不先理解 Document、Node、Index、Retriever、QueryEngine，直接看 Agent 会看不到它真正解决的问题。
 
 ### Q: Agent 源码里怎么判断一个框架是否适合生产？
 
-A: 看五件事：状态是否显式、工具 schema 是否严格、是否支持 checkpoint / resume、是否能插入人审、是否有 trace / callback / metrics。只会跑 prompt 和 tool call，但没有状态恢复和观测边界的框架，上生产会很难排障。
+> [!question]- 参考答案（点击展开）
+>
+> 看五件事：状态是否显式、工具 schema 是否严格、是否支持 checkpoint / resume、是否能插入人审、是否有 trace / callback / metrics。只会跑 prompt 和 tool call，但没有状态恢复和观测边界的框架，上生产会很难排障。
 
 ### Q: OpenTelemetry GenAI 规范在 Agent 源码导读里有什么价值？
 
-A: 它给了跨框架的观测语言。无论你用 LangGraph、OpenAI Agents SDK 还是 LlamaIndex，都可以把一次任务拆成 `invoke_agent -> plan -> retrieval -> chat -> execute_tool -> verifier`，再统一采集 token、latency、error、tool duration。这样框架不同，排障视角仍然一致。
+> [!question]- 参考答案（点击展开）
+>
+> 它给了跨框架的观测语言。无论你用 LangGraph、OpenAI Agents SDK 还是 LlamaIndex，都可以把一次任务拆成 `invoke_agent -> plan -> retrieval -> chat -> execute_tool -> verifier`，再统一采集 token、latency、error、tool duration。这样框架不同，排障视角仍然一致。
 
 ### Q: 读 Agent 框架源码时最容易踩的坑是什么？
 
-A: 最大的坑是把框架 API 当成核心。真正要读的是控制流和状态流：下一步谁决定、工具结果怎么回填、失败怎么重试、状态怎么持久化、trace 怎么串起来。API 名字会变，但这些不变量才是面试和工程里最有价值的部分。
+> [!question]- 参考答案（点击展开）
+>
+> 最大的坑是把框架 API 当成核心。真正要读的是控制流和状态流：下一步谁决定、工具结果怎么回填、失败怎么重试、状态怎么持久化、trace 怎么串起来。API 名字会变，但这些不变量才是面试和工程里最有价值的部分。
 
 ## 参考资料
 

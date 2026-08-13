@@ -252,25 +252,46 @@ graph TD
 ### 高频问题
 
 **Q: 什么是 P.runnext？它在 Go 调度器中的优先级如何？**
-A: `P.runnext` 是每个 P 上的一个特殊字段，只能存放**一个** goroutine，代表「下一个优先执行的 G」。它的调度优先级最高，顺序为 `P.runnext > P.localrunq > globalrunq`。设计目的是让刚创建或刚被唤醒的 goroutine 优先执行，利用时间局部性减少调度延迟、提升 cache 命中率。
+
+> [!question]- 参考答案（点击展开）
+>
+> `P.runnext` 是每个 P 上的一个特殊字段，只能存放**一个** goroutine，代表「下一个优先执行的 G」。它的调度优先级最高，顺序为 `P.runnext > P.localrunq > globalrunq`。设计目的是让刚创建或刚被唤醒的 goroutine 优先执行，利用时间局部性减少调度延迟、提升 cache 命中率。
 
 **Q: 单 P（GOMAXPROCS(1)）下连续 go A、B、C 三个打印，输出为什么是 C A B 而不是 A B C？**
-A: `go func()` 在底层走 `newproc → newproc1 → runqput(_p_, newg, true)`，`next=true` 会把新 G 放入 `runnext`。创建 G2 时 G1 被挤到本地队列尾，创建 G3 时 G2 也被挤到本地队列尾，最终 `runnext=G3`、`localrunq=[G1,G2]`。调度时先取 runnext 得 C，再从本地队列 FIFO 取 A、B，因此输出 `C A B`。
+
+> [!question]- 参考答案（点击展开）
+>
+> `go func()` 在底层走 `newproc → newproc1 → runqput(_p_, newg, true)`，`next=true` 会把新 G 放入 `runnext`。创建 G2 时 G1 被挤到本地队列尾，创建 G3 时 G2 也被挤到本地队列尾，最终 `runnext=G3`、`localrunq=[G1,G2]`。调度时先取 runnext 得 C，再从本地队列 FIFO 取 A、B，因此输出 `C A B`。
 
 **Q: runqput 中 next=true 时，被挤出的旧 goroutine 如何处理？**
-A: `runqput` 用 CAS 把新 G 写入 `runnext` 并换出旧值 `oldnext`；若 `oldnext==0`（runnext 原本为空）直接返回，否则把被挤出的旧 G 放入本地队列尾部。本地队列（环形数组 `runq [256]guintptr`，容量 256）满时通过 `runqputslow` 把约一半 G 批量转移到全局队列。
+
+> [!question]- 参考答案（点击展开）
+>
+> `runqput` 用 CAS 把新 G 写入 `runnext` 并换出旧值 `oldnext`；若 `oldnext==0`（runnext 原本为空）直接返回，否则把被挤出的旧 G 放入本地队列尾部。本地队列（环形数组 `runq [256]guintptr`，容量 256）满时通过 `runqputslow` 把约一半 G 批量转移到全局队列。
 
 **Q: 调度器从 P 取 G 的完整顺序是怎样的？**
-A: `runqget` 先用 CAS 尝试取 `runnext`（命中则返回，且 `inheritTime=true` 继承时间片）；runnext 为空时从本地队列头部 FIFO 取。整体 `schedule()` 还包括：每 61 次调度检查一次全局队列（避免全局队列饥饿），本地和全局都没有时执行 Work Stealing，从其他 P 偷走约一半的 G。
+
+> [!question]- 参考答案（点击展开）
+>
+> `runqget` 先用 CAS 尝试取 `runnext`（命中则返回，且 `inheritTime=true` 继承时间片）；runnext 为空时从本地队列头部 FIFO 取。整体 `schedule()` 还包括：每 61 次调度检查一次全局队列（避免全局队列饥饿），本地和全局都没有时执行 Work Stealing，从其他 P 偷走约一半的 G。
 
 **Q: 哪些场景会把 goroutine 放进 P.runnext？**
-A: 本质上都是通过 `runqput(..., next=true)`，主要两类来源：一是 `go func()` 新建 goroutine（编译为 `newproc → newproc1`，runtime 内部 `newproc` 创建 G 也是同一条路径）；二是 `goready()`（即 `ready()`）唤醒被阻塞的 goroutine（如 channel 接收方就绪）。共同点是这些 G 通常有更好的时间局部性，优先执行收益最大。
+
+> [!question]- 参考答案（点击展开）
+>
+> 本质上都是通过 `runqput(..., next=true)`，主要两类来源：一是 `go func()` 新建 goroutine（编译为 `newproc → newproc1`，runtime 内部 `newproc` 创建 G 也是同一条路径）；二是 `goready()`（即 `ready()`）唤醒被阻塞的 goroutine（如 channel 接收方就绪）。共同点是这些 G 通常有更好的时间局部性，优先执行收益最大。
 
 **Q: 为什么 Go 1.13 下用 time.Sleep 的同款代码输出是 A B C 而 1.14+ 是 C A B？**
-A: Go 1.13 中 `time.Sleep` 会隐式启动一个 `timerproc` goroutine 来监控 timer bucket，这个额外 G 的创建会扰动 `runnext` 状态，从而改变最终执行顺序。Go 1.14+ 把 timer 改为按 P 管理（`p.timers`），并将 timer 检查（`checkTimers`）合入 `schedule()`，配合 netpoller 设置最近 timer 的唤醒时间，不再启动独立的 `timerproc` goroutine，因此恢复为稳定的 `C A B`。
+
+> [!question]- 参考答案（点击展开）
+>
+> Go 1.13 中 `time.Sleep` 会隐式启动一个 `timerproc` goroutine 来监控 timer bucket，这个额外 G 的创建会扰动 `runnext` 状态，从而改变最终执行顺序。Go 1.14+ 把 timer 改为按 P 管理（`p.timers`），并将 timer 检查（`checkTimers`）合入 `schedule()`，配合 netpoller 设置最近 timer 的唤醒时间，不再启动独立的 `timerproc` goroutine，因此恢复为稳定的 `C A B`。
 
 **Q: runnext 的存在会不会破坏调度公平性？Go 如何避免饥饿？**
-A: runnext 只缓存一个 G 且取出后立即清空，不会无限插队；同时 `runqget` 取 runnext 时返回 `inheritTime=true`，让它继承当前时间片、不递增 `schedtick`，而非额外获得完整时间片，避免被频繁唤醒的 G 长期霸占 P。再叠加每 61 次调度强制查全局队列和 sysmon 的抢占（运行超 10ms 触发），整体仍保持公平。
+
+> [!question]- 参考答案（点击展开）
+>
+> runnext 只缓存一个 G 且取出后立即清空，不会无限插队；同时 `runqget` 取 runnext 时返回 `inheritTime=true`，让它继承当前时间片、不递增 `schedtick`，而非额外获得完整时间片，避免被频繁唤醒的 G 长期霸占 P。再叠加每 61 次调度强制查全局队列和 sysmon 的抢占（运行超 10ms 触发），整体仍保持公平。
 
 ### 面试加分点
 

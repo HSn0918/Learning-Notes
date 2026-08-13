@@ -553,39 +553,57 @@ flowchart TD
 
 ### Q: Agent 和普通 LLM Chat / Chain 的区别是什么？
 
-A: 普通 Chat 主要是一次输入一次输出；Chain 是固定步骤串联；Agent 是带状态的决策循环，会根据目标、上下文和工具观察结果动态决定下一步。生产级 Agent 不能只依赖模型自由发挥，而要把状态、工具权限、循环边界、校验、追踪和人工确认显式建模。
+> [!question]- 参考答案（点击展开）
+>
+> 普通 Chat 主要是一次输入一次输出；Chain 是固定步骤串联；Agent 是带状态的决策循环，会根据目标、上下文和工具观察结果动态决定下一步。生产级 Agent 不能只依赖模型自由发挥，而要把状态、工具权限、循环边界、校验、追踪和人工确认显式建模。
 
 ### Q: RAG 在 Agent 里解决什么问题？
 
-A: RAG 给 Agent 提供可验证的外部知识，降低模型凭记忆回答导致的幻觉。它解决的是“依据是什么”，不是“该不该调用工具”。Agent 可以先用 RAG 查文档，再根据证据决定是否调用监控、日志、工单等工具。
+> [!question]- 参考答案（点击展开）
+>
+> RAG 给 Agent 提供可验证的外部知识，降低模型凭记忆回答导致的幻觉。它解决的是“依据是什么”，不是“该不该调用工具”。Agent 可以先用 RAG 查文档，再根据证据决定是否调用监控、日志、工单等工具。
 
 ### Q: ReAct loop 为什么容易出线上问题？
 
-A: 因为它是动态循环。没有边界时会无限调用工具；工具 schema 太宽时可能执行危险动作；工具结果不稳定时会让模型反复重试；没有 trace 时很难复盘。所以必须加 max steps、timeout、typed schema、权限控制、幂等、trace 和人工确认。
+> [!question]- 参考答案（点击展开）
+>
+> 因为它是动态循环。没有边界时会无限调用工具；工具 schema 太宽时可能执行危险动作；工具结果不稳定时会让模型反复重试；没有 trace 时很难复盘。所以必须加 max steps、timeout、typed schema、权限控制、幂等、trace 和人工确认。
 
 ### Q: Planning 和 ReAct 是什么关系？
 
-A: Planning 负责把复杂目标拆成结构化步骤，ReAct 负责每一步内根据观察结果选择动作。短任务可以只用 ReAct；长任务更适合 plan-and-execute 或 graph workflow；外部状态变化明显时需要 RePlan。
+> [!question]- 参考答案（点击展开）
+>
+> Planning 负责把复杂目标拆成结构化步骤，ReAct 负责每一步内根据观察结果选择动作。短任务可以只用 ReAct；长任务更适合 plan-and-execute 或 graph workflow；外部状态变化明显时需要 RePlan。
 
 ### Q: 为什么很多生产 Agent 会用 LangGraph 这类 graph runtime？
 
-A: 因为 Agent 不是纯线性链路。它有条件分支、循环、失败恢复、人审中断、状态持久化和可观测需求。LangGraph 把 planner、retriever、tool executor、verifier 等节点和状态转移显式化，比把所有逻辑藏在一个 prompt 里更容易测试和上线。
+> [!question]- 参考答案（点击展开）
+>
+> 因为 Agent 不是纯线性链路。它有条件分支、循环、失败恢复、人审中断、状态持久化和可观测需求。LangGraph 把 planner、retriever、tool executor、verifier 等节点和状态转移显式化，比把所有逻辑藏在一个 prompt 里更容易测试和上线。
 
 ### Q: 如何评估一个 Agent 是否可靠？
 
-A: 分层评估。RAG 看 recall、precision、rerank quality 和 citation faithfulness；工具看 success rate、参数正确率、幂等和权限违规；整体看任务完成率、平均步数、成本、延迟、人工接管率和回归测试集通过率。
+> [!question]- 参考答案（点击展开）
+>
+> 分层评估。RAG 看 recall、precision、rerank quality 和 citation faithfulness；工具看 success rate、参数正确率、幂等和权限违规；整体看任务完成率、平均步数、成本、延迟、人工接管率和回归测试集通过率。
 
 ### Q: Agent 系统里 OpenTelemetry 应该怎么打点？
 
-A: 先把一次任务建成一个 trace，根 span 是 `invoke_agent` 或 `invoke_workflow`，下面拆 `plan`、`retrieval`、`chat/inference`、`execute_tool`、`verifier/evaluation`。span 上记录低基数字段，如 provider、model、agent version、operation name、error type、token usage 和 latency；metrics 记录 token、LLM duration、workflow duration、tool duration、TTFT/TPOT 等。prompt、output、tool arguments 可能包含 PII 或密钥，默认不要作为 span attribute 采集，必要时通过 opt-in event 或受控存储采集并脱敏。
+> [!question]- 参考答案（点击展开）
+>
+> 先把一次任务建成一个 trace，根 span 是 `invoke_agent` 或 `invoke_workflow`，下面拆 `plan`、`retrieval`、`chat/inference`、`execute_tool`、`verifier/evaluation`。span 上记录低基数字段，如 provider、model、agent version、operation name、error type、token usage 和 latency；metrics 记录 token、LLM duration、workflow duration、tool duration、TTFT/TPOT 等。prompt、output、tool arguments 可能包含 PII 或密钥，默认不要作为 span attribute 采集，必要时通过 opt-in event 或受控存储采集并脱敏。
 
 ### Q: 如何防 Prompt Injection？
 
-A: 核心原则是把外部文档、网页、工具结果都当作 data，而不是 instruction。系统指令和工具权限不能被 RAG 内容覆盖；高风险工具要做 allowlist、参数校验和人工确认；回答时优先基于可信来源和引用。
+> [!question]- 参考答案（点击展开）
+>
+> 核心原则是把外部文档、网页、工具结果都当作 data，而不是 instruction。系统指令和工具权限不能被 RAG 内容覆盖；高风险工具要做 allowlist、参数校验和人工确认；回答时优先基于可信来源和引用。
 
 ### Q: 面试中怎么回答“你会选哪个 Agent 框架”？
 
-A: 先按问题选层次：偏 RAG 和数据连接选 LlamaIndex / Haystack；偏复杂状态机和可恢复工作流选 LangGraph；偏 OpenAI 工具生态和 tracing 选 OpenAI Agents SDK；偏多 Agent 协作可看 Microsoft Agent Framework / AutoGen 或 CrewAI。关键不是框架名，而是能说明状态、工具、安全、评估和上线边界。
+> [!question]- 参考答案（点击展开）
+>
+> 先按问题选层次：偏 RAG 和数据连接选 LlamaIndex / Haystack；偏复杂状态机和可恢复工作流选 LangGraph；偏 OpenAI 工具生态和 tracing 选 OpenAI Agents SDK；偏多 Agent 协作可看 Microsoft Agent Framework / AutoGen 或 CrewAI。关键不是框架名，而是能说明状态、工具、安全、评估和上线边界。
 
 ## 参考资料
 

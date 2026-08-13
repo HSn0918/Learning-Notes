@@ -72,19 +72,34 @@
 ### 高频问题
 
 **Q: kubelet 和容器运行时之间是什么协议？最少需要哪几个 RPC 就能让 Node Ready？**
-A: 通过 **CRI（Container Runtime Interface）**，基于 gRPC over unix socket，分 `RuntimeService` 和 `ImageService` 两组。让 kubelet 认为 runtime 健康的最小集合是 `Version`（握手）、`Status`（返回 `RuntimeReady=true` / `NetworkReady=true`）、以及 `ListPodSandbox`（同步已有状态）。
+
+> [!question]- 参考答案（点击展开）
+>
+> 通过 **CRI（Container Runtime Interface）**，基于 gRPC over unix socket，分 `RuntimeService` 和 `ImageService` 两组。让 kubelet 认为 runtime 健康的最小集合是 `Version`（握手）、`Status`（返回 `RuntimeReady=true` / `NetworkReady=true`）、以及 `ListPodSandbox`（同步已有状态）。
 
 **Q: 为什么 `StopPodSandbox` / `RemovePodSandbox` 必须幂等？**
-A: kubelet 的 syncLoop 会重复触发删除（PLEG 事件重放、kubelet 重启后重新对账）。如果非幂等，找不到 sandbox 就报错，会让整个 Pod 删除流程卡在 Terminating。所以约定：目标不存在也返回成功。
+
+> [!question]- 参考答案（点击展开）
+>
+> kubelet 的 syncLoop 会重复触发删除（PLEG 事件重放、kubelet 重启后重新对账）。如果非幂等，找不到 sandbox 就报错，会让整个 Pod 删除流程卡在 Terminating。所以约定：目标不存在也返回成功。
 
 **Q: `Status` RPC 里 `NetworkReady=false` 通常意味着什么？**
-A: 通常是 CNI 插件没装好或配置缺失（`/etc/cni/net.d` 为空）。kubelet 检测到 `NetworkReady=false` 会让 Node 保持 NotReady，新 Pod 无法调度上来。
+
+> [!question]- 参考答案（点击展开）
+>
+> 通常是 CNI 插件没装好或配置缺失（`/etc/cni/net.d` 为空）。kubelet 检测到 `NetworkReady=false` 会让 Node 保持 NotReady，新 Pod 无法调度上来。
 
 **Q: CRI 调用是同步还是异步？没实现的 RPC 客户端会收到什么？**
-A: CRI 绝大多数是同步 unary 调用（`Exec`/`Attach`/`PortForward` 例外，走独立 streaming server）。未实现的 RPC 通过 `UnimplementedRuntimeServiceServer` 返回 `codes.Unimplemented`，客户端立即拿到错误码。
+
+> [!question]- 参考答案（点击展开）
+>
+> CRI 绝大多数是同步 unary 调用（`Exec`/`Attach`/`PortForward` 例外，走独立 streaming server）。未实现的 RPC 通过 `UnimplementedRuntimeServiceServer` 返回 `codes.Unimplemented`，客户端立即拿到错误码。
 
 **Q: 一个真实的 `RunPodSandbox` 除了登记状态还做了什么？**
-A: 起一个 pause（infra）容器持有 Pod 的 network namespace，然后调用 CNI ADD 给这个 netns 配 IP/路由，之后同 Pod 的业务容器都 join 这个 netns，从而共享网络。fake 版省略了这两步，只返回一个假 IP。
+
+> [!question]- 参考答案（点击展开）
+>
+> 起一个 pause（infra）容器持有 Pod 的 network namespace，然后调用 CNI ADD 给这个 netns 配 IP/路由，之后同 Pod 的业务容器都 join 这个 netns，从而共享网络。fake 版省略了这两步，只返回一个假 IP。
 
 ### 面试加分点
 

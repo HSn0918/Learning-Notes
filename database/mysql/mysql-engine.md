@@ -135,25 +135,46 @@ CREATE TABLE session_cache (
 ### 高频问题
 
 **Q: InnoDB 和 MyISAM 的核心区别是什么？**
-A: 最本质的区别是 InnoDB 支持事务（ACID）、行级锁、外键和 MVCC，而 MyISAM 都不支持，只有表级锁。崩溃恢复上 InnoDB 通过 Redo Log（WAL）保证持久性、可做到 crash-safe，MyISAM 较弱、崩溃后可能丢数据或损坏。InnoDB 自 MySQL 5.5 起成为默认引擎，适合高并发 OLTP；MyISAM 适合读多写少场景。
+
+> [!question]- 参考答案（点击展开）
+>
+> 最本质的区别是 InnoDB 支持事务（ACID）、行级锁、外键和 MVCC，而 MyISAM 都不支持，只有表级锁。崩溃恢复上 InnoDB 通过 Redo Log（WAL）保证持久性、可做到 crash-safe，MyISAM 较弱、崩溃后可能丢数据或损坏。InnoDB 自 MySQL 5.5 起成为默认引擎，适合高并发 OLTP；MyISAM 适合读多写少场景。
 
 **Q: 为什么 MySQL 5.5 之后默认引擎从 MyISAM 改成了 InnoDB？**
-A: 因为 InnoDB 提供事务支持、行级锁带来更高的并发写入能力，以及基于 Redo Log 的崩溃恢复能力，更符合现代业务对数据一致性和可靠性的要求。MyISAM 的表级锁在高并发写入时会成为瓶颈，且崩溃恢复弱、容易出现表损坏。
+
+> [!question]- 参考答案（点击展开）
+>
+> 因为 InnoDB 提供事务支持、行级锁带来更高的并发写入能力，以及基于 Redo Log 的崩溃恢复能力，更符合现代业务对数据一致性和可靠性的要求。MyISAM 的表级锁在高并发写入时会成为瓶颈，且崩溃恢复弱、容易出现表损坏。
 
 **Q: InnoDB 的行级锁相比 MyISAM 的表级锁有什么优势和代价？**
-A: 行级锁只锁住涉及的行，并发写入时不同事务可以操作不同的行而互不阻塞，大幅提升并发度。代价是锁的管理开销更大（需要维护更多锁信息）；而且 InnoDB 行锁是加在索引记录上的，当查询没有命中索引时会退化为锁住扫描到的每一行（效果近似全表加锁）。MyISAM 表级锁开销小但写并发差，读写互斥。
+
+> [!question]- 参考答案（点击展开）
+>
+> 行级锁只锁住涉及的行，并发写入时不同事务可以操作不同的行而互不阻塞，大幅提升并发度。代价是锁的管理开销更大（需要维护更多锁信息）；而且 InnoDB 行锁是加在索引记录上的，当查询没有命中索引时会退化为锁住扫描到的每一行（效果近似全表加锁）。MyISAM 表级锁开销小但写并发差，读写互斥。
 
 **Q: MVCC 是什么？InnoDB 为什么需要它？**
-A: MVCC（多版本并发控制）通过为数据保存多个版本，让读操作读取某个一致性快照而不必加锁，实现「读不阻塞写、写不阻塞读」。InnoDB 借助 undo log 构建历史版本链，配合 Read View 实现 RC/RR 隔离级别下的一致性读，避免大量加锁带来的性能损耗。MyISAM 没有 MVCC，读写之间只能靠表锁互斥。
+
+> [!question]- 参考答案（点击展开）
+>
+> MVCC（多版本并发控制）通过为数据保存多个版本，让读操作读取某个一致性快照而不必加锁，实现「读不阻塞写、写不阻塞读」。InnoDB 借助 undo log 构建历史版本链，配合 Read View 实现 RC/RR 隔离级别下的一致性读，避免大量加锁带来的性能损耗。MyISAM 没有 MVCC，读写之间只能靠表锁互斥。
 
 **Q: Memory 引擎有什么特点？使用时要注意什么？**
-A: Memory 引擎把数据全部存在 RAM 中，读写极快，默认使用 Hash 索引（等值查询很快，但对范围查询和排序无优化，需要时可显式指定 BTREE 索引）。锁粒度是表级锁，并发写性能受限；且不支持 TEXT/BLOB 等大字段。最大风险是数据不持久，服务重启或崩溃后数据全部丢失，因此只能用于缓存、临时表等可容忍数据丢失的场景。
+
+> [!question]- 参考答案（点击展开）
+>
+> Memory 引擎把数据全部存在 RAM 中，读写极快，默认使用 Hash 索引（等值查询很快，但对范围查询和排序无优化，需要时可显式指定 BTREE 索引）。锁粒度是表级锁，并发写性能受限；且不支持 TEXT/BLOB 等大字段。最大风险是数据不持久，服务重启或崩溃后数据全部丢失，因此只能用于缓存、临时表等可容忍数据丢失的场景。
 
 **Q: 如何查看和指定一张表的存储引擎？**
-A: 用 `SHOW VARIABLES LIKE 'default_storage_engine';` 查看默认引擎，用 `SHOW TABLE STATUS LIKE 'table_name';`（或查 `information_schema.TABLES`）查看具体表的引擎。建表时通过 `CREATE TABLE ... ENGINE=InnoDB;` 指定，已有表可用 `ALTER TABLE t ENGINE=InnoDB;` 转换引擎。
+
+> [!question]- 参考答案（点击展开）
+>
+> 用 `SHOW VARIABLES LIKE 'default_storage_engine';` 查看默认引擎，用 `SHOW TABLE STATUS LIKE 'table_name';`（或查 `information_schema.TABLES`）查看具体表的引擎。建表时通过 `CREATE TABLE ... ENGINE=InnoDB;` 指定，已有表可用 `ALTER TABLE t ENGINE=InnoDB;` 转换引擎。
 
 **Q: 现在还有哪些场景会选择 MyISAM？**
-A: 实际上现代项目已经很少用 MyISAM。它相对的优势是结构简单、空间占用小，以及历史上的全文索引支持；但 InnoDB 从 5.6 起也支持全文索引（FULLTEXT），而且全文检索更推荐交给 Elasticsearch。因此除了一些纯静态、读多写少的老系统，新项目基本统一用 InnoDB。
+
+> [!question]- 参考答案（点击展开）
+>
+> 实际上现代项目已经很少用 MyISAM。它相对的优势是结构简单、空间占用小，以及历史上的全文索引支持；但 InnoDB 从 5.6 起也支持全文索引（FULLTEXT），而且全文检索更推荐交给 Elasticsearch。因此除了一些纯静态、读多写少的老系统，新项目基本统一用 InnoDB。
 
 ### 面试加分点
 

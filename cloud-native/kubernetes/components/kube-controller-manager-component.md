@@ -315,20 +315,30 @@ kubectl rollout status deployment/<deployment> -n <namespace>
 
 ### Q: controller-manager 为什么要用 workqueue？
 
-A: 事件可能丢失、合并或乱序，控制器真正关心的是某个对象当前是否收敛。workqueue 存 key，worker 每次基于最新 cache/API 状态 reconcile，更符合声明式系统。
+> [!question]- 参考答案（点击展开）
+>
+> 事件可能丢失、合并或乱序，控制器真正关心的是某个对象当前是否收敛。workqueue 存 key，worker 每次基于最新 cache/API 状态 reconcile，更符合声明式系统。
 
 ### Q: controller 和 operator 的关系是什么？
 
-A: operator 是面向某个业务领域的控制器模式实践。Kubernetes 内置控制器由 kube-controller-manager 运行，自定义 operator 通常由用户部署的 controller-runtime 进程运行。
+> [!question]- 参考答案（点击展开）
+>
+> operator 是面向某个业务领域的控制器模式实践。Kubernetes 内置控制器由 kube-controller-manager 运行，自定义 operator 通常由用户部署的 controller-runtime 进程运行。
 
 ### Q: 为什么控制器要做到幂等？
 
-A: 同一个 key 可能因重试、resync、多个事件重复进入队列。reconcile 必须能重复执行而不产生错误副作用。
+> [!question]- 参考答案（点击展开）
+>
+> 同一个 key 可能因重试、resync、多个事件重复进入队列。reconcile 必须能重复执行而不产生错误副作用。
 
 ### Q: controller-manager 是高可用的吗？
 
-A: 可以多副本部署，但通过 leader election 保证同一个控制器只有 leader 主动执行 reconcile，其他副本待命。
+> [!question]- 参考答案（点击展开）
+>
+> 可以多副本部署，但通过 leader election 保证同一个控制器只有 leader 主动执行 reconcile，其他副本待命。
 
 ### Q: kube-controller-manager 和 cloud-controller-manager 的边界？
 
-A: kube-controller-manager 负责通用 Kubernetes 控制器；cloud-controller-manager 负责云厂商相关的 Node、Route、LoadBalancer 等逻辑。
+> [!question]- 参考答案（点击展开）
+>
+> kube-controller-manager 负责通用 Kubernetes 控制器；cloud-controller-manager 负责云厂商相关的 Node、Route、LoadBalancer 等逻辑。

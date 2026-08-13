@@ -150,13 +150,18 @@ cilium bpf lb list
 
 ### Q: kube-proxy 和 CNI 的边界是什么？
 
-A: CNI 负责 Pod 入网和 Pod 间连通；kube-proxy 负责把 Service VIP 转成后端 Pod IP。Service 选后端之后，跨节点包怎么走仍然依赖 CNI 数据面。
+> [!question]- 参考答案（点击展开）
+>
+> CNI 负责 Pod 入网和 Pod 间连通；kube-proxy 负责把 Service VIP 转成后端 Pod IP。Service 选后端之后，跨节点包怎么走仍然依赖 CNI 数据面。
 
 ### Q: iptables 和 IPVS 模式差异是什么？
 
-A: iptables 模式用 NAT 链规则逐步匹配并 DNAT；IPVS 模式把 Service 建成 virtual server，把 endpoint 建成 real server。IPVS 在大规模 Service / Endpoint 下更适合，但仍需要 iptables 做入口捕获和 SNAT 辅助。
+> [!question]- 参考答案（点击展开）
+>
+> iptables 模式用 NAT 链规则逐步匹配并 DNAT；IPVS 模式把 Service 建成 virtual server，把 endpoint 建成 real server。IPVS 在大规模 Service / Endpoint 下更适合，但仍需要 iptables 做入口捕获和 SNAT 辅助。
 
 ### Q: Cilium 替代 kube-proxy 后，Service 还存在吗？
 
-A: Service API 仍然存在，只是节点转发实现从 kube-proxy 的 iptables/IPVS 变成 eBPF program + BPF map。排障时要看 Cilium 的 service map，而不是 `KUBE-SERVICES`。
-
+> [!question]- 参考答案（点击展开）
+>
+> Service API 仍然存在，只是节点转发实现从 kube-proxy 的 iptables/IPVS 变成 eBPF program + BPF map。排障时要看 Cilium 的 service map，而不是 `KUBE-SERVICES`。

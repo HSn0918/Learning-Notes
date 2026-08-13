@@ -217,16 +217,24 @@ timeline
 
 ### Q：Prefill 和 Decode 为什么分开理解？
 
-A：Prefill 并行处理全部输入 Token 并建立 KV Cache，主要影响 TTFT；Decode 自回归地逐 Token 生成并反复读取模型权重与 KV Cache，主要影响 TPOT、ITL 和输出吞吐。两者的计算形态不同，因此调度和部署优化也不同。
+> [!question]- 参考答案（点击展开）
+>
+> Prefill 并行处理全部输入 Token 并建立 KV Cache，主要影响 TTFT；Decode 自回归地逐 Token 生成并反复读取模型权重与 KV Cache，主要影响 TPOT、ITL 和输出吞吐。两者的计算形态不同，因此调度和部署优化也不同。
 
 ### Q：KV Cache 与 Prefix Cache 有什么区别？
 
-A：KV Cache 保存当前 Sequence 已计算的 Key/Value，避免 Decode 重算历史；Prefix Cache 在不同请求间复用相同前缀的 KV Cache，减少重复 Prefill。Prefix Cache 建立在 KV Cache 之上，但属于跨请求优化。
+> [!question]- 参考答案（点击展开）
+>
+> KV Cache 保存当前 Sequence 已计算的 Key/Value，避免 Decode 重算历史；Prefix Cache 在不同请求间复用相同前缀的 KV Cache，减少重复 Prefill。Prefix Cache 建立在 KV Cache 之上，但属于跨请求优化。
 
 ### Q：为什么相同语义的 Prompt 可能无法命中 Prefix Cache？
 
-A：缓存匹配依据 Token 序列，而不是语义。字符、空格、Template、字段顺序和 Tokenizer 的任何变化都可能产生不同 Token IDs，导致差异位置之后无法复用。
+> [!question]- 参考答案（点击展开）
+>
+> 缓存匹配依据 Token 序列，而不是语义。字符、空格、Template、字段顺序和 Tokenizer 的任何变化都可能产生不同 Token IDs，导致差异位置之后无法复用。
 
 ### Q：为什么吞吐提高后延迟可能变差？
 
-A：更大的 Batch 和更激进的排队可以提高 GPU 利用率与总 Token Throughput，但单个请求可能等待更久。生产系统要同时观察吞吐、TTFT、TPOT 和 P99，而不是只优化一个平均值。
+> [!question]- 参考答案（点击展开）
+>
+> 更大的 Batch 和更激进的排队可以提高 GPU 利用率与总 Token Throughput，但单个请求可能等待更久。生产系统要同时观察吞吐、TTFT、TPOT 和 P99，而不是只优化一个平均值。

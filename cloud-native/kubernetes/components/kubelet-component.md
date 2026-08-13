@@ -702,20 +702,30 @@ kubectl logs <pod> -n <namespace> -c <container> --previous
 
 ### Q: kubelet watch 哪些 Pod？
 
-A: 主要 watch `spec.nodeName` 等于本节点的 Pod，同时还可以从本地 static pod manifest 或 HTTP source 获取 Pod。
+> [!question]- 参考答案（点击展开）
+>
+> 主要 watch `spec.nodeName` 等于本节点的 Pod，同时还可以从本地 static pod manifest 或 HTTP source 获取 Pod。
 
 ### Q: kubelet 和 container runtime 如何通信？
 
-A: kubelet 通过 CRI gRPC 调用 runtime service 和 image service，例如 `RunPodSandbox`、`CreateContainer`、`StartContainer`、`PullImage`。
+> [!question]- 参考答案（点击展开）
+>
+> kubelet 通过 CRI gRPC 调用 runtime service 和 image service，例如 `RunPodSandbox`、`CreateContainer`、`StartContainer`、`PullImage`。
 
 ### Q: kubelet 是否直接调用 CNI？
 
-A: 现代 Kubernetes 中 kubelet 不直接调用 CNI。kubelet 调 CRI 创建 Pod sandbox，containerd/CRI-O 再调用 CNI 插件配置网络。
+> [!question]- 参考答案（点击展开）
+>
+> 现代 Kubernetes 中 kubelet 不直接调用 CNI。kubelet 调 CRI 创建 Pod sandbox，containerd/CRI-O 再调用 CNI 插件配置网络。
 
 ### Q: PLEG 解决什么问题？
 
-A: PLEG 从 runtime 观测 Pod/容器生命周期事件，让 kubelet 能发现容器退出、重启、删除等实际状态变化。
+> [!question]- 参考答案（点击展开）
+>
+> PLEG 从 runtime 观测 Pod/容器生命周期事件，让 kubelet 能发现容器退出、重启、删除等实际状态变化。
 
 ### Q: static pod 和普通 Pod 区别是什么？
 
-A: static pod 由 kubelet 从本地文件直接管理，不通过 scheduler；kubelet 会在 apiserver 创建 mirror pod 便于观察。
+> [!question]- 参考答案（点击展开）
+>
+> static pod 由 kubelet 从本地文件直接管理，不通过 scheduler；kubelet 会在 apiserver 创建 mirror pod 便于观察。

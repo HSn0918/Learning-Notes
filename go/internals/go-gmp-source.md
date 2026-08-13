@@ -284,28 +284,42 @@ go tool trace trace.out
 
 ### Q: GMP 中 G、M、P 分别是什么？
 
-A: G 是 goroutine 的调度实体，M 是 OS thread，P 是执行 Go 代码需要的 processor 资源和本地队列。M 必须绑定 P 才能运行 Go 代码，G 会在 P 的本地队列、全局队列、netpoll、timer、GC worker 等来源之间流转。
+> [!question]- 参考答案（点击展开）
+>
+> G 是 goroutine 的调度实体，M 是 OS thread，P 是执行 Go 代码需要的 processor 资源和本地队列。M 必须绑定 P 才能运行 Go 代码，G 会在 P 的本地队列、全局队列、netpoll、timer、GC worker 等来源之间流转。
 
 ### Q: `go f()` 之后发生了什么？
 
-A: 编译器把 `go f()` lowering 到 `runtime.newproc`。runtime 在 g0 栈上调用 `newproc1` 初始化一个 G，把它放入当前 P 的本地队列，必要时唤醒 M。某个 M 后续在 `schedule -> findRunnable -> execute` 中取到这个 G，再通过 `gogo` 恢复到 G 的栈和入口 PC 执行。
+> [!question]- 参考答案（点击展开）
+>
+> 编译器把 `go f()` lowering 到 `runtime.newproc`。runtime 在 g0 栈上调用 `newproc1` 初始化一个 G，把它放入当前 P 的本地队列，必要时唤醒 M。某个 M 后续在 `schedule -> findRunnable -> execute` 中取到这个 G，再通过 `gogo` 恢复到 G 的栈和入口 PC 执行。
 
 ### Q: 为什么需要 P 的本地 run queue？
 
-A: 如果所有 goroutine 都放全局队列，每次创建、唤醒、调度都要抢全局锁。P 的本地队列把大多数操作局部化，降低锁竞争；本地队列满或负载不均时，再通过全局队列和 work stealing 平衡。
+> [!question]- 参考答案（点击展开）
+>
+> 如果所有 goroutine 都放全局队列，每次创建、唤醒、调度都要抢全局锁。P 的本地队列把大多数操作局部化，降低锁竞争；本地队列满或负载不均时，再通过全局队列和 work stealing 平衡。
 
 ### Q: work stealing 解决什么问题？
 
-A: 当某个 P 没有 runnable G，而其他 P 的本地队列积压时，空闲 P 会尝试从其他 P 偷一批 G。这样避免某些线程闲着、某些线程排队过长，提高整体吞吐和公平性。
+> [!question]- 参考答案（点击展开）
+>
+> 当某个 P 没有 runnable G，而其他 P 的本地队列积压时，空闲 P 会尝试从其他 P 偷一批 G。这样避免某些线程闲着、某些线程排队过长，提高整体吞吐和公平性。
 
 ### Q: goroutine 阻塞为什么不一定阻塞 OS thread？
 
-A: channel、mutex、netpoll、timer 等 runtime 可见阻塞会 park 当前 G，M 可以继续执行其他 G。只有 syscall/cgo 这类 OS 级阻塞可能卡住 M，此时 runtime 会尽量解绑 P，让其他 M 继续使用这个 P 跑 Go 代码。
+> [!question]- 参考答案（点击展开）
+>
+> channel、mutex、netpoll、timer 等 runtime 可见阻塞会 park 当前 G，M 可以继续执行其他 G。只有 syscall/cgo 这类 OS 级阻塞可能卡住 M，此时 runtime 会尽量解绑 P，让其他 M 继续使用这个 P 跑 Go 代码。
 
 ### Q: 什么情况下调度器会成为性能瓶颈？
 
-A: 大量 goroutine 高频创建销毁、海量 runnable G、channel/mutex 热点、频繁 syscall/cgo、`GOMAXPROCS` 和 CPU quota 不匹配、长时间不可抢占 CPU loop，都可能造成调度延迟或线程膨胀。
+> [!question]- 参考答案（点击展开）
+>
+> 大量 goroutine 高频创建销毁、海量 runnable G、channel/mutex 热点、频繁 syscall/cgo、`GOMAXPROCS` 和 CPU quota 不匹配、长时间不可抢占 CPU loop，都可能造成调度延迟或线程膨胀。
 
 ### Q: 怎么排查 goroutine 泄漏？
 
-A: 先抓 goroutine profile，看堆栈聚集点；再按阻塞类型分类：channel send/receive、select、context、timer、I/O。结合业务 owner 找到缺失的 cancel、未关闭的 channel、无界 worker 或未 stop 的 ticker。
+> [!question]- 参考答案（点击展开）
+>
+> 先抓 goroutine profile，看堆栈聚集点；再按阻塞类型分类：channel send/receive、select、context、timer、I/O。结合业务 owner 找到缺失的 cancel、未关闭的 channel、无界 worker 或未 stop 的 ticker。

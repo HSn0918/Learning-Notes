@@ -167,12 +167,18 @@ flowchart LR
 
 ### Q：vLLM、SGLang、LoRA 和 RL 分别处于哪一层？
 
-A：vLLM/SGLang 负责高性能推理与生成；LoRA 是参数高效训练方法；RL 是 Post-training 中根据 Reward 或环境反馈优化 Policy 的方法。Online RL 会调用推理引擎生成 Rollout，因此训练系统与推理系统会发生连接，但它们仍不是同一类技术。
+> [!question]- 参考答案（点击展开）
+>
+> vLLM/SGLang 负责高性能推理与生成；LoRA 是参数高效训练方法；RL 是 Post-training 中根据 Reward 或环境反馈优化 Policy 的方法。Online RL 会调用推理引擎生成 Rollout，因此训练系统与推理系统会发生连接，但它们仍不是同一类技术。
 
 ### Q：零基础为什么不能直接从 vLLM 源码开始？
 
-A：源码里的 Scheduler、KV Cache 和 Batch 管理都依赖对 Token、Prefill、Decode、显存和吞吐/延迟的理解。缺少这些数据流概念时只能记住类名，无法解释设计权衡。
+> [!question]- 参考答案（点击展开）
+>
+> 源码里的 Scheduler、KV Cache 和 Batch 管理都依赖对 Token、Prefill、Decode、显存和吞吐/延迟的理解。缺少这些数据流概念时只能记住类名，无法解释设计权衡。
 
 ### Q：如何判断自己真正学会了一个阶段？
 
-A：至少做到三点：能用自己的话解释完整链路；能运行最小实验并观察关键指标；能说明一个参数变化为何导致结果变化。只阅读文档或成功启动进程不算完成。
+> [!question]- 参考答案（点击展开）
+>
+> 至少做到三点：能用自己的话解释完整链路；能运行最小实验并观察关键指标；能说明一个参数变化为何导致结果变化。只阅读文档或成功启动进程不算完成。

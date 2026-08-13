@@ -268,20 +268,30 @@ ip route
 
 ### Q: kubelet 是否直接执行 CNI 插件？
 
-A: 现代 Kubernetes 中不是。kubelet 调 CRI runtime 创建 Pod sandbox，runtime 读取 CNI 配置并执行插件。
+> [!question]- 参考答案（点击展开）
+>
+> 现代 Kubernetes 中不是。kubelet 调 CRI runtime 创建 Pod sandbox，runtime 读取 CNI 配置并执行插件。
 
 ### Q: CNI 插件必须实现哪些命令？
 
-A: 常见命令是 `ADD`、`DEL`、`CHECK`、`VERSION`。`ADD` 和 `DEL` 必须尽量幂等，因为 runtime 可能重试。
+> [!question]- 参考答案（点击展开）
+>
+> 常见命令是 `ADD`、`DEL`、`CHECK`、`VERSION`。`ADD` 和 `DEL` 必须尽量幂等，因为 runtime 可能重试。
 
 ### Q: Calico、Flannel、Cilium 最大区别？
 
-A: Flannel 主要提供简单 Pod 网络；Calico 强在路由和 NetworkPolicy；Cilium 用 eBPF 实现网络、策略、Service 转发和可观测性。
+> [!question]- 参考答案（点击展开）
+>
+> Flannel 主要提供简单 Pod 网络；Calico 强在路由和 NetworkPolicy；Cilium 用 eBPF 实现网络、策略、Service 转发和可观测性。
 
 ### Q: Pod IP 是谁分配的？
 
-A: 由 CNI 的 IPAM 逻辑分配。具体实现可能是 host-local、本地 daemon 或集中式 IPAM。
+> [!question]- 参考答案（点击展开）
+>
+> 由 CNI 的 IPAM 逻辑分配。具体实现可能是 host-local、本地 daemon 或集中式 IPAM。
 
 ### Q: CNI 和 Service 有什么关系？
 
-A: CNI 保证 Pod IP 可达；Service 的 ClusterIP 转发由 kube-proxy 或 eBPF CNI 的 kube-proxy replacement 实现。
+> [!question]- 参考答案（点击展开）
+>
+> CNI 保证 Pod IP 可达；Service 的 ClusterIP 转发由 kube-proxy 或 eBPF CNI 的 kube-proxy replacement 实现。

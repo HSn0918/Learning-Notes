@@ -17,12 +17,13 @@ flowchart TD
 
 ## 目录入口
 
-| 方向 | 入口 | 内容 |
-| --- | --- | --- |
-| 基础 | [LLM Foundations](foundations/README.md) | 零基础路线、Token、Transformer、模型生命周期 |
-| 推理 | [LLM Inference](inference/README.md) | Prefill/Decode、KV Cache、vLLM、SGLang、分布式推理 |
-| 后训练 | [LLM Post-training](post-training/README.md) | LoRA/QLoRA、SFT、DPO、Reward Model、PPO、GRPO |
-| Agent | [Agent](agents/README.md) | RAG、Tool Calling、Planning、Graph Workflow、生产化与源码 |
+| 方向    | 入口                                           | 内容                                              |
+| ----- | -------------------------------------------- | ----------------------------------------------- |
+| 基础    | [LLM Foundations](foundations/README.md)     | 零基础路线、Token、Transformer、模型生命周期                  |
+| 推理    | [LLM Inference](inference/README.md)         | Prefill/Decode、KV Cache、vLLM、SGLang、分布式推理       |
+| 后训练   | [LLM Post-training](post-training/README.md) | LoRA/QLoRA、SFT、DPO、Reward Model、PPO、GRPO        |
+| Agent | [Agent](agents/README.md)                    | RAG、Tool Calling、Planning、Graph Workflow、生产化与源码 |
+| 实验    | [AI Experiments](experiments/README.md)      | 可离线运行的机制实验，以及未实测的推理服务基准脚本                       |
 
 ## 推荐顺序
 

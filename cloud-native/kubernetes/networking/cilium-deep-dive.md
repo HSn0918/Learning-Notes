@@ -122,13 +122,18 @@ hubble observe
 
 ### Q: Cilium 为什么能替代 kube-proxy？
 
-A: kube-proxy 的核心职责是把 Service VIP 转发到后端 endpoint。Cilium watch Service/EndpointSlice 后，把负载均衡状态写入 BPF map，再由 eBPF program 在内核路径上完成 backend 选择和转发，因此可以不依赖 iptables/IPVS。
+> [!question]- 参考答案（点击展开）
+>
+> kube-proxy 的核心职责是把 Service VIP 转发到后端 endpoint。Cilium watch Service/EndpointSlice 后，把负载均衡状态写入 BPF map，再由 eBPF program 在内核路径上完成 backend 选择和转发，因此可以不依赖 iptables/IPVS。
 
 ### Q: Cilium 的 identity 有什么价值？
 
-A: identity 把 Pod label 集合映射成稳定的安全身份，策略可以基于身份而不是易变的 IP 判断。Pod 重建或迁移后，只要 label 语义不变，策略仍然成立。
+> [!question]- 参考答案（点击展开）
+>
+> identity 把 Pod label 集合映射成稳定的安全身份，策略可以基于身份而不是易变的 IP 判断。Pod 重建或迁移后，只要 label 语义不变，策略仍然成立。
 
 ### Q: Cilium 的 L7 策略是不是纯 eBPF 实现？
 
-A: 不是。eBPF 负责流量识别、重定向和内核态快速路径；复杂 L7 解析通常交给 Envoy 等 userspace proxy。它是协作模型，不是把完整 HTTP 代理塞进 eBPF。
-
+> [!question]- 参考答案（点击展开）
+>
+> 不是。eBPF 负责流量识别、重定向和内核态快速路径；复杂 L7 解析通常交给 Envoy 等 userspace proxy。它是协作模型，不是把完整 HTTP 代理塞进 eBPF。

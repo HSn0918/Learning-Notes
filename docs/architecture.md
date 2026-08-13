@@ -51,8 +51,11 @@ flowchart TD
 4. 所有知识内容能从根 README 经 MOC 到达。
 5. 普通 Markdown 文件名使用英文小写 kebab-case。
 6. 不存在空文件和无实质内容的 stub。
+7. 每道正式学习题紧跟一个非空、默认折叠的参考答案；任务清单和排障步骤不冒充题目。
 
 这些规则由 `scripts/validate_notes.py` 持续检查。
+
+答案遮盖使用 `> [!question]- 参考答案（点击展开）`。它在 Obsidian 中默认收起，在 GitHub 中降级为可读引用块；仓库优先保证答案中的 Markdown、Wikilink、代码和 Mermaid 不丢失。
 
 ## 迁移记录
 

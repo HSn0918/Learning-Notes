@@ -1202,40 +1202,79 @@ func (e *Err) Error() string { return e.msg }
 ## 面试要点
 
 **Q1: kube-scheduler 的 scheduling cycle 和 binding cycle 有什么区别？为什么这样拆？**
+
+> [!question]- 参考答案（点击展开）
+>
 > scheduling cycle（QueueSort→...→Permit）是**同步串行**的，保证同一时刻只有一个 Pod 在做调度决策，避免对同一节点资源的并发误判；binding cycle（PreBind→Bind→PostBind）在**独立 goroutine 异步**执行。拆分的原因是 binding 涉及写 apiserver、挂载卷等慢操作，异步化后绑定慢不会阻塞下一个 Pod 的调度决策，靠 assume 机制衔接两者。
 
 **Q2: Scheduling Framework 有哪些扩展点，分别属于哪个周期？**
+
+> [!question]- 参考答案（点击展开）
+>
 > Scheduling cycle：QueueSort、PreFilter、Filter、PostFilter、PreScore、Score、NormalizeScore、Reserve、Permit。Binding cycle：PreBind、Bind、PostBind。此外 Reserve/PreBind/Bind 失败会触发 Unreserve 回滚。接口契约定义在 `pkg/scheduler/framework/interface.go`。
 
 **Q3: 调度队列为什么要分三级？unschedulablePods 里的 Pod 怎么回到 activeQ？**
+
+> [!question]- 参考答案（点击展开）
+>
 > activeQ 是真正待调度的优先级 heap；backoffQ 放调度失败、退避中的 Pod，做指数退避防止失败 Pod 空转；unschedulablePods 放当前无法调度的 Pod。回流靠 QueueingHint：插件声明关心哪些集群事件（NodeAdd、PodDelete 等），只有相关事件发生且 hint 判定"可能可调度"时才把对应 Pod 移回 activeQ，避免惊群；另有 `flushUnschedulablePodsLeftover`（默认 5min）兜底防饿死。
 
 **Q4: 插件之间如何跨扩展点传递数据？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 通过 `CycleState`（`pkg/scheduler/framework/cycle_state.go`），每次调度周期 new 一个、结束即丢弃。插件定义实现了 `StateData` 接口的结构体，PreFilter/PreScore 阶段 `Write` 进去，Filter/Score 阶段 `Read` 出来。典型如 InterPodAffinity 在 PreFilter 算好拓扑统计，避免每个节点重复遍历全集群 Pod。Score 并行场景下需要 `Clone()` 隔离。
 
 **Q5: Filter 和 Score 阶段如何保证大集群下的性能？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 调度决策基于一份不变的 snapshot（`internalcache.Snapshot`，每个节点是 `NodeInfo`）。Filter 用 `Parallelizer` 并行（默认 parallelism=16），并在找到足够数量可用节点后提前停止（由 `percentageOfNodesToScore` 决定），节点轮询起点在周期间轮换并按 zone 交错。Score 也并行，最终分 = Σ(weight × 归一化分)，并列最高分随机选一个。
 
 **Q6: assume 机制是什么？和 bind 什么关系？**
+
+> [!question]- 参考答案（点击展开）
+>
 > assume 是把选中的 Pod 在 `Scheduler.Cache` 里"乐观地"标记为已绑定到目标节点（`Cache.AssumePod`），立即扣减该节点缓存里的剩余资源，让下一个 Pod 的调度不必等 apiserver 确认。bind 才真正写 `Binding` 对象到 apiserver。binding 失败时 `unreserveAndForget` 回滚插件状态并撤销 assume；不要把旧版本的 assumed Pod TTL 默认值当作当前稳定契约。
 
 **Q7: Permit 扩展点的 wait 有什么用？**
+
+> [!question]- 参考答案（点击展开）
+>
 > Permit 可返回 approve / deny / wait(timeout)。`wait` 让 Pod 进入 waitingPods 等待，主要用于 Gang Scheduling——一组 Pod 互相等待，凑齐后由插件统一 `AllowWaitingPod` 放行，否则超时一起 deny。批调度框架（如 Coscheduling、Volcano 思路）就基于这个扩展点实现。
 
 **Q8: 怎么开发并部署一个自定义调度插件？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 实现 `framework.Plugin` 加具体扩展点接口（如 `ScorePlugin`/`FilterPlugin`），写一个 `PluginFactory`（`New` 函数）。用 `app.NewSchedulerCommand` + `app.WithPlugin` 注入插件、编译出自定义调度器二进制。然后在 `KubeSchedulerConfiguration` 的某个 profile 里 `enabled` 该插件。可作为第二调度器部署（独立 `leaderElection.resourceName`），Pod 通过 `spec.schedulerName` 选择；若无需独立进程，直接给默认调度器加一个 profile 更安全。
 
 **Q9: 一个 kube-scheduler 进程能跑多个调度器吗？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 能。`KubeSchedulerConfiguration.profiles` 可配置多个 profile，每个 profile 一个 `schedulerName` 和一套插件配置，对应 `Scheduler.Profiles` 里一个 `framework.Framework` 实例。它们共享同一调度队列与缓存，Pod 靠 `spec.schedulerName` 路由到对应 profile。这是比"部署多个调度器进程"更轻量、更不易出错的多调度策略方案。
 
 **Q10: Framework Plugin 和 Scheduler Extender 怎么选？**
+
+> [!question]- 参考答案（点击展开）
+>
 > Framework Plugin 是进程内 Go 代码，覆盖全部扩展点、性能好，但要重新编译调度器；Extender 是 HTTP webhook，只能扩展 Filter/Score/Bind，有网络延迟和单点风险，但无需改调度器代码。生产环境深度定制优先 Framework Plugin，Extender 仅用于对接遗留系统或轻量扩展。
 
 **Q11: PreFilter / PreScore 和 Filter / Score 是什么关系？为什么要拆出 Pre 阶段？**
+
+> [!question]- 参考答案（点击展开）
+>
 > Filter / Score 是**逐 Node 跑**的（Filter 跑 N 次、Score 跑 M 次，且跨 Node 并行）；PreFilter / PreScore 每个调度周期只跑 1 次。凡是只跟 Pod 自身有关、与具体 Node 无关的计算，放进 Pre 阶段算一次、`Write` 进 CycleState，Filter / Score 直接 `Read`，把"每 Node 重复"降为"每 Pod 一次"。典型：`NodeResourcesFit` 在 PreFilter 把容器 request 加总成"Pod 总需求"；`InterPodAffinity` 在 PreFilter 算好全集群拓扑统计。PreFilter 还能返回 `Unschedulable` 直接终止周期，或裁剪 Node 子集；PreScore 的输入是"已通过 Filter 的 Node 集"。
 
 **Q12: Reserve 扩展点是干什么的？和 Assume 有什么区别？**
+
+> [!question]- 参考答案（点击展开）
+>
 > Assume 是 Scheduler 框架动作，先把 Pod 的 `Spec.NodeName` 写进 `Scheduler.Cache` 并立即扣减该 Node 缓存里的剩余资源。随后 Reserve 扩展点让插件登记自己的预留状态，并提供失败时的 `Unreserve` 回滚钩子；最典型的使用者是 `VolumeBinding`，在此预留 PV。两者都属于“绑定前在内存占坑”，但一个维护 Scheduler 的 Pod/Node 资源账本，一个维护插件私有状态；Reserve 或后续阶段失败时还要 `ForgetPod` 回滚 Assume。
 
 **Q13: `volumeBindingMode: WaitForFirstConsumer` 下调度器做了什么？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 它把"PV 在哪个 AZ 创建"的决定权交给调度器，解决 PV 与 Pod 跨 AZ 的鸡生蛋问题。调度器内置的 `VolumeBinding` 插件在多个扩展点接管：PreFilter 分类 PVC（已绑/未绑）；Filter 逐 Node 判断"现成 PV 能否复用 / StorageClass 能否在该 Node 拓扑域动态 provision"，不满足就淘汰该 Node；Reserve 在内存里假绑定 PV；PreBind 给待创建的 PVC 打 `volume.kubernetes.io/selected-node` 注解，触发 external-provisioner 在选中 Node 的 AZ 真正造盘，并阻塞等 PVC 变 `Bound` 才放行 Bind。对比 `Immediate`——PVC 一创建就造 PV，反过来把 Pod 锁死在某个 AZ。

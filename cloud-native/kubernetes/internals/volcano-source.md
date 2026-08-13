@@ -952,51 +952,69 @@ HAMi（[[hami-source]]）作为 device plugin 提供 vGPU 资源（如 `nvidia.c
 
 ### Q1：Volcano 和 kube-scheduler 最本质的区别是什么？
 
-A：**调度的最小单位**和**驱动方式**。kube-scheduler 是 per-Pod 事件驱动（`ScheduleOne` 逐 Pod 处理），每个 Pod 独立决策；Volcano 是 per-Session 周期驱动（默认 1s 一次 `runOnce`），打集群快照后在 Session 内顺序跑 `enqueue → allocate → backfill → (preempt) → (reclaim)`，最小单位是 **PodGroup**（多个 Pod 的原子组）。这个差异决定了 Volcano 天然支持 Gang Scheduling——一组 Pod 通过 Statement 批量 Allocate，只有 Gang 满足才 Commit，否则整体 Discard，绝不会出现"半启动"的状态。
+> [!question]- 参考答案（点击展开）
+>
+> **调度的最小单位**和**驱动方式**。kube-scheduler 是 per-Pod 事件驱动（`ScheduleOne` 逐 Pod 处理），每个 Pod 独立决策；Volcano 是 per-Session 周期驱动（默认 1s 一次 `runOnce`），打集群快照后在 Session 内顺序跑 `enqueue → allocate → backfill → (preempt) → (reclaim)`，最小单位是 **PodGroup**（多个 Pod 的原子组）。这个差异决定了 Volcano 天然支持 Gang Scheduling——一组 Pod 通过 Statement 批量 Allocate，只有 Gang 满足才 Commit，否则整体 Discard，绝不会出现"半启动"的状态。
 
 ### Q2：Statement 在 Volcano 里扮演什么角色？为什么需要它？
 
-A：Statement 是 Volcano 版的"事务"，定义在 `pkg/scheduler/framework/statement.go`。allocate action 在一个 Statement 内尝试给整个 Job 分配多个 task，每个 `stmt.Allocate(task, node)` 只在 Session 视图里"假定"占位，并不真正写 K8s。只有 `ssn.JobPipelined(job)` 通过（Allocated + Pipelined task 数 >= MinAvailable）才调 `stmt.Commit()`，触发 `cache.Bind` 异步绑定；否则 `stmt.Discard()` 按反向操作回滚整个 Statement。**这是 Gang Scheduling 原子性的实现基础**——如果不用 Statement，allocate 边占位边 bind，一旦中途失败已经 bind 的 Pod 就空占资源了。
+> [!question]- 参考答案（点击展开）
+>
+> Statement 是 Volcano 版的"事务"，定义在 `pkg/scheduler/framework/statement.go`。allocate action 在一个 Statement 内尝试给整个 Job 分配多个 task，每个 `stmt.Allocate(task, node)` 只在 Session 视图里"假定"占位，并不真正写 K8s。只有 `ssn.JobPipelined(job)` 通过（Allocated + Pipelined task 数 >= MinAvailable）才调 `stmt.Commit()`，触发 `cache.Bind` 异步绑定；否则 `stmt.Discard()` 按反向操作回滚整个 Statement。**这是 Gang Scheduling 原子性的实现基础**——如果不用 Statement，allocate 边占位边 bind，一旦中途失败已经 bind 的 Pod 就空占资源了。
 
 ### Q3：Gang Scheduling 的 `JobReady` 是怎么判断的？
 
-A：在 `pkg/scheduler/plugins/gang/gang.go` 注册的 `JobReadyFn` 里，最终调到 `pkg/scheduler/api/job_info.go:1024 CheckTaskReady`。逻辑分两层：
-
-1. 如果 Job 级 `MinAvailable < Σ TaskMinAvailable`，降级只看 Job 级 ready 数；
-2. 否则按 role 综合判断——对每个 task role，已分配数必须 >= 该 role 的 minAvailable（典型场景：PyTorch DDP 的 master 必须 1 个、worker 必须 N 个，缺一不可）。
-
-设计意图是支持多角色 Gang——只有所有 role 都达标，才算这一组 Job ready。
+> [!question]- 参考答案（点击展开）
+>
+> 在 `pkg/scheduler/plugins/gang/gang.go` 注册的 `JobReadyFn` 里，最终调到 `pkg/scheduler/api/job_info.go:1024 CheckTaskReady`。逻辑分两层：
+>
+> 1. 如果 Job 级 `MinAvailable < Σ TaskMinAvailable`，降级只看 Job 级 ready 数；
+> 2. 否则按 role 综合判断——对每个 task role，已分配数必须 >= 该 role 的 minAvailable（典型场景：PyTorch DDP 的 master 必须 1 个、worker 必须 N 个，缺一不可）。
+>
+> 设计意图是支持多角色 Gang——只有所有 role 都达标，才算这一组 Job ready。
 
 ### Q4：Volcano 的抢占（preempt）和回收（reclaim）有什么区别？
 
-A：粒度不同。preempt 是**同 Queue 内的优先级抢占**——`actions/preempt/preempt.go` 找 starving 的 preemptor，让 `ssn.Preemptable` 决定哪些低优 task 可被驱逐，由 gang + priority plugin 共同把关。reclaim 是**跨 Queue 的配额回收**——`actions/reclaim/reclaim.go` 用 proportion plugin 的 OverusedFn 找出 `allocated > deserved` 的 queue，把它"借用"的资源还给真正应得的 queue。两者都用 Statement 的 `Evict + Pipeline` 模式。**关键坑**：两个 action 默认都不在 ConfigMap 的 `actions:` 列表，不开启它们 Volcano 不会主动抢占。
+> [!question]- 参考答案（点击展开）
+>
+> 粒度不同。preempt 是**同 Queue 内的优先级抢占**——`actions/preempt/preempt.go` 找 starving 的 preemptor，让 `ssn.Preemptable` 决定哪些低优 task 可被驱逐，由 gang + priority plugin 共同把关。reclaim 是**跨 Queue 的配额回收**——`actions/reclaim/reclaim.go` 用 proportion plugin 的 OverusedFn 找出 `allocated > deserved` 的 queue，把它"借用"的资源还给真正应得的 queue。两者都用 Statement 的 `Evict + Pipeline` 模式。**关键坑**：两个 action 默认都不在 ConfigMap 的 `actions:` 列表，不开启它们 Volcano 不会主动抢占。
 
 ### Q5：DRF 是怎么工作的？为什么 GPU 集群常用它？
 
-A：DRF（Dominant Resource Fairness）是 `pkg/scheduler/plugins/drf/drf.go` 的核心。对每个 Job 或 Queue 计算 `share = max(allocated[res] / total[res])`，即所有资源维度中占比最大的那一个。`JobOrderFn` 和 `QueueOrderFn` 都按 share 升序排序，share 小的优先调度。在多资源场景（CPU/Memory/GPU）下，避免某个 Job 因为只占大量 GPU 但 CPU/Memory 很少，就被算成"占用少"而无限优先——它的 GPU share 已经很大了。GPU 集群通常瓶颈是 GPU，DRF 能让 GPU 用量大的 Job 礼让 CPU/Memory 密集型 Job，反之亦然。
+> [!question]- 参考答案（点击展开）
+>
+> DRF（Dominant Resource Fairness）是 `pkg/scheduler/plugins/drf/drf.go` 的核心。对每个 Job 或 Queue 计算 `share = max(allocated[res] / total[res])`，即所有资源维度中占比最大的那一个。`JobOrderFn` 和 `QueueOrderFn` 都按 share 升序排序，share 小的优先调度。在多资源场景（CPU/Memory/GPU）下，避免某个 Job 因为只占大量 GPU 但 CPU/Memory 很少，就被算成"占用少"而无限优先——它的 GPU share 已经很大了。GPU 集群通常瓶颈是 GPU，DRF 能让 GPU 用量大的 Job 礼让 CPU/Memory 密集型 Job，反之亦然。
 
 ### Q6：Volcano 的 `--schedule-period`（默认 1s）意味着什么？
 
-A：意味着 Volcano **本质上不是事件驱动的实时调度器**。一个 Pod 创建后，最坏等 1s 才进入下一个 Session 被考虑；同样，节点资源释放后也要等 1s 才被重新利用。这是 batch scheduler 的设计取舍：批任务通常对调度延迟不敏感（任务跑几小时几天），但对 Gang 原子性和队列公平性强敏感，**用响应时间换决策一致性**。在线服务（Web/微服务）应继续用 kube-scheduler，因为它的 ScheduleOne 是事件驱动的。如果调度延迟成为瓶颈，可以减小 schedule-period（如 500ms），代价是 Snapshot 深拷贝开销翻倍。
+> [!question]- 参考答案（点击展开）
+>
+> 意味着 Volcano **本质上不是事件驱动的实时调度器**。一个 Pod 创建后，最坏等 1s 才进入下一个 Session 被考虑；同样，节点资源释放后也要等 1s 才被重新利用。这是 batch scheduler 的设计取舍：批任务通常对调度延迟不敏感（任务跑几小时几天），但对 Gang 原子性和队列公平性强敏感，**用响应时间换决策一致性**。在线服务（Web/微服务）应继续用 kube-scheduler，因为它的 ScheduleOne 是事件驱动的。如果调度延迟成为瓶颈，可以减小 schedule-period（如 500ms），代价是 Snapshot 深拷贝开销翻倍。
 
 ### Q7：写一个 Volcano 自定义 Plugin 需要做什么？
 
-A：实现 `Plugin` 接口（`Name / OnSessionOpen / OnSessionClose`），在 `OnSessionOpen` 里调 `ssn.AddXxxFn` 注册需要的回调（如 `NodeOrderFn / PredicateFn / JobOrderFn / PreemptableFn`）。然后在 `pkg/scheduler/plugins/factory.go` 加 import 并调 `framework.RegisterPluginBuilder(name, builder)`，重新编译 scheduler 镜像。ConfigMap 的 `tiers:` 列表里加上 plugin name，下一周期生效（不用重启）。不想 fork 主仓的话，用 extender plugin 走 HTTP webhook 实现，代价是网络延迟。
+> [!question]- 参考答案（点击展开）
+>
+> 实现 `Plugin` 接口（`Name / OnSessionOpen / OnSessionClose`），在 `OnSessionOpen` 里调 `ssn.AddXxxFn` 注册需要的回调（如 `NodeOrderFn / PredicateFn / JobOrderFn / PreemptableFn`）。然后在 `pkg/scheduler/plugins/factory.go` 加 import 并调 `framework.RegisterPluginBuilder(name, builder)`，重新编译 scheduler 镜像。ConfigMap 的 `tiers:` 列表里加上 plugin name，下一周期生效（不用重启）。不想 fork 主仓的话，用 extender plugin 走 HTTP webhook 实现，代价是网络延迟。
 
 ### Q8：Volcano 和 Kueue / YuniKorn 的边界在哪？
 
-A：
-
-- **Volcano**：自带完整调度器（scheduler binary），有 Job CRD（多 task role），Gang/DRF/Proportion 都是核心能力。强项：AI 训练、HPC、MPI、Ray 这种"成组任务"。
-- **Kueue**：不是调度器，是**准入控制器** + 配额管理器。它复用原生 kube-scheduler 和原生 Job/Kubeflow，自己负责"什么时候让 Job 进入调度队列"。强项：和 Kubeflow/Ray Operator 生态集成。
-- **YuniKorn**：来自 Apache，原生支持层级队列和 Spark/Flink 场景，定位接近 Volcano 但更偏 Hadoop 生态。
-
-判断：需要 Gang + 多角色 Job 直接选 Volcano；只想加配额管理但继续用原生 Job 选 Kueue；大数据生态主选 YuniKorn。
+> [!question]- 参考答案（点击展开）
+>
+> - **Volcano**：自带完整调度器（scheduler binary），有 Job CRD（多 task role），Gang/DRF/Proportion 都是核心能力。强项：AI 训练、HPC、MPI、Ray 这种"成组任务"。
+> - **Kueue**：不是调度器，是**准入控制器** + 配额管理器。它复用原生 kube-scheduler 和原生 Job/Kubeflow，自己负责"什么时候让 Job 进入调度队列"。强项：和 Kubeflow/Ray Operator 生态集成。
+> - **YuniKorn**：来自 Apache，原生支持层级队列和 Spark/Flink 场景，定位接近 Volcano 但更偏 Hadoop 生态。
+>
+> 判断：需要 Gang + 多角色 Job 直接选 Volcano；只想加配额管理但继续用原生 Job 选 Kueue；大数据生态主选 YuniKorn。
 
 ### Q9：Session 内的 plugin 回调是怎么注册的？为什么有 Tier 概念？
 
-A：Session 内大约有 30 张回调表（map[plugin_name]callback），如 `jobOrderFns / predicateFns / preemptableFns` 等。Plugin 在 `OnSessionOpen` 时调 `ssn.AddJobOrderFn(pluginName, fn)` 把自己的实现挂上去。当 action 需要决策时（如 `ssn.JobReady(job)`），按 Tier 顺序遍历回调，按 plugin 的 `EnabledXxx` 配置和"短路"/"投票"策略汇总结果。**Tier 的意义**是把硬约束（gang/priority/conformance）放 Tier 1、软约束（drf/proportion/nodeorder）放 Tier 2——Tier 1 拒绝就不会问 Tier 2，硬约束有更高否决权。例如 gang 拒绝抢占（victim 减 1 后破坏 MinAvailable），priority 即便允许也无效。
+> [!question]- 参考答案（点击展开）
+>
+> Session 内大约有 30 张回调表（map[plugin_name]callback），如 `jobOrderFns / predicateFns / preemptableFns` 等。Plugin 在 `OnSessionOpen` 时调 `ssn.AddJobOrderFn(pluginName, fn)` 把自己的实现挂上去。当 action 需要决策时（如 `ssn.JobReady(job)`），按 Tier 顺序遍历回调，按 plugin 的 `EnabledXxx` 配置和"短路"/"投票"策略汇总结果。**Tier 的意义**是把硬约束（gang/priority/conformance）放 Tier 1、软约束（drf/proportion/nodeorder）放 Tier 2——Tier 1 拒绝就不会问 Tier 2，硬约束有更高否决权。例如 gang 拒绝抢占（victim 减 1 后破坏 MinAvailable），priority 即便允许也无效。
 
 ### Q10：Volcano 怎么和 GPU device plugin（如 HAMi、NVIDIA device plugin）配合？
 
-A：device plugin 在 kubelet 层面工作，向 K8s 通告 `nvidia.com/gpu` 这种扩展资源。Volcano 的 predicates plugin 调用 k8s 的标准 NodeFit 算法检查节点资源（包括 extended resources）够不够。但 device 的**具体 device id 分配是 kubelet bind 后才发生**——这意味着 Volcano 的 Statement 只能看到"数量"，看不到"哪张卡"。如果是 HAMi 的 vGPU（一张物理卡切多个虚拟卡），需要用 Volcano 的 **deviceshare plugin** 或 HAMi 的 scheduler-extender 模式，让 Volcano 在调度阶段就能感知 device 拓扑（NVLink、MIG slice），否则可能出现 task allocate 到节点但 HAMi 实际分不出来。MIG（Multi-Instance GPU）场景需要 numa-aware + deviceshare 联动，详见 [[gpu-scheduling-source]] 和 [[hami-source]]。
+> [!question]- 参考答案（点击展开）
+>
+> device plugin 在 kubelet 层面工作，向 K8s 通告 `nvidia.com/gpu` 这种扩展资源。Volcano 的 predicates plugin 调用 k8s 的标准 NodeFit 算法检查节点资源（包括 extended resources）够不够。但 device 的**具体 device id 分配是 kubelet bind 后才发生**——这意味着 Volcano 的 Statement 只能看到"数量"，看不到"哪张卡"。如果是 HAMi 的 vGPU（一张物理卡切多个虚拟卡），需要用 Volcano 的 **deviceshare plugin** 或 HAMi 的 scheduler-extender 模式，让 Volcano 在调度阶段就能感知 device 拓扑（NVLink、MIG slice），否则可能出现 task allocate 到节点但 HAMi 实际分不出来。MIG（Multi-Instance GPU）场景需要 numa-aware + deviceshare 联动，详见 [[gpu-scheduling-source]] 和 [[hami-source]]。

@@ -247,16 +247,24 @@ spec:
 
 ### Q1: Longhorn 的架构特点是什么？
 
-Longhorn 采用微服务化架构，每个 Volume 对应一个独立的 Engine 进程和多个 Replica 进程。Longhorn Manager 以 DaemonSet 方式运行在每个节点上管理 Volume 生命周期。这种设计的好处是故障隔离——某个 Volume 的 Engine 崩溃不影响其他 Volume。
+> [!question]- 参考答案（点击展开）
+>
+> Longhorn 采用微服务化架构，每个 Volume 对应一个独立的 Engine 进程和多个 Replica 进程。Longhorn Manager 以 DaemonSet 方式运行在每个节点上管理 Volume 生命周期。这种设计的好处是故障隔离——某个 Volume 的 Engine 崩溃不影响其他 Volume。
 
 ### Q2: Longhorn 的数据写入流程？
 
-Pod 写入数据 → Longhorn Engine 接收 I/O → Engine 同步写入到所有 Replica（默认 3 副本）→ 所有 Replica ACK 后返回写入成功。Engine 和 Replica 之间通过 iSCSI 或 NVMe-TCP 协议通信。
+> [!question]- 参考答案（点击展开）
+>
+> Pod 写入数据 → Longhorn Engine 接收 I/O → Engine 同步写入到所有 Replica（默认 3 副本）→ 所有 Replica ACK 后返回写入成功。Engine 和 Replica 之间通过 iSCSI 或 NVMe-TCP 协议通信。
 
 ### Q3: Longhorn 适合什么场景？不适合什么场景？
 
-适合：中小规模 K8s 集群（< 50 节点），需要简单易用的分布式块存储，Rancher 生态用户。不适合：大规模集群（性能不如 Ceph）、需要 RWX 多 Pod 共享读写（Longhorn 只支持 RWO）、极致性能需求。
+> [!question]- 参考答案（点击展开）
+>
+> 适合：中小规模 K8s 集群（< 50 节点），需要简单易用的分布式块存储，Rancher 生态用户。不适合：大规模集群（性能不如 Ceph）、需要 RWX 多 Pod 共享读写（Longhorn 只支持 RWO）、极致性能需求。
 
 ### Q4: Longhorn 的备份和快照有什么区别？
 
-快照（Snapshot）是本地的、基于 CoW 的轻量级操作，速度快但数据仍在本地磁盘上，不能防机器故障。备份（Backup）是将数据完整导出到 S3 或 NFS 等外部存储，可以跨集群恢复，用于灾备。生产环境应同时配置快照（快速回滚）和备份（灾难恢复）。
+> [!question]- 参考答案（点击展开）
+>
+> 快照（Snapshot）是本地的、基于 CoW 的轻量级操作，速度快但数据仍在本地磁盘上，不能防机器故障。备份（Backup）是将数据完整导出到 S3 或 NFS 等外部存储，可以跨集群恢复，用于灾备。生产环境应同时配置快照（快速回滚）和备份（灾难恢复）。

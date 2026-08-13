@@ -269,28 +269,42 @@ GOMEMLIMIT=3GiB ./server
 
 ### Q: Go GC 是什么类型？
 
-A: Go 主线 GC 是并发、非分代、非移动的 mark-sweep collector。它有短 STW 阶段，但大部分标记和清扫与 mutator 并发执行。
+> [!question]- 参考答案（点击展开）
+>
+> Go 主线 GC 是并发、非分代、非移动的 mark-sweep collector。它有短 STW 阶段，但大部分标记和清扫与 mutator 并发执行。
 
 ### Q: Go GC 的主要阶段是什么？
 
-A: 大致是 sweep termination STW、开启 write barrier、并发 mark、mark termination STW、关闭 barrier、并发 sweep。pacer 决定启动时机和标记速度，mutator assist 负责在分配太快时帮忙还 GC work debt。
+> [!question]- 参考答案（点击展开）
+>
+> 大致是 sweep termination STW、开启 write barrier、并发 mark、mark termination STW、关闭 barrier、并发 sweep。pacer 决定启动时机和标记速度，mutator assist 负责在分配太快时帮忙还 GC work debt。
 
 ### Q: write barrier 解决什么问题？
 
-A: 并发标记期间 mutator 仍在修改指针。write barrier 确保新写入或被覆盖的指针不会让可达对象从 GC 视野中丢失，维持三色不变量。
+> [!question]- 参考答案（点击展开）
+>
+> 并发标记期间 mutator 仍在修改指针。write barrier 确保新写入或被覆盖的指针不会让可达对象从 GC 视野中丢失，维持三色不变量。
 
 ### Q: 为什么分配太快会影响请求延迟？
 
-A: 分配太快会让 GC 标记跟不上 heap growth，runtime 会让分配 goroutine 执行 mutator assist。assist 消耗业务 goroutine 时间，可能直接抬高请求延迟。
+> [!question]- 参考答案（点击展开）
+>
+> 分配太快会让 GC 标记跟不上 heap growth，runtime 会让分配 goroutine 执行 mutator assist。assist 消耗业务 goroutine 时间，可能直接抬高请求延迟。
 
 ### Q: `GOGC` 调大一定更好吗？
 
-A: 不一定。调大 `GOGC` 会减少 GC 频率、降低 GC CPU，但 live heap 和 RSS 可能上升，容器里可能触发 OOM。调小则降低 heap 但增加 GC CPU 和 assist 风险。
+> [!question]- 参考答案（点击展开）
+>
+> 不一定。调大 `GOGC` 会减少 GC 频率、降低 GC CPU，但 live heap 和 RSS 可能上升，容器里可能触发 OOM。调小则降低 heap 但增加 GC CPU 和 assist 风险。
 
 ### Q: 怎么判断是内存泄漏还是正常缓存？
 
-A: 看 live heap 是否随流量稳定后仍单调增长；看 heap profile 的 inuse 持有者；看 cache 是否有 size/TTL；对比 GC 后 heap live。如果是缓存，通常能解释 key/value 生命周期；如果是泄漏，常表现为不可控增长且 owner 不清晰。
+> [!question]- 参考答案（点击展开）
+>
+> 看 live heap 是否随流量稳定后仍单调增长；看 heap profile 的 inuse 持有者；看 cache 是否有 size/TTL；对比 GC 后 heap live。如果是缓存，通常能解释 key/value 生命周期；如果是泄漏，常表现为不可控增长且 owner 不清晰。
 
 ### Q: Green Tea GC 改变了什么？
 
-A: 它改变并发标记阶段的扫描组织方式：把对象按 span 聚合，延迟扫描以提升局部性，并使用 marks/scans 两套标记位和 FIFO span queue。它不改变 Go GC 的基本 mark-sweep 语义。
+> [!question]- 参考答案（点击展开）
+>
+> 它改变并发标记阶段的扫描组织方式：把对象按 span 聚合，延迟扫描以提升局部性，并使用 marks/scans 两套标记位和 FIFO span queue。它不改变 Go GC 的基本 mark-sweep 语义。

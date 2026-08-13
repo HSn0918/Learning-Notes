@@ -266,20 +266,30 @@ kubectl get svc,endpointslice -n <namespace>
 
 ### Q: CoreDNS 解析 Service 返回什么？
 
-A: 普通 Service 返回 ClusterIP；Headless Service 返回后端 endpoint 的 IP 记录。
+> [!question]- 参考答案（点击展开）
+>
+> 普通 Service 返回 ClusterIP；Headless Service 返回后端 endpoint 的 IP 记录。
 
 ### Q: CoreDNS 和 kube-proxy 的关系？
 
-A: CoreDNS 负责把服务名解析成 IP；kube-proxy 负责访问 Service IP 时转发到后端 Pod。两者是服务发现链路的不同阶段。
+> [!question]- 参考答案（点击展开）
+>
+> CoreDNS 负责把服务名解析成 IP；kube-proxy 负责访问 Service IP 时转发到后端 Pod。两者是服务发现链路的不同阶段。
 
 ### Q: 为什么直接访问 ClusterIP 正常但服务名不通？
 
-A: 说明 Service 转发可能正常，问题更可能在 DNS，例如 CoreDNS、Pod resolv.conf、DNS Service、NetworkPolicy 或上游配置。
+> [!question]- 参考答案（点击展开）
+>
+> 说明 Service 转发可能正常，问题更可能在 DNS，例如 CoreDNS、Pod resolv.conf、DNS Service、NetworkPolicy 或上游配置。
 
 ### Q: Headless Service 为什么常用于 StatefulSet？
 
-A: 它返回具体 Pod endpoint，让客户端能直接发现稳定的 Pod DNS 名和后端地址，而不是统一负载均衡到一个 ClusterIP。
+> [!question]- 参考答案（点击展开）
+>
+> 它返回具体 Pod endpoint，让客户端能直接发现稳定的 Pod DNS 名和后端地址，而不是统一负载均衡到一个 ClusterIP。
 
 ### Q: CoreDNS 如何知道 Service 变化？
 
-A: 通过 Kubernetes plugin watch apiserver 中的 Service、EndpointSlice 等对象，并更新内存索引。
+> [!question]- 参考答案（点击展开）
+>
+> 通过 Kubernetes plugin watch apiserver 中的 Service、EndpointSlice 等对象，并更新内存索引。

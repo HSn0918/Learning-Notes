@@ -53,8 +53,12 @@ Weaveworks 已经关闭，Weave Net 长期维护存疑。新项目建议优先�
 
 **Q: Weave Net 的 fastdp 和 sleeve 模式有什么区别？**
 
-A: fastdp 使用 Linux 内核的 Open vSwitch datapath 在内核态转发数据包，性能高；sleeve 是用户态转发的回退方案，性能较低。Weave 自动检测环境，优先使用 fastdp。
+> [!question]- 参考答案（点击展开）
+>
+> fastdp 使用 Linux 内核的 Open vSwitch datapath 在内核态转发数据包，性能高；sleeve 是用户态转发的回退方案，性能较低。Weave 自动检测环境，优先使用 fastdp。
 
 **Q: Weave Net 的加密如何工作？**
 
-A: Weave Net 内置 NaCl 加密库，安装时指定密码即可启用 IPsec 加密，对所有 Pod 间流量透明生效，无需应用层改造。
+> [!question]- 参考答案（点击展开）
+>
+> Weave Net 内置 NaCl 加密库，安装时指定密码即可启用 IPsec 加密，对所有 Pod 间流量透明生效，无需应用层改造。

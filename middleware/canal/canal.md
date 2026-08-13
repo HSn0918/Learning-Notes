@@ -137,28 +137,52 @@ graph LR
 ### 高频问题
 
 **Q: Canal 的核心工作原理是什么？**
-A: Canal 伪装成 MySQL 的 Slave，向 Master 发送 dump 协议请求。Master 误以为它是从库，于是推送 Binary Log events 给它。Canal 解析这些原始 byte 流，转换为结构化的变更数据后推送给下游（MQ 或 Client）。本质上是复用了 MySQL 主备复制的协议链路，对源库无业务侵入。
+
+> [!question]- 参考答案（点击展开）
+>
+> Canal 伪装成 MySQL 的 Slave，向 Master 发送 dump 协议请求。Master 误以为它是从库，于是推送 Binary Log events 给它。Canal 解析这些原始 byte 流，转换为结构化的变更数据后推送给下游（MQ 或 Client）。本质上是复用了 MySQL 主备复制的协议链路，对源库无业务侵入。
 
 **Q: 使用 Canal 需要 MySQL 做哪些前置配置？**
-A: 必须开启 binlog（`log_bin`），且 `binlog_format` 设为 `ROW`（STATEMENT/MIXED 拿不到完整的行变更数据）；需要为 Canal 单独创建一个具备 `REPLICATION SLAVE` 和 `REPLICATION CLIENT` 权限的账号；同时保证 Canal 实例使用的 `slaveId`（即对外呈现的 server_id）唯一，避免与真实从库或其它 Canal 实例冲突。
+
+> [!question]- 参考答案（点击展开）
+>
+> 必须开启 binlog（`log_bin`），且 `binlog_format` 设为 `ROW`（STATEMENT/MIXED 拿不到完整的行变更数据）；需要为 Canal 单独创建一个具备 `REPLICATION SLAVE` 和 `REPLICATION CLIENT` 权限的账号；同时保证 Canal 实例使用的 `slaveId`（即对外呈现的 server_id）唯一，避免与真实从库或其它 Canal 实例冲突。
 
 **Q: 为什么 binlog_format 一定要用 ROW 而不能用 STATEMENT？**
-A: STATEMENT 格式记录的是原始 SQL 语句，对于 `now()`、`uuid()` 等非确定性函数，或 `UPDATE ... LIMIT` 这类不确定影响行的语句，下游无法还原出每行真实的前后值；ROW 格式记录每一行变更前后的镜像（before/after image），Canal 才能精确解析出 INSERT/UPDATE/DELETE 的字段级数据。代价是 binlog 体积更大。
+
+> [!question]- 参考答案（点击展开）
+>
+> STATEMENT 格式记录的是原始 SQL 语句，对于 `now()`、`uuid()` 等非确定性函数，或 `UPDATE ... LIMIT` 这类不确定影响行的语句，下游无法还原出每行真实的前后值；ROW 格式记录每一行变更前后的镜像（before/after image），Canal 才能精确解析出 INSERT/UPDATE/DELETE 的字段级数据。代价是 binlog 体积更大。
 
 **Q: Canal Server 内部有哪几个核心组件，职责分别是什么？**
-A: 主要四个：EventParser 负责连接 MySQL 并解析 binlog 事件；EventSink 负责事件的过滤、路由和分发，是 Parser 与 Store 之间的链接器；EventStore 负责事件缓存供下游消费；MetaManager 负责管理 binlog 消费位点（position）等元数据。
+
+> [!question]- 参考答案（点击展开）
+>
+> 主要四个：EventParser 负责连接 MySQL 并解析 binlog 事件；EventSink 负责事件的过滤、路由和分发，是 Parser 与 Store 之间的链接器；EventStore 负责事件缓存供下游消费；MetaManager 负责管理 binlog 消费位点（position）等元数据。
 
 **Q: Canal 如何保证位点不丢失、宕机后能续传？**
-A: 由 MetaManager 管理消费位点（binlog filename + position，或 GTID）。位点可保存在内存（FileMixed 模式会定期刷盘），或在集群模式下存到 ZooKeeper。Canal Server 重启后从已记录的位点继续 dump，从而做到断点续传。配合 HA 模式可在主实例故障时由备实例接管同一位点。
+
+> [!question]- 参考答案（点击展开）
+>
+> 由 MetaManager 管理消费位点（binlog filename + position，或 GTID）。位点可保存在内存（FileMixed 模式会定期刷盘），或在集群模式下存到 ZooKeeper。Canal Server 重启后从已记录的位点继续 dump，从而做到断点续传。配合 HA 模式可在主实例故障时由备实例接管同一位点。
 
 **Q: Canal 能否保证消息不重复（Exactly-Once）？下游如何应对？**
-A: 不能严格保证。Canal 在宕机切换、位点回退等场景下可能重复投递，本质是 At-Least-Once 语义。下游通常依赖业务主键 + binlog 的 offset/位点做幂等去重，例如用「主键覆盖写（upsert）」或基于 row 的最终一致来消化重复事件。
+
+> [!question]- 参考答案（点击展开）
+>
+> 不能严格保证。Canal 在宕机切换、位点回退等场景下可能重复投递，本质是 At-Least-Once 语义。下游通常依赖业务主键 + binlog 的 offset/位点做幂等去重，例如用「主键覆盖写（upsert）」或基于 row 的最终一致来消化重复事件。
 
 **Q: Canal 高可用是怎么实现的？**
-A: 通过 ZooKeeper 实现 HA。同一个 destination 同时只有一个 running 的 Canal instance（抢占式创建 EPHEMERAL 节点），其余作为 standby。当 running 实例失联，ZK 临时节点被释放，standby 抢占成为新的 running，并从 ZK 中记录的最新位点继续消费，实现故障自动切换。
+
+> [!question]- 参考答案（点击展开）
+>
+> 通过 ZooKeeper 实现 HA。同一个 destination 同时只有一个 running 的 Canal instance（抢占式创建 EPHEMERAL 节点），其余作为 standby。当 running 实例失联，ZK 临时节点被释放，standby 抢占成为新的 running，并从 ZK 中记录的最新位点继续消费，实现故障自动切换。
 
 **Q: 典型的使用场景有哪些？**
-A: 数据库与缓存同步（MySQL 变更刷新 Redis）、搜索引擎索引构建（同步到 Elasticsearch）、跨机房/异构数据库同步、数据库实时备份与镜像、带业务逻辑的增量数据处理等。本质都是「监听 MySQL 增量变更并下发」的 CDC 模式。
+
+> [!question]- 参考答案（点击展开）
+>
+> 数据库与缓存同步（MySQL 变更刷新 Redis）、搜索引擎索引构建（同步到 Elasticsearch）、跨机房/异构数据库同步、数据库实时备份与镜像、带业务逻辑的增量数据处理等。本质都是「监听 MySQL 增量变更并下发」的 CDC 模式。
 
 ### 面试加分点
 

@@ -515,24 +515,45 @@ percentageOfNodesToScore: 50  # 默认值根据集群规模动态计算
 ### 高频问题
 
 **Q: kube-scheduler 的调度流程？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 从 scheduling queue 取出 Pod → Filter（过滤不可用节点）→ Score（对可用节点打分）→ 选最高分节点 → Assume（乐观写入 cache）→ Bind（写 apiserver）。整个过程分为同步的 scheduling cycle 和异步的 binding cycle。
 
 **Q: Scheduling Framework 有哪些扩展点？**
+
+> [!question]- 参考答案（点击展开）
+>
 > QueueSort → PreFilter → Filter → PostFilter → PreScore → Score → NormalizeScore → Reserve → Permit → PreBind → Bind → PostBind。Scheduling cycle 是同步的，Binding cycle 是异步的。
 
 **Q: Preemption 是怎么工作的？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 高优先级 Pod Filter 失败后，PostFilter 阶段执行 DefaultPreemption plugin。模拟在每个节点上驱逐低优先级 Pod，找到代价最小的节点，设置 nominatedNodeName，发起 victim Pod 的驱逐请求。被抢占 Pod 优雅退出后，调度器在下一轮将 Pod 调度到该节点。
 
 **Q: Node Affinity 和 Taints/Tolerations 的区别？**
+
+> [!question]- 参考答案（点击展开）
+>
 > Node Affinity 是 Pod 主动选择 Node（"我想去哪"），Taints/Tolerations 是 Node 主动排斥 Pod（"我不欢迎谁"）。两者互补使用：Taint 让 Node 拒绝普通 Pod，Toleration 让特定 Pod 能够调度上去。
 
 **Q: Pod Affinity 和 Topology Spread Constraints 的区别？**
+
+> [!question]- 参考答案（点击展开）
+>
 > Pod Anti-Affinity 只能表达"不要和某个 Pod 在一起"的二元关系。Topology Spread Constraints 能表达"在各拓扑域之间均匀分布"的多域平衡关系，控制粒度更细（通过 maxSkew），且性能更好。
 
 **Q: 如何扩展调度器？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 三种方式：1）编写 Scheduling Framework Plugin（推荐，性能最好）；2）Scheduler Extender（HTTP webhook，无需编译）；3）部署多个调度器，Pod 通过 schedulerName 选择。
 
 **Q: percentageOfNodesToScore 的作用？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 控制 Score 阶段参与打分的节点比例。大集群中避免对所有节点打分导致延迟过高。默认值根据集群规模自动计算，100 节点以下全量打分，超过后按公式递减，最低 5%。
 
 ### 经验性问题

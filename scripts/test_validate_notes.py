@@ -87,5 +87,114 @@ class ValidateNotesTest(unittest.TestCase):
         self.assertTrue(any("Markdown basename 重复" in error for error in errors))
 
 
+    def test_collapsed_reference_answer_is_valid(self) -> None:
+        temporary, root = self.make_repo()
+        self.addCleanup(temporary.cleanup)
+        (root / "notes" / "README.md").write_text("# Notes\n\n[One](one.md)\n", encoding="utf-8")
+        (root / "notes" / "one.md").write_text(
+            "# One\n\n## 面试要点\n\n### Q: why?\n\n"
+            "> [!question]- 参考答案（点击展开）\n>\n> because\n",
+            encoding="utf-8",
+        )
+
+        self.assertEqual([], validate(root).errors)
+
+    def test_question_without_reference_answer_fails(self) -> None:
+        temporary, root = self.make_repo()
+        self.addCleanup(temporary.cleanup)
+        (root / "notes" / "README.md").write_text("# Notes\n\n[One](one.md)\n", encoding="utf-8")
+        (root / "notes" / "one.md").write_text(
+            "# One\n\n## 面试要点\n\n### Q: why?\n\nA: because\n",
+            encoding="utf-8",
+        )
+
+        errors = validate(root).errors
+        self.assertTrue(any("缺少默认折叠" in error for error in errors))
+
+    def test_empty_reference_answer_fails(self) -> None:
+        temporary, root = self.make_repo()
+        self.addCleanup(temporary.cleanup)
+        (root / "notes" / "README.md").write_text("# Notes\n\n[One](one.md)\n", encoding="utf-8")
+        (root / "notes" / "one.md").write_text(
+            "# One\n\n### Q: why?\n\n"
+            "> [!question]- 参考答案（点击展开）\n>\n",
+            encoding="utf-8",
+        )
+
+        errors = validate(root).errors
+        self.assertTrue(any("参考答案为空" in error for error in errors))
+
+    def test_question_template_in_fence_is_ignored(self) -> None:
+        temporary, root = self.make_repo()
+        self.addCleanup(temporary.cleanup)
+        (root / "notes" / "README.md").write_text("# Notes\n\n[One](one.md)\n", encoding="utf-8")
+        (root / "notes" / "one.md").write_text(
+            "# One\n\n```markdown\n### Q: template?\nA: placeholder\n```\n",
+            encoding="utf-8",
+        )
+
+        self.assertEqual([], validate(root).errors)
+
+    def test_self_check_list_question_requires_callout(self) -> None:
+        temporary, root = self.make_repo()
+        self.addCleanup(temporary.cleanup)
+        (root / "notes" / "README.md").write_text("# Notes\n\n[One](one.md)\n", encoding="utf-8")
+        (root / "notes" / "one.md").write_text(
+            "# One\n\n## 高阶自检题\n\n1. Why?\n",
+            encoding="utf-8",
+        )
+
+        errors = validate(root).errors
+        self.assertTrue(any("缺少默认折叠" in error for error in errors))
+
+    def test_interrogative_heading_requires_callout(self) -> None:
+        temporary, root = self.make_repo()
+        self.addCleanup(temporary.cleanup)
+        (root / "notes" / "README.md").write_text("# Notes\n\n[One](one.md)\n", encoding="utf-8")
+        (root / "notes" / "one.md").write_text(
+            "# One\n\n## Why does this happen?\n\nVisible prose is not a covered answer.\n",
+            encoding="utf-8",
+        )
+
+        errors = validate(root).errors
+        self.assertTrue(any("缺少默认折叠" in error for error in errors))
+
+    def test_inline_list_qa_requires_migration(self) -> None:
+        temporary, root = self.make_repo()
+        self.addCleanup(temporary.cleanup)
+        (root / "notes" / "README.md").write_text("# Notes\n\n[One](one.md)\n", encoding="utf-8")
+        (root / "notes" / "one.md").write_text(
+            "# One\n\n## 面试要点\n\n1. **Why?** Because.\n",
+            encoding="utf-8",
+        )
+
+        errors = validate(root).errors
+        self.assertTrue(any("同一行" in error for error in errors))
+
+    def test_legacy_qa_table_requires_migration(self) -> None:
+        temporary, root = self.make_repo()
+        self.addCleanup(temporary.cleanup)
+        (root / "notes" / "README.md").write_text("# Notes\n\n[One](one.md)\n", encoding="utf-8")
+        (root / "notes" / "one.md").write_text(
+            "# One\n\n| 问题 | 回答要点 |\n| --- | --- |\n| **Why?** | Because. |\n",
+            encoding="utf-8",
+        )
+
+        errors = validate(root).errors
+        self.assertTrue(any("问答表格" in error for error in errors))
+
+    def test_interview_subsection_heading_is_not_a_question(self) -> None:
+        temporary, root = self.make_repo()
+        self.addCleanup(temporary.cleanup)
+        (root / "notes" / "README.md").write_text("# Notes\n\n[One](one.md)\n", encoding="utf-8")
+        (root / "notes" / "one.md").write_text(
+            "# One\n\n## 面试要点\n\n### 高频问题\n\n"
+            "**Q: why?**\n\n> [!question]- 参考答案（点击展开）\n>\n> because\n",
+            encoding="utf-8",
+        )
+
+        self.assertEqual([], validate(root).errors)
+
+
 if __name__ == "__main__":
     unittest.main()

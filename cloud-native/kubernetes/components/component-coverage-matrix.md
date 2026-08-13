@@ -75,20 +75,30 @@
 
 ### Q: Kubernetes 官方标准组件有哪些？
 
-A: Control Plane 包括 kube-apiserver、etcd、kube-scheduler、kube-controller-manager、cloud-controller-manager；Node 包括 kubelet、kube-proxy、container runtime；addon 包括 DNS、Web UI、资源监控和集群日志。
+> [!question]- 参考答案（点击展开）
+>
+> Control Plane 包括 kube-apiserver、etcd、kube-scheduler、kube-controller-manager、cloud-controller-manager；Node 包括 kubelet、kube-proxy、container runtime；addon 包括 DNS、Web UI、资源监控和集群日志。
 
 ### Q: CNI/CSI/Device Plugin 为什么不放 Tier 1？
 
-A: 它们是 Kubernetes 扩展接口或生态组件，不是官方 Components 文档里的最小运行组件分类。但生产集群必须依赖 CNI，存储和 GPU 场景也必须掌握 CSI/Device Plugin。
+> [!question]- 参考答案（点击展开）
+>
+> 它们是 Kubernetes 扩展接口或生态组件，不是官方 Components 文档里的最小运行组件分类。但生产集群必须依赖 CNI，存储和 GPU 场景也必须掌握 CSI/Device Plugin。
 
 ### Q: kubectl 算组件吗？
 
-A: 不算本目录里的运行组件。kubectl 是客户端工具，重要但不属于 control plane、node component 或 addon。
+> [!question]- 参考答案（点击展开）
+>
+> 不算本目录里的运行组件。kubectl 是客户端工具，重要但不属于 control plane、node component 或 addon。
 
 ### Q: 为什么 Dashboard 标成 legacy？
 
-A: 原 Kubernetes Dashboard 仓库已在 2026-01-21 归档，缺少持续维护。它适合学习历史 Web UI 和 RBAC 风险，不建议作为新平台默认选型。
+> [!question]- 参考答案（点击展开）
+>
+> 原 Kubernetes Dashboard 仓库已在 2026-01-21 归档，缺少持续维护。它适合学习历史 Web UI 和 RBAC 风险，不建议作为新平台默认选型。
 
 ### Q: 后续新增组件按什么标准？
 
-A: 必须满足三个条件之一：官方 components、生产常驻 addon、Kubernetes 研发扩展点。否则不放进 components 目录。
+> [!question]- 参考答案（点击展开）
+>
+> 必须满足三个条件之一：官方 components、生产常驻 addon、Kubernetes 研发扩展点。否则不放进 components 目录。

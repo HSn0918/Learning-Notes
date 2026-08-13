@@ -297,25 +297,46 @@ import _ "net/http/pprof"
 ### 高频问题
 
 **Q: GMP 模型中 G、M、P 各代表什么，为什么需要引入 P？**
-A: G 是用户态 goroutine，M 是 OS 线程，P 是逻辑处理器，持有本地运行队列（runq）和 mcache。Go 1.1 之前只有 GM 模型，所有 M 共享一个全局队列，需要全局锁，竞争严重且缺乏局部性。引入 P 后每个 P 拥有独立的本地队列，大幅减少锁竞争，并让 M 通过 P 携带 mcache 实现无锁小对象分配，同时 P 的数量（GOMAXPROCS）天然限制了并行度。
+
+> [!question]- 参考答案（点击展开）
+>
+> G 是用户态 goroutine，M 是 OS 线程，P 是逻辑处理器，持有本地运行队列（runq）和 mcache。Go 1.1 之前只有 GM 模型，所有 M 共享一个全局队列，需要全局锁，竞争严重且缺乏局部性。引入 P 后每个 P 拥有独立的本地队列，大幅减少锁竞争，并让 M 通过 P 携带 mcache 实现无锁小对象分配，同时 P 的数量（GOMAXPROCS）天然限制了并行度。
 
 **Q: GOMAXPROCS 控制的是什么？设置后 M 的数量也被限制了吗？**
-A: GOMAXPROCS 控制 P 的数量，即同时执行 Go 代码的最大并行度，Go 1.5 起默认值等于 CPU 核心数。它不限制 M 的数量——M 默认上限是 10000（可用 `runtime/debug.SetMaxThreads` 调整）。即使 `GOMAXPROCS=1`，当 G 进入阻塞系统调用时仍会创建新的 M 接管 P，所以 M 数量通常多于 P。
+
+> [!question]- 参考答案（点击展开）
+>
+> GOMAXPROCS 控制 P 的数量，即同时执行 Go 代码的最大并行度，Go 1.5 起默认值等于 CPU 核心数。它不限制 M 的数量——M 默认上限是 10000（可用 `runtime/debug.SetMaxThreads` 调整）。即使 `GOMAXPROCS=1`，当 G 进入阻塞系统调用时仍会创建新的 M 接管 P，所以 M 数量通常多于 P。
 
 **Q: 调度器 schedule() 查找下一个可运行 G 的优先级顺序是什么？**
-A: 优先级从高到低为：先检查 `P.runnext`（刚创建/唤醒的 G，优先级最高），再取 P 本地队列（FIFO），然后是全局队列，接着 netpoll 就绪的 G，最后通过 work stealing 从其他 P 偷取约一半 G。此外为防止全局队列饥饿，调度器每 61 次调度（`schedtick%61==0` 且全局队列非空）会强制从全局队列取一个 G。
+
+> [!question]- 参考答案（点击展开）
+>
+> 优先级从高到低为：先检查 `P.runnext`（刚创建/唤醒的 G，优先级最高），再取 P 本地队列（FIFO），然后是全局队列，接着 netpoll 就绪的 G，最后通过 work stealing 从其他 P 偷取约一半 G。此外为防止全局队列饥饿，调度器每 61 次调度（`schedtick%61==0` 且全局队列非空）会强制从全局队列取一个 G。
 
 **Q: 什么是 work stealing？偷取多少个 G？**
-A: 当某个 P 的本地队列和全局队列都为空时，对应的 M 会进入 spinning 状态，随机选择其他 P，从其本地队列偷取约一半的 G 到自己的队列（必要时也会抢走对方的 `runnext`）。这样既保证了各 P 之间的负载均衡，又避免了 M 频繁陷入休眠，提升了 CPU 利用率。
+
+> [!question]- 参考答案（点击展开）
+>
+> 当某个 P 的本地队列和全局队列都为空时，对应的 M 会进入 spinning 状态，随机选择其他 P，从其本地队列偷取约一半的 G 到自己的队列（必要时也会抢走对方的 `runnext`）。这样既保证了各 P 之间的负载均衡，又避免了 M 频繁陷入休眠，提升了 CPU 利用率。
 
 **Q: goroutine 发起系统调用时，调度器如何处理？**
-A: 区分阻塞与否。进入 syscall 时 P 的状态置为 `_Psyscall`，M 携带 G 一起陷入内核；如果是阻塞型系统调用，sysmon 监控线程检测到 P 长时间停留在 `_Psyscall` 后会将 P 与 M 解绑（handoffp），让空闲或新建的 M 接管这个 P 继续执行其他 G，从而不浪费 P。系统调用返回后，原 M 尝试重新获取一个 P，获取不到则把 G 放回全局队列并让自己休眠。
+
+> [!question]- 参考答案（点击展开）
+>
+> 区分阻塞与否。进入 syscall 时 P 的状态置为 `_Psyscall`，M 携带 G 一起陷入内核；如果是阻塞型系统调用，sysmon 监控线程检测到 P 长时间停留在 `_Psyscall` 后会将 P 与 M 解绑（handoffp），让空闲或新建的 M 接管这个 P 继续执行其他 G，从而不浪费 P。系统调用返回后，原 M 尝试重新获取一个 P，获取不到则把 G 放回全局队列并让自己休眠。
 
 **Q: goroutine 抢占机制是怎样的？协作式和异步抢占的区别？**
-A: Go 1.14 之前是协作式抢占，依赖函数调用入口的栈扩容检查点（morestack）检测抢占标记，缺点是纯计算的紧密循环（无函数调用）无法被抢占，可能导致 GC STW 长时间等待。Go 1.14 引入基于信号的异步抢占：sysmon 检测到 G 连续运行超过 10ms 后，向其所在 M 发送 SIGURG 信号，在信号处理中安全地中断并切换，解决了死循环无法抢占的问题。
+
+> [!question]- 参考答案（点击展开）
+>
+> Go 1.14 之前是协作式抢占，依赖函数调用入口的栈扩容检查点（morestack）检测抢占标记，缺点是纯计算的紧密循环（无函数调用）无法被抢占，可能导致 GC STW 长时间等待。Go 1.14 引入基于信号的异步抢占：sysmon 检测到 G 连续运行超过 10ms 后，向其所在 M 发送 SIGURG 信号，在信号处理中安全地中断并切换，解决了死循环无法抢占的问题。
 
 **Q: 如何排查和避免 goroutine 泄漏？**
-A: 泄漏通常源于 channel/锁永久阻塞、死循环、或 goroutine 等待一个永不到来的事件。排查可用 pprof 访问 `/debug/pprof/goroutine?debug=1` 查看所有 goroutine 栈，定位卡在哪一行。核心原则是每个 goroutine 都要有明确的退出路径，推荐用 `context.Context` 的 Done channel 统一控制生命周期，并给 channel 操作配合 select 加超时或取消分支。
+
+> [!question]- 参考答案（点击展开）
+>
+> 泄漏通常源于 channel/锁永久阻塞、死循环、或 goroutine 等待一个永不到来的事件。排查可用 pprof 访问 `/debug/pprof/goroutine?debug=1` 查看所有 goroutine 栈，定位卡在哪一行。核心原则是每个 goroutine 都要有明确的退出路径，推荐用 `context.Context` 的 Done channel 统一控制生命周期，并给 channel 操作配合 select 加超时或取消分支。
 
 ### 面试加分点
 

@@ -235,10 +235,25 @@ cd vllm
 ### 2.3 关键问题
 
 读完应该能答：
-- block size 为什么默认 16？改成 1 / 128 各有什么权衡？
-- waiting / running / swapped 三个队列各自的角色？
-- preemption（抢占）什么时候发生？recompute vs swap 怎么选？
-- block table 在 attention kernel 里怎么用？（提示：indirect addressing，每读一个 token 先查 block table）
+- **block size 为什么常见为 16？改成 1 / 128 各有什么权衡？**
+
+  > [!question]- 参考答案（点击展开）
+  > 固定 block 的大小是在元数据、调度/Kernel 间接寻址开销和 KV 内部碎片之间折中。更小的 block 降低尾部碎片、提高细粒度复用，但 block table 和分配次数更多；更大的 block 相反。`16` 不是跨版本或跨模型的定律，应以目标引擎版本、上下文长度与压测结果选择。
+
+- **waiting / running / swapped 三个队列各自的角色？**
+
+  > [!question]- 参考答案（点击展开）
+  > `waiting` 是尚未获得初始 KV block、等待 admission 的请求；`running` 是本轮可继续 prefill/decode 的请求；`swapped` 是 KV 被迁到 CPU 后等待换回 GPU 的请求。后两者是否存在及其转换细节随 vLLM 版本和是否启用 offload 而变，应以对应版本的 scheduler 状态机为准。
+
+- **preemption（抢占）什么时候发生？recompute 和 swap 怎么选？**
+
+  > [!question]- 参考答案（点击展开）
+  > 当运行请求无法再追加 KV slot、且系统需要释放 GPU block 给更应优先推进的请求时会触发抢占。`recompute` 丢弃可重建 KV，省去 CPU 内存和传输，适合短上下文或重算便宜的请求；`swap` 保留 KV 到主存，适合重算昂贵但会增加 PCIe 传输与恢复延迟。选择取决于 KV 大小、可用主存和预期恢复时间。
+
+- **block table 在 attention kernel 里怎么用？**
+
+  > [!question]- 参考答案（点击展开）
+  > 它把逻辑 token block 映射到不连续的物理 KV block。Kernel 先由 token position 算出逻辑 block 与 block 内 offset，再查表定位物理地址，因此 sequence 扩容、回收或复用不要求 KV 连续。具体表布局和 kernel 名称是引擎版本实现细节。
 
 ### 2.4 联系到你已学的
 
@@ -292,9 +307,20 @@ def schedule():
 
 ### 3.3 关键问题
 
-- chunked prefill 解决了什么问题？（提示：长 prompt 阻塞 decode 导致 ITL 抖动）
-- max_num_seqs / max_num_batched_tokens 这两个旋钮分别控制什么？
-- vLLM 的 throughput-first 模式和 latency-first 模式有什么参数差异？
+- **chunked prefill 解决了什么问题？**
+
+  > [!question]- 参考答案（点击展开）
+  > 它把长 prompt 的 prefill 切成受 token budget 限制的小段，与 decode 轮次交错，避免一次长 prefill 长时间占满 batch 而抬高已有流式请求的 ITL/P99。代价是长请求完成 prefill 的轮次更多；chunk 大小应由 TTFT、ITL 和吞吐的压测共同决定。
+
+- **`max_num_seqs` / `max_num_batched_tokens` 两个旋钮分别控制什么？**
+
+  > [!question]- 参考答案（点击展开）
+  > 前者约束一轮内可并发服务的 sequence 数，主要影响并发和每请求调度机会；后者约束一轮可处理的 token 总量，主要限制 prefill/decode 的计算量和显存压力。两者不是独立的性能开关，应在固定模型、上下文分布和硬件上联合调优。
+
+- **vLLM 的 throughput-first 与 latency-first 模式有什么参数差异？**
+
+  > [!question]- 参考答案（点击展开）
+  > throughput-first 通常提高 batch token/并发上限并容忍排队，以换取更高 GPU 利用率；latency-first 则限制批大小、优先让 decode 获得及时调度，以控制 TTFT/ITL。没有一组跨版本通用 flag，必须记录 vLLM 版本、scheduler 配置和压测负载。
 
 **产出**：
 - 画一张时序图：3 个不同长度的请求（短/中/长 prompt）在 continuous batching 下如何并行
@@ -349,9 +375,20 @@ flowchart TD
 
 ### 4.4 关键问题
 
-- 哪些场景 RadixAttention 命中率明显高于 Block Hash？
-- prefix cache 在 多 LoRA 场景怎么处理？
-- 如果两个请求 token id 完全一样但 sampling 参数不同，能共享 KV 吗？
+- **哪些场景 RadixAttention 命中率明显高于 Block Hash？**
+
+  > [!question]- 参考答案（点击展开）
+  > 当请求共享很长前缀、但在任意 token 边界分叉或有多轮对话的频繁分支时，radix tree 的最长前缀匹配通常比只能复用完整固定 block 的方案更灵活。实际命中率仍取决于 prompt/tokenizer 一致性、并发驻留时间和淘汰策略，不能只按数据结构名称断言。
+
+- **Prefix Cache 在多 LoRA / 多模型版本场景怎么处理？**
+
+  > [!question]- 参考答案（点击展开）
+  > 缓存 key 必须包含决定前向计算的模型版本、LoRA adapter/权重版本、tokenizer 与位置编码相关配置；只有这些兼容时才能共享 KV。adapter 热更新、卸载或基础模型升级时应按 namespace/版本失效，不能把“token 相同”误当作语义兼容。
+
+- **如果两个请求 token ID 完全一样但 sampling 参数不同，能共享 KV 吗？**
+
+  > [!question]- 参考答案（点击展开）
+  > 可以共享已给定 prompt 的 KV，因为 sampling 发生在 logits 之后，不改变该 prompt 的前向计算；后续生成 token 一旦不同，cache 链就分叉。前提仍是模型、adapter、tokenizer、position/rope 等前向条件相同。
 
 **产出**：
 - 跑一个对比实验：同样的 system prompt + 10 个不同 user query，记 vLLM/SGLang 各自的命中率与 TTFT
@@ -402,10 +439,25 @@ Mooncake 是 Kimi（月之暗面）的生产系统，**KVCache-centric** 是它�
 
 ### 5.4 关键问题
 
-- CPU offload 的瓶颈在哪？（提示：PCIe 带宽，H100 PCIe 5.0 约 128GB/s 单向）
-- RDMA 比走 TCP 快多少？为什么 Mooncake 必须用 RDMA？
-- 跨实例拉 KV 和直接重算 prefill 怎么决策？
-- KV cache 的 staleness 问题：模型权重更新后旧 cache 怎么办？
+- **CPU offload 的瓶颈在哪？**
+
+  > [!question]- 参考答案（点击展开）
+  > 关键瓶颈是 GPU↔host 的传输带宽、同步延迟和主存容量/NUMA 位置；被换出的 KV 在恢复时会直接拉长请求延迟，并与其他 PCIe/NVLink 流量竞争。标称带宽不是可直接套用的常数，应实测实际链路、并发 DMA 和 copy/compute 重叠效果。
+
+- **RDMA 比走 TCP 快多少？为什么 Mooncake 必须用 RDMA？**
+
+  > [!question]- 参考答案（点击展开）
+  > RDMA 通常能减少 CPU 参与和拷贝，降低端到端延迟并提高大块 KV 传输吞吐；具体倍数由网卡、拓扑、消息大小和拥塞决定。Mooncake 的设计从高速互连中获益很大，但“必须 RDMA”不是协议正确性前提：TCP 可以工作，只是在高频远端 KV 传输时往往难以满足其性能目标。
+
+- **跨实例拉 KV 和直接重算 prefill 怎么决策？**
+
+  > [!question]- 参考答案（点击展开）
+  > 比较 `查找 + 传输 + 排队` 与本地 `prefill 计算 + 排队` 的预期延迟，并确认 cache 命中、版本兼容和目的端容量。短前缀、低速网络或远端拥塞时重算可能更快；命中长前缀且高速互连可用时拉取更有利。失败时必须能退回本地 prefill。
+
+- **模型权重更新后旧 KV cache 怎么办？**
+
+  > [!question]- 参考答案（点击展开）
+  > KV 与生成它的 base model、adapter、tokenizer 和关键运行配置绑定。发布新版本时应使用版本化 cache namespace，并在路由和传输层拒绝旧版本命中；可让旧 namespace 自然淘汰或显式回收，不能跨权重版本复用。
 
 **产出**：
 - 自己画一张「冷热分层」图：GPU HBM / CPU DRAM / NVMe / 远端节点 各自存什么
@@ -445,10 +497,25 @@ flowchart LR
 
 ### 6.3 KV 传输的工程难点
 
-- **格式**：Prefill 实例的 layer-by-layer KV 怎么序列化？
-- **传输**：必须 RDMA / NVLink，不能走 TCP
-- **重叠**：传输能不能和 Decode 的下一层计算重叠（layer-wise streaming）
-- **故障**：Decode 实例挂了，正在传的 KV 怎么办？
+- **Prefill 实例的 layer-by-layer KV 怎么序列化？**
+
+  > [!question]- 参考答案（点击展开）
+  > 传输协议至少要固定模型/权重版本、layer、KV dtype、tensor shape、并行分片、token range 和内存布局，再用版本化 metadata 指向连续或分块 buffer。接收端必须校验兼容性；不能只传一段裸 bytes 后假设两端布局相同。
+
+- **传输为什么通常选择 RDMA / NVLink，而不是普通 TCP？**
+
+  > [!question]- 参考答案（点击展开）
+  > RDMA/NVLink 的价值是降低主机拷贝和 CPU 开销，并提供更高、更稳定的带宽；TCP 在功能上可用，但可能让 KV 传输超过直接重算 Prefill 的成本。是否必须使用取决于 KV 大小、拓扑、并发和 SLO，应以端到端压测而不是协议名称判断。
+
+- **传输能不能和 Decode 的下一层计算重叠？**
+
+  > [!question]- 参考答案（点击展开）
+  > 可以在 layer 粒度建立就绪信号：Decode 计算已到达的当前层时，用独立 stream/DMA 传输后续层，并用双缓冲减少等待。重叠程度受 layer 依赖、链路竞争、buffer 数量和抖动限制；未到达时仍必须等待或回退。
+
+- **Decode 实例挂了，正在传的 KV 怎么办？**
+
+  > [!question]- 参考答案（点击展开）
+  > 把传输视为可失败、可重试的有版本对象：目录中只发布完整就绪的 KV，部分传输不能被消费。Decode 失败后 Router 停止分流，请求按策略重选实例并重传，或在新实例重算 Prefill；是否保留远端 KV 取决于复制、生命周期和 SLO 成本。
 
 ### 6.4 真实实现的源码
 
@@ -470,10 +537,25 @@ flowchart LR
 
 ### 6.5 关键问题
 
-- PD 分离一定比 co-located 好吗？什么时候不该分？
-- Prefill 和 Decode 的并行策略可以不同吗？（提示：可以，Prefill 适合 TP，Decode 长上下文适合 SP）
-- KV 传输延迟 vs 重算延迟，怎么选？
-- 1P:N D 还是 1P:1D？比例怎么定？
+- **PD 分离一定比 co-located 好吗？什么时候不该分？**
+
+  > [!question]- 参考答案（点击展开）
+  > 不一定。它在 prompt/输出长度差异大、请求量足够高且 KV 传输可控时能分别优化两阶段；低流量、短上下文、网络慢或运维复杂度无法接受时，co-located 往往延迟更低、故障面更小。应以端到端 goodput、P99 和成本验证，而非只看单阶段吞吐。
+
+- **Prefill 和 Decode 的并行策略可以不同吗？**
+
+  > [!question]- 参考答案（点击展开）
+  > 可以：Prefill 的矩阵计算更易受吞吐导向的并行策略影响，Decode 则更受每 token 延迟、KV 访问和长上下文通信约束影响。TP/SP 等具体搭配依模型架构、序列长度和互连而定，不能把某一经验组合写成普适规则。
+
+- **KV 传输延迟与重算延迟怎么选？**
+
+  > [!question]- 参考答案（点击展开）
+  > 选择预计更短且更稳定的一侧：KV 已命中、链路带宽/排队可控时传输；KV 较小、链路拥塞或兼容性不成立时重算。调度器应把该比较做成实时/近实时成本模型，并保留传输失败后的重算 fallback。
+
+- **1P:N D 还是 1P:1D？比例怎么定？**
+
+  > [!question]- 参考答案（点击展开）
+  > 没有固定比例。根据到达请求的输入/输出 token 分布、各池的服务率、TTFT/TPOT SLO、KV 传输容量和 GPU 利用率估算，并随负载调整；输出较长时 decode 容量常更紧，长输入突发时 prefill 容量可能成为瓶颈。
 
 **产出**：
 - 部署一个 PD 分离的最小集群（1 prefill + 1 decode，本地两块 GPU 或单卡用 MPS 模拟）
@@ -569,10 +651,25 @@ K8s 官方推进的 LLM 推理 Gateway 标准，仓库：https://github.com/kube
 
 ### 7.7 关键问题
 
-- Prefix-aware routing 在 router 端怎么知道哪个实例有哪个 prefix？（提示：定期 sync 还是事件推送）
-- 一个请求路错了（命中率不如预期）怎么 fallback？
-- KV-aware autoscaler 怎么定义「过载」？（QPS / TTFT P99 / queue 长度都有局限）
-- LoRA 动态加载场景：router 怎么决定要不要在某实例上 warm up 一个 LoRA？
+- **Prefix-aware routing 在 router 端怎么知道哪个实例有哪个 prefix？**
+
+  > [!question]- 参考答案（点击展开）
+  > 实例需要上报可复用 prefix 的摘要或目录，router 再通过周期同步、事件推送或两者结合维护近似视图。该视图允许短暂陈旧，因此路由决定应同时考虑负载并接受 cache miss；精确目录、Bloom filter 或集中 catalog 是不同实现取舍，而非唯一方案。
+
+- **一个请求路错了（命中率不如预期）怎么 fallback？**
+
+  > [!question]- 参考答案（点击展开）
+  > 目标实例 cache miss 时可在本实例冷 prefill，或按容量转发到兼容的备选实例；不能为了追求命中无限重试。应记录预测命中与实际命中、限制重路由次数，并在模型/adapter 不兼容、传输失败时走确定的本地 prefill 路径。
+
+- **KV-aware autoscaler 怎么定义「过载」？**
+
+  > [!question]- 参考答案（点击展开）
+  > 应组合 queue wait、TTFT/TPOT 分位数、decode token rate、KV 使用率/可回收空间和实例可用性，而非只看 QPS。扩容要区分需要新模型副本、decode 容量还是缓存容量；缩容需先迁移/驱逐可安全失效的 KV，并设置滞后避免抖动。
+
+- **LoRA 动态加载场景：router 怎么决定要不要在某实例上 warm up 一个 LoRA？**
+
+  > [!question]- 参考答案（点击展开）
+  > 基于近期请求频率、预计驻留收益、加载成本、GPU 显存余量和副本数做预算；热门 adapter 可预热，低频 adapter 应按需加载或路由到已有副本。决策还要区分 adapter 版本，并避免在用户请求关键路径上无界排队加载。
 
 ### 7.8 联系到你已学的
 
@@ -672,17 +769,74 @@ K8s 官方推进的 LLM 推理 Gateway 标准，仓库：https://github.com/kube
 
 ## 面试要点
 
-| 问题 | 回答要点 |
-| :--- | :--- |
-| **为什么 LLM 推理要 KV Cache？** | Decode 每生成 1 个 token 都要对所有历史 token 做 attention，没 cache 就要重算 O(N²)，有了 cache 是 O(N)。代价是显存——KV 大小 = 2 × layer × head × dim × seq_len × dtype，128k context 一个 sequence 就 GB 级。 |
-| **PagedAttention 解决了什么？** | 传统 KV 按 max_seq_len 预留连续显存，浪费严重（30-60% 碎片）。PagedAttention 把 KV 切 block（默认 16 token），像 OS page 一样按需分配，碎片率压到个位数，并发数翻几倍。 |
-| **Continuous Batching 与传统 batching 的本质差异？** | 传统按 batch 等齐：所有 seq 必须同时开始同时结束，慢的拖累快的。Continuous batching 是 iteration-level scheduling：每个 iteration 决定哪些 seq 参与，刚结束的立刻让位给新请求，GPU 利用率从 30% 拉到 70%+。 |
-| **vLLM 的 prefix cache 怎么命中？** | 按 block 算 hash（基于 block 内 token + 父 block hash），新请求 prefill 时按 block 查 hash 表，命中的 block 直接复用引用计数 +1，跳过这部分的 prefill 计算。block size 是 hash 粒度的下限，所以差 1 个 token 也可能 miss 整个 block。 |
-| **SGLang RadixAttention 比 vLLM 强在哪？** | Radix tree 上做最长前缀匹配，比固定 block hash 粒度更细，多分支共享（多轮对话、agent）命中率明显高。代价是树维护 + 并发锁更复杂。 |
-| **PD 分离解决什么？** | Prefill 是 compute-bound、Decode 是 memory-bound，混跑时长 prompt 占满 GPU 导致 decode ITL 抖动。拆开后各自的 batch 策略、并行策略、扩缩容独立优化，TTFT 和 ITL 同时改善。代价是要传 KV，靠 RDMA / NVLink。 |
-| **PD 比例怎么定？** | 取决于 workload：长 prompt + 短输出 → Prefill 多；短 prompt + 长输出（agent / 写作）→ Decode 多。Dynamo 的 planner、Mooncake 的 conductor 都能动态调整。生产经验常见 1P:2D ~ 1P:4D。 |
-| **跨实例怎么共享 KV？** | 两条路：① 走分布式 KV Store（Mooncake / LMCache），用 redis/etcd 注册位置，RDMA 拉；② PD 分离的 KV transfer，Prefill 算完直接 push 到 Decode。瓶颈在 PCIe / RDMA 带宽和 layer-wise 重叠程度。 |
-| **LLM Router 为什么不能复用普通 HTTP LB？** | 4 个本质不同：① 请求大小差几个量级（128 vs 32k token）；② 处理时长秒级 vs 毫秒级；③ 有状态（KV/LoRA/模型版本）；④ 路由维度多了 prefix hash、KV 位置、Pool 类型。所以要 prefix-aware + load-aware + KV-aware。 |
-| **KV-aware autoscaler 跟普通 HPA 区别？** | HPA 看 CPU/QPS，LLM 要看 KV cache 占用率、queue 长度、TTFT P99。AIBrix / Dynamo 都自定义了 metrics，关键挑战是 KV 占用是 stateful 的——缩容前要把 KV 迁出去或重算，不能直接 kill pod。 |
-| **GIE（Gateway API Inference Extension）是什么？** | K8s 官方推的 LLM 推理 Gateway 标准，定义 InferenceModel / InferencePool CRD，配合 Gateway API HTTPRoute。endpoint picker plugin（epp）做路由决策，scheduling chain 复用 K8s scheduler framework 的 filter/scorer 思路。llm-d 等基于它。 |
-| **大模型推理面试常被问的最难问题？** | "你怎么诊断一个推理服务 P99 TTFT 突然变高？" —— 检查路径：① 看 prefix cache 命中率掉了没；② 看 KV cache 占用率是否接近满（导致 preempt）；③ 看 prefill chunk size 是否被某些长 prompt 拖住；④ 看 router 路由分布是否倾斜；⑤ 看 GPU 利用率是不是因为 batch 抖动忽高忽低；⑥ 看 KV transfer 链路（PD 分离场景）。 |
+### Q：为什么 LLM 推理要 KV Cache？
+
+> [!question]- 参考答案（点击展开）
+>
+> Decode 每生成 1 个 token 都要对所有历史 token 做 attention，没 cache 就要重算 O(N²)，有了 cache 是 O(N)。代价是显存——KV 大小 = 2 × layer × head × dim × seq_len × dtype，128k context 一个 sequence 就 GB 级。
+
+### Q：PagedAttention 解决了什么？
+
+> [!question]- 参考答案（点击展开）
+>
+> 传统 KV 按 max_seq_len 预留连续显存，浪费严重（30-60% 碎片）。PagedAttention 把 KV 切 block（默认 16 token），像 OS page 一样按需分配，碎片率压到个位数，并发数翻几倍。
+
+### Q：Continuous Batching 与传统 batching 的本质差异？
+
+> [!question]- 参考答案（点击展开）
+>
+> 传统按 batch 等齐：所有 seq 必须同时开始同时结束，慢的拖累快的。Continuous batching 是 iteration-level scheduling：每个 iteration 决定哪些 seq 参与，刚结束的立刻让位给新请求，GPU 利用率从 30% 拉到 70%+。
+
+### Q：vLLM 的 prefix cache 怎么命中？
+
+> [!question]- 参考答案（点击展开）
+>
+> 按 block 算 hash（基于 block 内 token + 父 block hash），新请求 prefill 时按 block 查 hash 表，命中的 block 直接复用引用计数 +1，跳过这部分的 prefill 计算。block size 是 hash 粒度的下限，所以差 1 个 token 也可能 miss 整个 block。
+
+### Q：SGLang RadixAttention 比 vLLM 强在哪？
+
+> [!question]- 参考答案（点击展开）
+>
+> Radix tree 上做最长前缀匹配，比固定 block hash 粒度更细，多分支共享（多轮对话、agent）命中率明显高。代价是树维护 + 并发锁更复杂。
+
+### Q：PD 分离解决什么？
+
+> [!question]- 参考答案（点击展开）
+>
+> Prefill 是 compute-bound、Decode 是 memory-bound，混跑时长 prompt 占满 GPU 导致 decode ITL 抖动。拆开后各自的 batch 策略、并行策略、扩缩容独立优化，TTFT 和 ITL 同时改善。代价是要传 KV，靠 RDMA / NVLink。
+
+### Q：PD 比例怎么定？
+
+> [!question]- 参考答案（点击展开）
+>
+> 取决于 workload：长 prompt + 短输出 → Prefill 多；短 prompt + 长输出（agent / 写作）→ Decode 多。Dynamo 的 planner、Mooncake 的 conductor 都能动态调整。生产经验常见 1P:2D ~ 1P:4D。
+
+### Q：跨实例怎么共享 KV？
+
+> [!question]- 参考答案（点击展开）
+>
+> 两条路：① 走分布式 KV Store（Mooncake / LMCache），用 redis/etcd 注册位置，RDMA 拉；② PD 分离的 KV transfer，Prefill 算完直接 push 到 Decode。瓶颈在 PCIe / RDMA 带宽和 layer-wise 重叠程度。
+
+### Q：LLM Router 为什么不能复用普通 HTTP LB？
+
+> [!question]- 参考答案（点击展开）
+>
+> 4 个本质不同：① 请求大小差几个量级（128 vs 32k token）；② 处理时长秒级 vs 毫秒级；③ 有状态（KV/LoRA/模型版本）；④ 路由维度多了 prefix hash、KV 位置、Pool 类型。所以要 prefix-aware + load-aware + KV-aware。
+
+### Q：KV-aware autoscaler 跟普通 HPA 区别？
+
+> [!question]- 参考答案（点击展开）
+>
+> HPA 看 CPU/QPS，LLM 要看 KV cache 占用率、queue 长度、TTFT P99。AIBrix / Dynamo 都自定义了 metrics，关键挑战是 KV 占用是 stateful 的——缩容前要把 KV 迁出去或重算，不能直接 kill pod。
+
+### Q：GIE（Gateway API Inference Extension）是什么？
+
+> [!question]- 参考答案（点击展开）
+>
+> K8s 官方推的 LLM 推理 Gateway 标准，定义 InferenceModel / InferencePool CRD，配合 Gateway API HTTPRoute。endpoint picker plugin（epp）做路由决策，scheduling chain 复用 K8s scheduler framework 的 filter/scorer 思路。llm-d 等基于它。
+
+### Q：大模型推理面试常被问的最难问题？
+
+> [!question]- 参考答案（点击展开）
+>
+> "你怎么诊断一个推理服务 P99 TTFT 突然变高？" —— 检查路径：① 看 prefix cache 命中率掉了没；② 看 KV cache 占用率是否接近满（导致 preempt）；③ 看 prefill chunk size 是否被某些长 prompt 拖住；④ 看 router 路由分布是否倾斜；⑤ 看 GPU 利用率是不是因为 batch 抖动忽高忽低；⑥ 看 KV transfer 链路（PD 分离场景）。

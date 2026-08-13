@@ -805,40 +805,60 @@ resources:
 
 **Q1: kubelet 的 SyncLoop 在做什么？事件来源有哪些？**
 
-A: `SyncLoop` 是 kubelet 的主循环，本质是一个 select 多路复用。事件来源包括：`PodConfig` 的配置变更（apiserver/file/http 三类 Pod 来源）、`PLEG` 的容器实际状态变化事件、定时 sync（默认 1s 全量 reconcile）、探针结果变化、周期性 housekeeping 清理。它本身不做重活，只把事件分发给 `SyncHandler`，再推给对应 Pod 的 `podWorker` goroutine 串行执行。
+> [!question]- 参考答案（点击展开）
+>
+> `SyncLoop` 是 kubelet 的主循环，本质是一个 select 多路复用。事件来源包括：`PodConfig` 的配置变更（apiserver/file/http 三类 Pod 来源）、`PLEG` 的容器实际状态变化事件、定时 sync（默认 1s 全量 reconcile）、探针结果变化、周期性 housekeeping 清理。它本身不做重活，只把事件分发给 `SyncHandler`，再推给对应 Pod 的 `podWorker` goroutine 串行执行。
 
 **Q2: PLEG 是什么？为什么需要它？`PLEG is not healthy` 怎么回事？**
 
-A: PLEG（Pod Lifecycle Event Generator）负责让 kubelet 感知容器的「实际」状态变化（如容器自己崩溃退出）。它每隔约 1s 调用 CRI 的 `ListPodSandbox`+`ListContainers` 做一次 relist，与上次快照 diff 生成生命周期事件。相比为每个 Pod 单独轮询，relist 把查询开销摊薄。当 relist 长时间无法完成（运行时卡死、CRI socket 无响应）时，节点 `Ready` condition 会变为 `PLEG is not healthy`，导致 Node `NotReady`。
+> [!question]- 参考答案（点击展开）
+>
+> PLEG（Pod Lifecycle Event Generator）负责让 kubelet 感知容器的「实际」状态变化（如容器自己崩溃退出）。它每隔约 1s 调用 CRI 的 `ListPodSandbox`+`ListContainers` 做一次 relist，与上次快照 diff 生成生命周期事件。相比为每个 Pod 单独轮询，relist 把查询开销摊薄。当 relist 长时间无法完成（运行时卡死、CRI socket 无响应）时，节点 `Ready` condition 会变为 `PLEG is not healthy`，导致 Node `NotReady`。
 
 **Q3: CRI 是什么？它解决了什么问题？**
 
-A: CRI 是 kubelet 与容器运行时之间的 gRPC 接口标准，含 `RuntimeService`（Pod sandbox / container 生命周期）与 `ImageService`（镜像）两组 service。在 CRI 之前 kubelet 要为每种运行时内置适配代码（dockershim）；CRI 把运行时变成可插拔——任何实现该接口的运行时（containerd、CRI-O）都能被直接使用，无需改 kubelet。
+> [!question]- 参考答案（点击展开）
+>
+> CRI 是 kubelet 与容器运行时之间的 gRPC 接口标准，含 `RuntimeService`（Pod sandbox / container 生命周期）与 `ImageService`（镜像）两组 service。在 CRI 之前 kubelet 要为每种运行时内置适配代码（dockershim）；CRI 把运行时变成可插拔——任何实现该接口的运行时（containerd、CRI-O）都能被直接使用，无需改 kubelet。
 
 **Q4: PodSandbox / pause 容器是什么？为什么需要它？**
 
-A: CRI 把 Pod 抽象为 PodSandbox——Pod 内容器共享的环境（network/IPC namespace、cgroup 父节点、Pod IP）。它的物理载体是 pause 容器：pause 进程只调 `pause()` 阻塞，几乎不耗资源，但它先创建并 hold 住 namespace，业务容器通过 `NamespaceOption` 加入。这样即使业务容器全部崩溃重启，namespace 和 Pod IP 仍由 pause 容器保持不变。
+> [!question]- 参考答案（点击展开）
+>
+> CRI 把 Pod 抽象为 PodSandbox——Pod 内容器共享的环境（network/IPC namespace、cgroup 父节点、Pod IP）。它的物理载体是 pause 容器：pause 进程只调 `pause()` 阻塞，几乎不耗资源，但它先创建并 hold 住 namespace，业务容器通过 `NamespaceOption` 加入。这样即使业务容器全部崩溃重启，namespace 和 Pod IP 仍由 pause 容器保持不变。
 
 **Q5: 描述 kubelet 创建一个 Pod 调用 CRI 的关键 RPC 顺序。**
 
-A: `kuberuntime.SyncPod` 先 `computePodActions` 算出动作集合，然后：(1) `RunPodSandbox` 创建 pause 容器并配 CNI 网络；(2) 对 init 容器和业务容器分别 `PullImage`（必要时）→ `CreateContainer` → `StartContainer`。运行时再经 containerd-shim-runc-v2 调用 runc，由 runc `clone()` 出 namespace、配 cgroup、`pivot_root`、`execve` 用户进程。
+> [!question]- 参考答案（点击展开）
+>
+> `kuberuntime.SyncPod` 先 `computePodActions` 算出动作集合，然后：(1) `RunPodSandbox` 创建 pause 容器并配 CNI 网络；(2) 对 init 容器和业务容器分别 `PullImage`（必要时）→ `CreateContainer` → `StartContainer`。运行时再经 containerd-shim-runc-v2 调用 runc，由 runc `clone()` 出 namespace、配 cgroup、`pivot_root`、`execve` 用户进程。
 
 **Q6: 为什么 K8s 1.24 移除 dockershim？移除后用 Docker 镜像还行吗？**
 
-A: dockershim 是 kubelet 内置的 Docker 适配层，链路 `kubelet→dockershim→dockerd→containerd→runc` 多了 dockerd 这一跳，且 Docker 的镜像构建、Swarm 等能力 K8s 用不上，维护成本高、故障面大。移除后直连 containerd / CRI-O，链路更短。Docker 构建的镜像符合 OCI 标准，在任何 CRI 运行时上都能正常运行，不受影响。
+> [!question]- 参考答案（点击展开）
+>
+> dockershim 是 kubelet 内置的 Docker 适配层，链路 `kubelet→dockershim→dockerd→containerd→runc` 多了 dockerd 这一跳，且 Docker 的镜像构建、Swarm 等能力 K8s 用不上，维护成本高、故障面大。移除后直连 containerd / CRI-O，链路更短。Docker 构建的镜像符合 OCI 标准，在任何 CRI 运行时上都能正常运行，不受影响。
 
 **Q7: Device Plugin 的工作原理？要实现哪些 gRPC 接口？**
 
-A: Device Plugin 让厂商硬件以 Extended Resource 形式被 kubelet 感知，无需改 kubelet 源码。插件以 DaemonSet 部署，通过 `/var/lib/kubelet/device-plugins/kubelet.sock` 调 `Register` 注册资源名。需实现 `DevicePlugin` service：`GetDevicePluginOptions`(协商能力)、`ListAndWatch`(流式上报设备与健康状态)、`Allocate`(容器创建前返回设备挂载/env/设备节点)，可选 `GetPreferredAllocation`(拓扑建议) 和 `PreStartContainer`。
+> [!question]- 参考答案（点击展开）
+>
+> Device Plugin 让厂商硬件以 Extended Resource 形式被 kubelet 感知，无需改 kubelet 源码。插件以 DaemonSet 部署，通过 `/var/lib/kubelet/device-plugins/kubelet.sock` 调 `Register` 注册资源名。需实现 `DevicePlugin` service：`GetDevicePluginOptions`(协商能力)、`ListAndWatch`(流式上报设备与健康状态)、`Allocate`(容器创建前返回设备挂载/env/设备节点)，可选 `GetPreferredAllocation`(拓扑建议) 和 `PreStartContainer`。
 
 **Q8: Device Plugin 的 ListAndWatch 和 Allocate 分别在什么时候被调用？**
 
-A: `ListAndWatch` 是一个长连接 stream，注册成功后 kubelet 立即调用，插件先发全量设备列表，之后设备健康状态变化时再 push；kubelet 据此更新 Node `status.capacity`/`allocatable`。`Allocate` 在 Pod 已被调度到本节点、kubelet 准备创建容器前调用——DeviceManager 先选出空闲设备 ID，再调插件 `Allocate`，把返回的 envs/mounts/devices 合并进 CRI `CreateContainer` 请求。
+> [!question]- 参考答案（点击展开）
+>
+> `ListAndWatch` 是一个长连接 stream，注册成功后 kubelet 立即调用，插件先发全量设备列表，之后设备健康状态变化时再 push；kubelet 据此更新 Node `status.capacity`/`allocatable`。`Allocate` 在 Pod 已被调度到本节点、kubelet 准备创建容器前调用——DeviceManager 先选出空闲设备 ID，再调插件 `Allocate`，把返回的 envs/mounts/devices 合并进 CRI `CreateContainer` 请求。
 
 **Q9: GPU 调度中 Scheduler 和 kubelet/Device Plugin 的分工？**
 
-A: Scheduler 只做数量级调度——判断哪个 Node 的 `allocatable` 中 `nvidia.com/gpu` 够用，把 Pod 绑定上去（NodeResourcesFit 插件）。具体哪块物理 GPU 分配给容器由 kubelet 侧 DeviceManager + Device Plugin 的 `Allocate` 决定。Scheduler 不感知 GPU 拓扑（NVLink 等），拓扑感知需 Topology Manager 或 Volcano 等增强方案。
+> [!question]- 参考答案（点击展开）
+>
+> Scheduler 只做数量级调度——判断哪个 Node 的 `allocatable` 中 `nvidia.com/gpu` 够用，把 Pod 绑定上去（NodeResourcesFit 插件）。具体哪块物理 GPU 分配给容器由 kubelet 侧 DeviceManager + Device Plugin 的 `Allocate` 决定。Scheduler 不感知 GPU 拓扑（NVLink 等），拓扑感知需 Topology Manager 或 Volcano 等增强方案。
 
 **Q10: kubelet 重启后 Device Plugin 为什么要重新注册？**
 
-A: kubelet 重启会重建 `kubelet.sock`，并清空内存中已注册的插件 endpoint。设备插件需要用 fsnotify/inotify 监听 `kubelet.sock` 文件的重建事件，一旦检测到就重新发起 `Register`，否则 kubelet 无法再感知该插件上报的设备，对应的 Extended Resource 会从 Node capacity 中消失。
+> [!question]- 参考答案（点击展开）
+>
+> kubelet 重启会重建 `kubelet.sock`，并清空内存中已注册的插件 endpoint。设备插件需要用 fsnotify/inotify 监听 `kubelet.sock` 文件的重建事件，一旦检测到就重新发起 `Register`，否则 kubelet 无法再感知该插件上报的设备，对应的 Extended Resource 会从 Node capacity 中消失。

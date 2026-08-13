@@ -497,27 +497,51 @@ iptables -L -n | grep cali
 ### 高频问题
 
 **Q: Kubernetes 网络模型的核心要求是什么？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 所有 Pod 之间可直接通信，无需 NAT；每个 Pod 有独立 IP；Node 上的进程可以和 Pod 通信。
 
 **Q: 同节点 Pod 如何通信？跨节点呢？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 同节点通过 Linux bridge（cni0）直接二层转发。跨节点取决于 CNI 插件：Flannel 用 VXLAN 封装，Calico 用 BGP 路由或 IPIP 隧道，Cilium 用 eBPF。
 
 **Q: ClusterIP 是如何实现的？**
+
+> [!question]- 参考答案（点击展开）
+>
 > ClusterIP 是虚拟 IP，不绑定在任何网卡上。kube-proxy 在每个 Node 上生成 iptables DNAT 规则或 IPVS 虚拟服务器，将访问 ClusterIP 的流量在内核态转发到后端 Pod。
 
 **Q: iptables 和 IPVS 有什么区别？**
+
+> [!question]- 参考答案（点击展开）
+>
 > iptables 逐条匹配规则，O(n) 复杂度，大集群下性能下降；IPVS 基于内核哈希表，O(1) 查找，支持多种负载均衡算法（rr, lc, sh），适合大规模集群。
 
 **Q: kube-proxy 三种模式的区别？**
+
+> [!question]- 参考答案（点击展开）
+>
 > userspace（已废弃，用户态转发）→ iptables（默认，内核态规则链）→ IPVS（推荐大集群，内核级哈希 + 多种调度算法）。
 
 **Q: Pod 内的 DNS 是怎么解析的？**
+
+> [!question]- 参考答案（点击展开）
+>
 > Pod 的 `/etc/resolv.conf` 指向 CoreDNS（ClusterIP 10.96.0.10），域名按 `search` 配置补全后发往 CoreDNS，CoreDNS 通过 Watch Kubernetes API 返回 Service 对应的 ClusterIP。
 
 **Q: NetworkPolicy 的默认行为？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 默认全开放。一旦 Pod 被某条 NetworkPolicy 选中，则未被显式允许的方向（Ingress/Egress）流量会被拒绝。
 
 **Q: Calico、Flannel、Cilium 怎么选？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 小集群/学习用 Flannel；通用生产环境用 Calico（BGP 路由 + NetworkPolicy）；高性能/需要 L7 策略用 Cilium（eBPF）。
 
 ### 排查思路速查

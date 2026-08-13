@@ -208,16 +208,24 @@ kubectl get msp -n openebs
 
 ### Q1: OpenEBS 的 CAS 架构是什么？有什么优势？
 
-CAS（Container Attached Storage）是 OpenEBS 的核心架构理念：每个 Volume 的控制器和副本都运行在独立的 Pod 中，而不是共享一个集中式的存储控制面。优势是故障隔离（某个 Volume 故障不影响其他），真正的 Kubernetes Native（用 CRD 和 kubectl 管理），以及灵活性（同一集群可以混用不同存储引擎）。
+> [!question]- 参考答案（点击展开）
+>
+> CAS（Container Attached Storage）是 OpenEBS 的核心架构理念：每个 Volume 的控制器和副本都运行在独立的 Pod 中，而不是共享一个集中式的存储控制面。优势是故障隔离（某个 Volume 故障不影响其他），真正的 Kubernetes Native（用 CRD 和 kubectl 管理），以及灵活性（同一集群可以混用不同存储引擎）。
 
 ### Q2: Mayastor 为什么性能高？
 
-Mayastor 使用 NVMe-oF（NVMe over Fabrics）协议和 SPDK（Storage Performance Development Kit）用户态 I/O 框架。SPDK 绕过内核态存储栈，直接在用户态通过轮询方式访问 NVMe 设备，避免了中断和上下文切换的开销，延迟可以低到微秒级。
+> [!question]- 参考答案（点击展开）
+>
+> Mayastor 使用 NVMe-oF（NVMe over Fabrics）协议和 SPDK（Storage Performance Development Kit）用户态 I/O 框架。SPDK 绕过内核态存储栈，直接在用户态通过轮询方式访问 NVMe 设备，避免了中断和上下文切换的开销，延迟可以低到微秒级。
 
 ### Q3: OpenEBS 有哪些存储引擎？如何选择？
 
-四种引擎：Mayastor（NVMe-oF 高性能）、cStor（CoW 通用生产）、Jiva（iSCSI 轻量级）、Local PV（本地直通）。选择依据：应用自带副本选 Local PV；需要极致性能选 Mayastor；需要快照克隆等功能选 cStor；资源受限选 Jiva。
+> [!question]- 参考答案（点击展开）
+>
+> 四种引擎：Mayastor（NVMe-oF 高性能）、cStor（CoW 通用生产）、Jiva（iSCSI 轻量级）、Local PV（本地直通）。选择依据：应用自带副本选 Local PV；需要极致性能选 Mayastor；需要快照克隆等功能选 cStor；资源受限选 Jiva。
 
 ### Q4: NDM（Node Disk Manager）的作用？
 
-NDM 以 DaemonSet 方式运行在每个节点上，自动发现节点上的裸磁盘和块设备，并以 BlockDevice CRD 的形式注册到 Kubernetes。Mayastor 和 cStor 引擎通过 NDM 发现的 BlockDevice 来创建存储池，实现自动化磁盘管理。
+> [!question]- 参考答案（点击展开）
+>
+> NDM 以 DaemonSet 方式运行在每个节点上，自动发现节点上的裸磁盘和块设备，并以 BlockDevice CRD 的形式注册到 Kubernetes。Mayastor 和 cStor 引擎通过 NDM 发现的 BlockDevice 来创建存储池，实现自动化磁盘管理。

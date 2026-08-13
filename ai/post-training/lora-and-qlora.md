@@ -185,12 +185,18 @@ model.print_trainable_parameters()
 
 ### Q：LoRA 为什么能减少训练成本？
 
-A：它冻结原始权重，只训练两个低秩更新矩阵，使可训练参数、梯度和 Optimizer State 大幅减少。Activation 成本仍然存在，因此显存不会按可训练参数比例无限下降。
+> [!question]- 参考答案（点击展开）
+>
+> 它冻结原始权重，只训练两个低秩更新矩阵，使可训练参数、梯度和 Optimizer State 大幅减少。Activation 成本仍然存在，因此显存不会按可训练参数比例无限下降。
 
 ### Q：LoRA 与 SFT 有什么关系？
 
-A：SFT 定义训练数据和目标，即用标准回答监督模型；LoRA 定义参数如何被更新。可以用 LoRA 做 SFT，也可以 Full Fine-tuning 做 SFT。
+> [!question]- 参考答案（点击展开）
+>
+> SFT 定义训练数据和目标，即用标准回答监督模型；LoRA 定义参数如何被更新。可以用 LoRA 做 SFT，也可以 Full Fine-tuning 做 SFT。
 
 ### Q：QLoRA 与普通 LoRA 的关键区别是什么？
 
-A：QLoRA 还会以低比特形式加载冻结的 Base Model 权重以降低显存，而 LoRA Adapter 通常保持较高精度训练。它不是把所有计算和状态都简单变成 4-bit。
+> [!question]- 参考答案（点击展开）
+>
+> QLoRA 还会以低比特形式加载冻结的 Base Model 权重以降低显存，而 LoRA Adapter 通常保持较高精度训练。它不是把所有计算和状态都简单变成 4-bit。

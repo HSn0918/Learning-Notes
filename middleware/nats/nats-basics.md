@@ -355,35 +355,50 @@ func main() {
 
 ### Q1：NATS Core 和 JetStream 的本质区别是什么？
 
-**A**：Core NATS 是纯内存的 pub/sub 总线，消息不落盘，没有 ack 机制，语义是 at-most-once，追求极低延迟（微秒级）。JetStream 是 NATS 内置的持久化扩展层，将消息存储在 Stream 中（支持 File/Memory），提供 at-least-once 和 exactly-once 语义，支持消息回溯、Consumer 消费进度追踪等能力。两者共用同一个 Server，JetStream 是可选启用的功能。
+> [!question]- 参考答案（点击展开）
+>
+> Core NATS 是纯内存的 pub/sub 总线，消息不落盘，没有 ack 机制，语义是 at-most-once，追求极低延迟（微秒级）。JetStream 是 NATS 内置的持久化扩展层，将消息存储在 Stream 中（支持 File/Memory），提供 at-least-once 和 exactly-once 语义，支持消息回溯、Consumer 消费进度追踪等能力。两者共用同一个 Server，JetStream 是可选启用的功能。
 
 ### Q2：NATS Subject 的通配符规则？
 
-**A**：`*` 匹配单个 token（点分隔的一层），`>` 匹配剩余所有层级且必须放在末尾。例如 `orders.*` 匹配 `orders.us` 但不匹配 `orders.us.east`；`orders.>` 匹配 `orders.us`、`orders.us.east`、`orders.us.east.created` 等。
+> [!question]- 参考答案（点击展开）
+>
+> `*` 匹配单个 token（点分隔的一层），`>` 匹配剩余所有层级且必须放在末尾。例如 `orders.*` 匹配 `orders.us` 但不匹配 `orders.us.east`；`orders.>` 匹配 `orders.us`、`orders.us.east`、`orders.us.east.created` 等。
 
 ### Q3：Queue Group 如何实现负载均衡？它与 Kafka Consumer Group 的区别？
 
-**A**：Queue Group 由 NATS Server 在 Server 端随机选择组内一个订阅者投递消息，实现负载均衡。Kafka Consumer Group 是客户端协调，每个 Partition 分配给固定的 Consumer，并发度受 Partition 数量限制。NATS Queue Group 没有分区概念，动态扩缩容更简单，但不保证顺序。
+> [!question]- 参考答案（点击展开）
+>
+> Queue Group 由 NATS Server 在 Server 端随机选择组内一个订阅者投递消息，实现负载均衡。Kafka Consumer Group 是客户端协调，每个 Partition 分配给固定的 Consumer，并发度受 Partition 数量限制。NATS Queue Group 没有分区概念，动态扩缩容更简单，但不保证顺序。
 
 ### Q4：NATS 如何保证高可用？
 
-**A**：通过 Cluster 实现。多个 Server 组成 full-mesh 路由，客户端连接到任意 Server，消息在集群内路由。JetStream 支持 Stream 的副本（Replication），数据在多个 Server 上冗余存储，使用 Raft 协议保证一致性。
+> [!question]- 参考答案（点击展开）
+>
+> 通过 Cluster 实现。多个 Server 组成 full-mesh 路由，客户端连接到任意 Server，消息在集群内路由。JetStream 支持 Stream 的副本（Replication），数据在多个 Server 上冗余存储，使用 Raft 协议保证一致性。
 
 ### Q5：NATS 的 Leaf Node 适用什么场景？
 
-**A**：Leaf Node 是轻量级 NATS Server，连接到上级集群。适用于：IoT 边缘设备（本地低延迟通信，网络断开时仍可本地运行）、私有数据中心延伸到云端、跨网络边界的安全通信。只有本地有订阅者时，消息才会跨 Leaf 连接传输，节省带宽。
+> [!question]- 参考答案（点击展开）
+>
+> Leaf Node 是轻量级 NATS Server，连接到上级集群。适用于：IoT 边缘设备（本地低延迟通信，网络断开时仍可本地运行）、私有数据中心延伸到云端、跨网络边界的安全通信。只有本地有订阅者时，消息才会跨 Leaf 连接传输，节省带宽。
 
 ### Q6：NATS Request-Reply 的 _INBOX 机制？
 
-**A**：发起请求时，NATS 客户端自动生成唯一的 `_INBOX.<random>` reply subject，并将其作为消息的 ReplyTo 字段发送。响应方收到消息后，向 ReplyTo 发布响应，请求方已订阅该 inbox subject，收到响应后关闭订阅。整个过程对应用透明。
+> [!question]- 参考答案（点击展开）
+>
+> 发起请求时，NATS 客户端自动生成唯一的 `_INBOX.<random>` reply subject，并将其作为消息的 ReplyTo 字段发送。响应方收到消息后，向 ReplyTo 发布响应，请求方已订阅该 inbox subject，收到响应后关闭订阅。整个过程对应用透明。
 
 ### Q7：NATS 与 Kafka 各自适用什么场景，如何选择？
 
-**A**：
-- **选 NATS**：微服务间实时通信、IoT 设备管控、命令-控制模式、需要极低延迟（<1ms）、部署资源受限、不需要长期消息保留。
-- **选 Kafka**：大数据日志收集、事件溯源、需要精确的 Partition 顺序保证、消费者需要从任意 Offset 回溯、超大规模数据管道（TB 级日志）。
-- JetStream 填补了两者之间的空白，轻量级且支持持久化。
+> [!question]- 参考答案（点击展开）
+>
+> - **选 NATS**：微服务间实时通信、IoT 设备管控、命令-控制模式、需要极低延迟（<1ms）、部署资源受限、不需要长期消息保留。
+> - **选 Kafka**：大数据日志收集、事件溯源、需要精确的 Partition 顺序保证、消费者需要从任意 Offset 回溯、超大规模数据管道（TB 级日志）。
+> - JetStream 填补了两者之间的空白，轻量级且支持持久化。
 
 ### Q8：NATS 的 JWT 三层认证体系如何工作？
 
-**A**：三层结构为 Operator > Account > User。Operator 是顶层信任锚（通常是基础设施团队管理），持有 Operator NKey 签发 Account JWT；Account 实现命名空间隔离，不同 Account 之间 Subject 隔离，Account NKey 持有人签发 User JWT；User 持有 JWT 连接 Server，Server 验证 JWT 签名链（User JWT 由 Account 签，Account JWT 由 Operator 签），无需联系中心 Auth Server，实现去中心化认证。
+> [!question]- 参考答案（点击展开）
+>
+> 三层结构为 Operator > Account > User。Operator 是顶层信任锚（通常是基础设施团队管理），持有 Operator NKey 签发 Account JWT；Account 实现命名空间隔离，不同 Account 之间 Subject 隔离，Account NKey 持有人签发 User JWT；User 持有 JWT 连接 Server，Server 验证 JWT 签名链（User JWT 由 Account 签，Account JWT 由 Operator 签），无需联系中心 Auth Server，实现去中心化认证。

@@ -279,24 +279,36 @@ items := make([]Item, 0, expected)
 
 ### Q: slice 的底层结构是什么？
 
-A: slice 是三字段 header：`array unsafe.Pointer`、`len int`、`cap int`。header 按值传递，但底层数组可能共享，所以修改元素会影响其他共享同一 backing array 的 slice。
+> [!question]- 参考答案（点击展开）
+>
+> slice 是三字段 header：`array unsafe.Pointer`、`len int`、`cap int`。header 按值传递，但底层数组可能共享，所以修改元素会影响其他共享同一 backing array 的 slice。
 
 ### Q: append 一定会分配新数组吗？
 
-A: 不一定。`newLen <= cap` 时直接写入原 backing array；容量不够才调用 `runtime.growslice` 分配新数组、复制旧元素并返回新 header。
+> [!question]- 参考答案（点击展开）
+>
+> 不一定。`newLen <= cap` 时直接写入原 backing array；容量不够才调用 `runtime.growslice` 分配新数组、复制旧元素并返回新 header。
 
 ### Q: 当前 Go 的 slice 扩容规则是什么？
 
-A: Go 1.26.1 中 `nextslicecap` 以 256 为阈值，小容量近似 2 倍；大容量用 `newcap += (newcap + 3*threshold) >> 2` 平滑过渡到约 1.25 倍；最后还会被 allocator size class round up，所以实际 cap 不一定等于公式值。
+> [!question]- 参考答案（点击展开）
+>
+> Go 1.26.1 中 `nextslicecap` 以 256 为阈值，小容量近似 2 倍；大容量用 `newcap += (newcap + 3*threshold) >> 2` 平滑过渡到约 1.25 倍；最后还会被 allocator size class round up，所以实际 cap 不一定等于公式值。
 
 ### Q: `[]byte` 和 `[]*T` 对 GC 有什么区别？
 
-A: `[]byte` 不含指针，runtime 可以用 noscan allocation，GC 不扫描元素；`[]*T` 含指针，分配时需要类型信息，GC 要扫描，扩容复制时还可能触发 bulk write barrier。
+> [!question]- 参考答案（点击展开）
+>
+> `[]byte` 不含指针，runtime 可以用 noscan allocation，GC 不扫描元素；`[]*T` 含指针，分配时需要类型信息，GC 要扫描，扩容复制时还可能触发 bulk write barrier。
 
 ### Q: 为什么小切片会导致大内存不释放？
 
-A: slice header 的 `array` 指针仍然指向大 backing array，只要小切片存活，整个数组都被视为可达。需要 copy/clone 出一个新的小数组来断开引用。
+> [!question]- 参考答案（点击展开）
+>
+> slice header 的 `array` 指针仍然指向大 backing array，只要小切片存活，整个数组都被视为可达。需要 copy/clone 出一个新的小数组来断开引用。
 
 ### Q: 怎么判断 slice 是否是内存问题根因？
 
-A: 看 heap profile 的 allocation site 和 retained heap。如果某些函数只返回小 slice 但持有大 buffer，或 `runtime.growslice` 相关调用点分配很高，就需要检查子切片逃逸、append ownership、预分配策略。
+> [!question]- 参考答案（点击展开）
+>
+> 看 heap profile 的 allocation site 和 retained heap。如果某些函数只返回小 slice 但持有大 buffer，或 `runtime.growslice` 相关调用点分配很高，就需要检查子切片逃逸、append ownership、预分配策略。

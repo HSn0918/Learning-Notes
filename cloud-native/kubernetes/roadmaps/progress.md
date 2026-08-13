@@ -285,26 +285,125 @@
 
 ## 高阶自检题（6 周后应该全部能答）
 
-1. 11 个 Scheduler 扩展点的顺序、各自能修改什么
-2. 调度队列 activeQ / backoffQ / unschedulableQ 的转换条件
-3. Framework plugin vs Extender 各自的适用场景
-4. Scheduler assume 是干什么的、Bind 失败怎么回滚
-5. Device Plugin 的 4 个 RPC，Allocate 返回值的 4 个字段
-6. kubelet 重启后 Device Plugin 怎么重新连接（fsnotify 监听什么）
-7. HAMi 为什么不能用 framework plugin 替代 extender
-8. HAMi 在 1 张物理卡上跑 2 个 Pod，配额隔离的"信任边界"在哪
-9. LD_PRELOAD 的 Linux 实现机制（ld.so 顺序、RTLD_NEXT）
-10. PLEG 的工作原理、PLEG is not healthy 怎么排查
-11. Evented PLEG 解决了什么
-12. CRI 的 RunPodSandbox 和 CreateContainer 谁先调用、谁创建 pause 容器
-13. 4 个 CSI sidecar 各自连哪个 CSI RPC
-14. `volumeBindingMode: WaitForFirstConsumer` 改变了什么
-15. CSI Controller / Node service 分别部署在哪种 Pod 里
-16. etcd raft 的 Ready 循环、WAL 和 snapshot 的关系
-17. compact 和 defrag 的差异
-18. 一次写请求从 apiserver 到 etcd 落盘的完整路径
-19. CNI 的 ADD / DEL 各自传哪些参数
-20. Calico BGP / IPIP 和 Cilium eBPF 数据面的本质差异
+### 1. 11 个 Scheduler 扩展点的顺序、各自能修改什么？
+
+> [!question]- 参考答案（点击展开）
+>
+> 调度周期依次经过 `QueueSort → PreFilter → Filter → PostFilter → PreScore → Score → Reserve → Permit`，绑定周期经过 `PreBind → Bind → PostBind`；并非每个 Pod 都会走到所有分支。前半段选择节点并做预留，后半段写 Binding 和收尾，插件只能在其契约允许的阶段读写状态。详见 [[scheduler-framework-source]]。
+
+### 2. 调度队列 `activeQ` / `backoffQ` / `unschedulableQ` 的转换条件是什么？
+
+> [!question]- 参考答案（点击展开）
+>
+> 新 Pod 进入 `activeQ`；可重试失败先按退避进入 `backoffQ`，到期再回 `activeQ`；当前无资源且等待相关集群事件的 Pod 留在 `unschedulableQ`，由 QueueingHint 命中事件或兜底超时重新激活。详见 [[scheduler-framework-source#二、Scheduling Queue：三级队列与状态流转]]。
+
+### 3. Framework Plugin 和 Extender 各自适用什么场景？
+
+> [!question]- 参考答案（点击展开）
+>
+> Framework Plugin 是调度器进程内扩展，可接入完整扩展点，适合需要深度控制调度周期的能力；Extender 以 HTTP 独立运行，易于单独部署升级，但扩展点和性能边界较窄。选择取决于维护成本、延迟和所需调度语义。详见 [[scheduler-framework-source]]、[[hami-source#2.1 为什么是 Extender 而不是 Framework Plugin]]。
+
+### 4. Scheduler `Assume` 是干什么的，Bind 失败怎么回滚？
+
+> [!question]- 参考答案（点击展开）
+>
+> `Assume` 先在 scheduler cache 乐观占用资源，防止后续 Pod 重复选择；Binding 成功后确认，失败或超时则忘记该假设并按重试路径重新调度。它是缓存收敛机制，不替代 API Server 的最终事实。详见 [[scheduler-framework-source#七、Assume / Reserve / Permit：乐观绑定]]。
+
+### 5. Device Plugin 的 4 个 RPC，Allocate 返回值的 4 个字段是什么？
+
+> [!question]- 参考答案（点击展开）
+>
+> 不应死记为固定“4 个 RPC”：核心链路是注册、`ListAndWatch` 和 `Allocate`，协议还可协商 `GetDevicePluginOptions`、`GetPreferredAllocation`、`PreStartContainer`。`Allocate` 的容器响应至少可携带 env、mount、device、annotation 和 CDI device，具体字段随 API 版本演进。详见 [[kubelet-cri-source#Device Plugin 机制]]。
+
+### 6. kubelet 重启后 Device Plugin 怎么重新连接，`fsnotify` 监听什么？
+
+> [!question]- 参考答案（点击展开）
+>
+> kubelet 重启会重建 `/var/lib/kubelet/device-plugins/kubelet.sock`；插件需监听该目录/注册 socket 的删除或重建事件，再重新向 kubelet 注册并恢复 `ListAndWatch`。详情应以所用插件的重连实现确认。详见 [[kubelet-cri-source#注册路径与 socket]]。
+
+### 7. HAMi 为什么不能用 Framework Plugin 替代 Extender？
+
+> [!question]- 参考答案（点击展开）
+>
+> 不是“不能”：Framework Plugin 也能实现设备级调度逻辑。HAMi 选择 Extender 是为了避免维护自定义 scheduler 二进制，并将 GPU 调度能力独立部署；代价是 HTTP 调用、较少扩展点和独立 cache 的一致性复杂度。详见 [[hami-source#2.1 为什么是 Extender 而不是 Framework Plugin]]。
+
+### 8. HAMi 在一张物理卡上跑两个 Pod 时，配额隔离的信任边界在哪？
+
+> [!question]- 参考答案（点击展开）
+>
+> scheduler、annotation 和 Device Plugin 负责记账、选择与注入；真正执行显存/算力限制的是容器内 `libvgpu.so` 的用户态 hook。它不是恶意工作负载不可绕过的硬件安全边界，和 MIG 的隔离强度不同。详见 [[hami-source#四、HAMi-core（libvgpu.so）：容器内的真实隔离]]。
+
+### 9. `LD_PRELOAD` 的 Linux 实现机制是什么，`RTLD_NEXT` 有什么作用？
+
+> [!question]- 参考答案（点击展开）
+>
+> 动态链接器会优先加载 `LD_PRELOAD` 指定的库，使同名符号先被解析到 hook；hook 内通过 `dlsym(RTLD_NEXT, ...)` 找到后续真实实现并在检查后转调。它只覆盖动态链接和被拦截的调用路径。详见 [[hami-source#4.1 LD_PRELOAD 拦截原理]]。
+
+### 10. PLEG 如何工作，`PLEG is not healthy` 怎么排查？
+
+> [!question]- 参考答案（点击展开）
+>
+> Generic PLEG 周期性从 CRI 获取 Pod/Container 状态并与上次快照 diff；重列举长期失败或过慢会让 kubelet 报不健康。先查 kubelet 的 PLEG relist 指标和日志，再查 CRI/runtime 响应、节点负载与卡住的容器，而不是直接重启 Pod 掩盖原因。详见 [[kubelet-cri-source#PLEG：Pod Lifecycle Event Generator]]。
+
+### 11. Evented PLEG 解决了什么？
+
+> [!question]- 参考答案（点击展开）
+>
+> 它使用 CRI 的容器事件流减少 Generic PLEG 的高频全量 relist 成本，并保留 relist 作为兜底。是否可用取决于 Kubernetes 版本、feature gate 与运行时对事件接口的支持。详见 [[kubelet-cri-source#PLEG：Pod Lifecycle Event Generator]]。
+
+### 12. CRI 的 `RunPodSandbox` 和 `CreateContainer` 谁先调用，谁创建 pause 容器？
+
+> [!question]- 参考答案（点击展开）
+>
+> kubelet 先通过 `RunPodSandbox` 让运行时建立 Pod sandbox（通常对应 pause 容器和网络命名空间），再对每个业务容器调用 `CreateContainer` / `StartContainer`。pause/sandbox 由 CRI runtime 创建，不是 kubelet 直接 fork。详见 [[kubelet-cri-source#Sandbox / pause 容器模型]]。
+
+### 13. 四个 CSI sidecar 各自连接哪个 CSI RPC？
+
+> [!question]- 参考答案（点击展开）
+>
+> 常见映射是 external-provisioner 调 `CreateVolume` / `DeleteVolume`，external-attacher 调 `ControllerPublishVolume` / `ControllerUnpublishVolume`，external-resizer 调 `ControllerExpandVolume`，external-snapshotter 调 `CreateSnapshot` / `DeleteSnapshot`。实际启用的 sidecar 取决于 driver 是否声明对应 CSI capability。详见 [[csi-sidecars]]、[[csi-source]]。
+
+### 14. `volumeBindingMode: WaitForFirstConsumer` 改变了什么？
+
+> [!question]- 参考答案（点击展开）
+>
+> 它将 PV 绑定或动态供给推迟到首个使用 PVC 的 Pod 已被调度时，使 provisioner 能依据目标 Node 的拓扑选卷。代价是 PVC 会在消费者出现前保持 Pending，不能把它误判为故障。详见 [[volume-lifecycle]]、[[scheduler-framework-source#8.2 用了 WaitForFirstConsumer 存储卷的 Pod]]。
+
+### 15. CSI Controller / Node service 分别部署在哪种 Pod 里？
+
+> [!question]- 参考答案（点击展开）
+>
+> Controller Service 通常与 controller sidecar 以 Deployment 或 StatefulSet 运行在控制面可达的位置；Node Service 必须在每个可挂载节点上以 DaemonSet 运行，执行 node-stage/publish 等本地操作。具体拓扑仍受存储后端和驱动实现约束。详见 [[csi-driver-component]]、[[csi-source]]。
+
+### 16. etcd Raft 的 `Ready` 循环、WAL 和 snapshot 有什么关系？
+
+> [!question]- 参考答案（点击展开）
+>
+> Raft 把待持久化的 HardState、日志和待发送消息交给 `Ready`；持久化层先将日志写入 WAL，已提交条目再 apply 到状态机。snapshot 记录某一已应用状态并允许截断旧日志，降低恢复时的回放长度。详见 [[etcd-source]]。
+
+### 17. `compact` 和 `defrag` 的差异是什么？
+
+> [!question]- 参考答案（点击展开）
+>
+> `compact` 清理旧 revision 的历史版本，缩小逻辑历史窗口并保护 watch/存储；`defrag` 重写 backend 文件以回收 compact 后仍占用的物理空间。两者时机和运维影响不同，defrag 前应评估成员和 I/O 压力。详见 [[etcd-source]]、[[etcd-component]]。
+
+### 18. 一次写请求从 API Server 到 etcd 落盘的完整路径是什么？
+
+> [!question]- 参考答案（点击展开）
+>
+> API Server 完成认证、鉴权、准入和对象校验后，经 etcd client 写入 leader；leader 将日志复制到多数 Raft 成员，持久化 WAL 后提交并 apply 到 MVCC backend，随后向 API Server 返回结果。精确时序会受线性一致读写、fsync 和网络延迟影响。详见 [[etcd-source]]、[[etcd-component]]。
+
+### 19. CNI 的 ADD / DEL 各自传哪些参数？
+
+> [!question]- 参考答案（点击展开）
+>
+> 两者都通过环境变量给出 `CNI_COMMAND`、`CNI_CONTAINERID`、`CNI_IFNAME`、`CNI_PATH` 等，并从 stdin 读取网络配置；ADD 还需可用的 `CNI_NETNS` 以创建接口。DEL 用相同身份清理，运行时应容忍容器或 netns 已消失的幂等删除场景。详见 [[cni-source]]、[[cni-plugin-component]]。
+
+### 20. Calico BGP / IPIP 与 Cilium eBPF 数据面的本质差异是什么？
+
+> [!question]- 参考答案（点击展开）
+>
+> Calico 可通过 BGP 分发 Pod CIDR 路由，跨网络时也可用 IPIP 等封装；Cilium 将转发、Service 和策略等逻辑下沉为 eBPF 程序，在内核数据路径按 map 做查找与决策。二者都可组合多种模式，比较时应限定所用封装、路由和 kube-proxy 替代配置。详见 [[calico]]、[[cilium-deep-dive]]。
 
 ---
 

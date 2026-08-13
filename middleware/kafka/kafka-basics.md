@@ -100,25 +100,46 @@ graph LR
 ### 高频问题
 
 **Q: Topic、Partition、Replica 三者是什么关系？**
-A: Topic 是消息的逻辑分类，Partition 是 Topic 的物理分片，一个 Topic 可以有多个 Partition 分布在不同 Broker 上以实现水平扩展。每个 Partition 又有多个 Replica（副本）用于高可用，副本分 Leader 和 Follower，默认读写都只走 Leader，Follower 仅从 Leader 同步数据保持冗余（新版本可通过 fetch-from-follower 让 Consumer 就近从 Follower 读，需显式配置）。
+
+> [!question]- 参考答案（点击展开）
+>
+> Topic 是消息的逻辑分类，Partition 是 Topic 的物理分片，一个 Topic 可以有多个 Partition 分布在不同 Broker 上以实现水平扩展。每个 Partition 又有多个 Replica（副本）用于高可用，副本分 Leader 和 Follower，默认读写都只走 Leader，Follower 仅从 Leader 同步数据保持冗余（新版本可通过 fetch-from-follower 让 Consumer 就近从 Follower 读，需显式配置）。
 
 **Q: Kafka 如何保证消息的消费顺序？**
-A: Kafka 只保证**分区内有序**（按 Offset 单调递增），不保证跨分区有序。要让特定消息有序，可以将 Topic 设为单 Partition（牺牲吞吐量），或者给需要有序的消息指定相同的 Message Key，让它们被路由到同一个 Partition。后者更常用，既保证局部有序又不放弃整体吞吐。
+
+> [!question]- 参考答案（点击展开）
+>
+> Kafka 只保证**分区内有序**（按 Offset 单调递增），不保证跨分区有序。要让特定消息有序，可以将 Topic 设为单 Partition（牺牲吞吐量），或者给需要有序的消息指定相同的 Message Key，让它们被路由到同一个 Partition。后者更常用，既保证局部有序又不放弃整体吞吐。
 
 **Q: Consumer Group 的作用是什么？组内消费有什么规则？**
-A: Consumer Group 用于实现消费的负载均衡和横向扩展，组内每个 Partition 只能被一个 Consumer 消费（一个 Consumer 可消费多个 Partition），因此一个 Group 内有效 Consumer 数不应超过 Partition 数，多出的 Consumer 会空闲。不同 Consumer Group 之间互不影响、各自维护 Offset，从而同一份消息可被多个业务（Group）独立消费，天然契合发布-订阅模型。
+
+> [!question]- 参考答案（点击展开）
+>
+> Consumer Group 用于实现消费的负载均衡和横向扩展，组内每个 Partition 只能被一个 Consumer 消费（一个 Consumer 可消费多个 Partition），因此一个 Group 内有效 Consumer 数不应超过 Partition 数，多出的 Consumer 会空闲。不同 Consumer Group 之间互不影响、各自维护 Offset，从而同一份消息可被多个业务（Group）独立消费，天然契合发布-订阅模型。
 
 **Q: Offset 是什么？由谁来维护？**
-A: Offset 是消息在某个 Partition 内单调递增的唯一标识，用来标记消息位置并跟踪消费进度。消费进度由 Consumer Group 维护，新版本 Kafka 默认提交到内部 Topic `__consumer_offsets`（旧版本存于 ZooKeeper）。Offset 的提交时机决定了投递语义：先提交后处理可能丢消息（at-most-once），先处理后提交可能重复消费（at-least-once）。
+
+> [!question]- 参考答案（点击展开）
+>
+> Offset 是消息在某个 Partition 内单调递增的唯一标识，用来标记消息位置并跟踪消费进度。消费进度由 Consumer Group 维护，新版本 Kafka 默认提交到内部 Topic `__consumer_offsets`（旧版本存于 ZooKeeper）。Offset 的提交时机决定了投递语义：先提交后处理可能丢消息（at-most-once），先处理后提交可能重复消费（at-least-once）。
 
 **Q: 发布-订阅模型和队列模型有什么区别？Kafka 属于哪种？**
-A: 队列模型中一条消息只被一个消费者消费；发布-订阅模型以 Topic 为载体，类似广播，一条消息可被所有订阅者收到，但**广播之后才订阅的消费者收不到历史消息**。Kafka 通过 Consumer Group 同时兼容两者：组内是队列式负载均衡，组间是发布-订阅式广播。
+
+> [!question]- 参考答案（点击展开）
+>
+> 队列模型中一条消息只被一个消费者消费；发布-订阅模型以 Topic 为载体，类似广播，一条消息可被所有订阅者收到，但**广播之后才订阅的消费者收不到历史消息**。Kafka 通过 Consumer Group 同时兼容两者：组内是队列式负载均衡，组间是发布-订阅式广播。
 
 **Q: Partition 越多越好吗？增加 Partition 有什么代价？**
-A: 不是。Partition 越多吞吐和并行度越高，但也带来代价：更多的文件句柄和内存开销、Leader 选举/故障恢复时间变长、端到端延迟可能上升，且 Partition 数只能增加不能减少。此外增加 Partition 会改变基于 Key 的哈希路由结果，可能破坏原有的顺序保证，需谨慎规划。
+
+> [!question]- 参考答案（点击展开）
+>
+> 不是。Partition 越多吞吐和并行度越高，但也带来代价：更多的文件句柄和内存开销、Leader 选举/故障恢复时间变长、端到端延迟可能上升，且 Partition 数只能增加不能减少。此外增加 Partition 会改变基于 Key 的哈希路由结果，可能破坏原有的顺序保证，需谨慎规划。
 
 **Q: Kafka 为什么能做到高吞吐？**
-A: 核心在于顺序写磁盘（append-only log，避免随机 IO）、利用 OS Page Cache、零拷贝（sendfile，减少内核态与用户态间的数据拷贝）、批量发送与压缩，以及 Partition 带来的水平并行。这些设计共同支撑了 Kafka 高吞吐、低延迟的通用流处理平台目标。
+
+> [!question]- 参考答案（点击展开）
+>
+> 核心在于顺序写磁盘（append-only log，避免随机 IO）、利用 OS Page Cache、零拷贝（sendfile，减少内核态与用户态间的数据拷贝）、批量发送与压缩，以及 Partition 带来的水平并行。这些设计共同支撑了 Kafka 高吞吐、低延迟的通用流处理平台目标。
 
 ### 面试加分点
 

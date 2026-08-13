@@ -290,20 +290,30 @@ conntrack -L | grep <cluster-ip>
 
 ### Q: kube-proxy 和 CNI 的区别？
 
-A: CNI 解决 Pod 如何获得 IP、接入网络、跨节点互通；kube-proxy 解决 Service VIP 如何转发到后端 Pod。
+> [!question]- 参考答案（点击展开）
+>
+> CNI 解决 Pod 如何获得 IP、接入网络、跨节点互通；kube-proxy 解决 Service VIP 如何转发到后端 Pod。
 
 ### Q: ClusterIP 是真实 IP 吗？
 
-A: 不是绑定在某张网卡上的真实 IP，而是由节点数据面规则识别并转发的虚拟服务地址。
+> [!question]- 参考答案（点击展开）
+>
+> 不是绑定在某张网卡上的真实 IP，而是由节点数据面规则识别并转发的虚拟服务地址。
 
 ### Q: kube-proxy 是否在流量路径上转发每个包？
 
-A: iptables/IPVS 模式下 kube-proxy 主要负责下发规则，真正转发发生在内核数据面，不是每个包都经过 kube-proxy 用户态进程。
+> [!question]- 参考答案（点击展开）
+>
+> iptables/IPVS 模式下 kube-proxy 主要负责下发规则，真正转发发生在内核数据面，不是每个包都经过 kube-proxy 用户态进程。
 
 ### Q: `externalTrafficPolicy: Local` 的作用？
 
-A: 保留客户端源 IP，并避免跨节点二次转发；代价是只有存在本地 endpoint 的节点能接收流量。
+> [!question]- 参考答案（点击展开）
+>
+> 保留客户端源 IP，并避免跨节点二次转发；代价是只有存在本地 endpoint 的节点能接收流量。
 
 ### Q: eBPF 替代 kube-proxy 后 Service 还存在吗？
 
-A: 存在。消失的是 kube-proxy 这个实现组件，Service API 和 EndpointSlice 仍然是控制面输入。
+> [!question]- 参考答案（点击展开）
+>
+> 存在。消失的是 kube-proxy 这个实现组件，Service API 和 EndpointSlice 仍然是控制面输入。

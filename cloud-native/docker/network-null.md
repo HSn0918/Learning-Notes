@@ -70,22 +70,40 @@ nsenter -t <pid> -n ip route add ...
 ### 高频问题
 
 **Q: 什么是 Docker 的 Null 网络模式？它和容器"没有网络"是一回事吗？**
-A: Null 模式 (`--net=none`) 下容器仍然拥有独立的 Network Namespace，只是 Docker 不做任何网络配置，namespace 内仅有 loopback (`lo`)，没有 `eth0`、没有 IP、没有路由。所以它不是"没有 namespace"，而是"有隔离但空白"，需要你自己把网络补上，这给了完全自定义的空间。
+
+> [!question]- 参考答案（点击展开）
+>
+> Null 模式 (`--net=none`) 下容器仍然拥有独立的 Network Namespace，只是 Docker 不做任何网络配置，namespace 内仅有 loopback (`lo`)，没有 `eth0`、没有 IP、没有路由。所以它不是"没有 namespace"，而是"有隔离但空白"，需要你自己把网络补上，这给了完全自定义的空间。
 
 **Q: Null 模式下容器还能访问外部网络吗？**
-A: 默认完全不能，因为没有 `eth0` 接口、没有 veth pair 接到任何网桥、也没有默认路由。容器内只能走 loopback 自己访问自己（如 `127.0.0.1`）。要联网必须手动创建 veth、配置 IP 和路由，否则它是一个网络上的"孤岛"。
+
+> [!question]- 参考答案（点击展开）
+>
+> 默认完全不能，因为没有 `eth0` 接口、没有 veth pair 接到任何网桥、也没有默认路由。容器内只能走 loopback 自己访问自己（如 `127.0.0.1`）。要联网必须手动创建 veth、配置 IP 和路由，否则它是一个网络上的"孤岛"。
 
 **Q: Bridge、Host、Null 三种网络模式有什么区别？**
-A: Bridge 是默认模式，容器有独立 namespace，Docker 通过 veth 接到 `docker0` 网桥并做 NAT，自动分配 IP 和路由；Host 模式容器直接共享宿主机的 Network Namespace，无隔离、性能最好但端口会冲突；Null 模式有独立 namespace 但完全不配网络。从网络可达性的隔离强度看：Null > Bridge > Host（Null 与 Bridge 都有独立 netns，但 Null 完全断网、隔离最彻底，Bridge 仍接入 `docker0`，Host 直接共享宿主机 netns）；自动化程度 Bridge（自动配） > Host（无需配） > Null（要手动配）。
+
+> [!question]- 参考答案（点击展开）
+>
+> Bridge 是默认模式，容器有独立 namespace，Docker 通过 veth 接到 `docker0` 网桥并做 NAT，自动分配 IP 和路由；Host 模式容器直接共享宿主机的 Network Namespace，无隔离、性能最好但端口会冲突；Null 模式有独立 namespace 但完全不配网络。从网络可达性的隔离强度看：Null > Bridge > Host（Null 与 Bridge 都有独立 netns，但 Null 完全断网、隔离最彻底，Bridge 仍接入 `docker0`，Host 直接共享宿主机 netns）；自动化程度 Bridge（自动配） > Host（无需配） > Null（要手动配）。
 
 **Q: Null 模式典型的使用场景有哪些？**
-A: 三类：一是安全敏感容器，彻底切断网络访问以收窄攻击面；二是需要完全自定义网络的场景，比如自己实现网络方案或对接 CNI/SDN；三是网络配置的测试和调试，从干净的空白 namespace 出发逐步搭建。Kubernetes 中 Pod 的 sandbox/pause 容器思路类似——先建空 namespace，再由 CNI 插件填充网络。
+
+> [!question]- 参考答案（点击展开）
+>
+> 三类：一是安全敏感容器，彻底切断网络访问以收窄攻击面；二是需要完全自定义网络的场景，比如自己实现网络方案或对接 CNI/SDN；三是网络配置的测试和调试，从干净的空白 namespace 出发逐步搭建。Kubernetes 中 Pod 的 sandbox/pause 容器思路类似——先建空 namespace，再由 CNI 插件填充网络。
 
 **Q: 如何给一个 Null 模式的容器手动配置网络？**
-A: 先 `docker inspect` 拿到容器的 PID，然后用 `nsenter -t <pid> -n` 进入它的 Network Namespace，依次执行 `ip link add`（创建 veth 并把一端塞进容器）、`ip addr add`（配 IP）、`ip route add`（配路由/默认网关），再在宿主机侧把另一端接到网桥并开启转发/NAT。本质就是手动复刻 Bridge 模式自动做的那套配置。
+
+> [!question]- 参考答案（点击展开）
+>
+> 先 `docker inspect` 拿到容器的 PID，然后用 `nsenter -t <pid> -n` 进入它的 Network Namespace，依次执行 `ip link add`（创建 veth 并把一端塞进容器）、`ip addr add`（配 IP）、`ip route add`（配路由/默认网关），再在宿主机侧把另一端接到网桥并开启转发/NAT。本质就是手动复刻 Bridge 模式自动做的那套配置。
 
 **Q: 为什么 `nsenter -t <pid> -n` 能进入容器的网络？它的原理是什么？**
-A: 容器隔离本质是 Linux Namespace，每个进程的 namespace 通过 `/proc/<pid>/ns/net` 暴露。`nsenter -t <pid> -n` 就是 `setns(2)` 到目标 PID 的 net namespace，之后执行的命令（如 `ip`）就运行在容器的网络视图里。所以配置容器网络不一定要 `docker exec`，在宿主机用 nsenter 操作 namespace 同样有效。
+
+> [!question]- 参考答案（点击展开）
+>
+> 容器隔离本质是 Linux Namespace，每个进程的 namespace 通过 `/proc/<pid>/ns/net` 暴露。`nsenter -t <pid> -n` 就是 `setns(2)` 到目标 PID 的 net namespace，之后执行的命令（如 `ip`）就运行在容器的网络视图里。所以配置容器网络不一定要 `docker exec`，在宿主机用 nsenter 操作 namespace 同样有效。
 
 ### 面试加分点
 

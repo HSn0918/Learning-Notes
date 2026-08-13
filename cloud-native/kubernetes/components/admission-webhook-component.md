@@ -286,20 +286,30 @@ kubectl get events -A --sort-by=.lastTimestamp
 
 ### Q: Mutating 和 Validating Webhook 区别？
 
-A: Mutating 可以修改对象，常用于默认值和注入；Validating 只能校验并允许或拒绝，常用于不变量和策略。
+> [!question]- 参考答案（点击展开）
+>
+> Mutating 可以修改对象，常用于默认值和注入；Validating 只能校验并允许或拒绝，常用于不变量和策略。
 
 ### Q: Webhook 和 Controller 怎么分工？
 
-A: Webhook 负责写入前的同步校验/改写；Controller 负责写入后的异步 reconcile，把期望状态收敛到实际状态。
+> [!question]- 参考答案（点击展开）
+>
+> Webhook 负责写入前的同步校验/改写；Controller 负责写入后的异步 reconcile，把期望状态收敛到实际状态。
 
 ### Q: `failurePolicy: Fail` 有什么风险？
 
-A: webhook 不可用时匹配资源的写请求会失败。若没有排除系统 namespace，可能导致核心组件或 webhook 自身无法恢复。
+> [!question]- 参考答案（点击展开）
+>
+> webhook 不可用时匹配资源的写请求会失败。若没有排除系统 namespace，可能导致核心组件或 webhook 自身无法恢复。
 
 ### Q: 为什么 webhook 不能依赖慢外部服务？
 
-A: 它在 apiserver 请求路径上，会直接放大写请求延迟和失败率，严重时影响整个集群控制面。
+> [!question]- 参考答案（点击展开）
+>
+> 它在 apiserver 请求路径上，会直接放大写请求延迟和失败率，严重时影响整个集群控制面。
 
 ### Q: 简单校验一定要写 webhook 吗？
 
-A: 不一定。字段级或简单表达式校验可以优先考虑 CRD schema、CEL validation 或 ValidatingAdmissionPolicy。
+> [!question]- 参考答案（点击展开）
+>
+> 不一定。字段级或简单表达式校验可以优先考虑 CRD schema、CEL validation 或 ValidatingAdmissionPolicy。

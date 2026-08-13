@@ -316,28 +316,42 @@ go tool pprof http://127.0.0.1:6060/debug/pprof/block
 
 ### Q: channel 底层结构是什么？
 
-A: channel 底层是 `hchan`，包含元素类型、缓冲区指针、缓冲区容量和计数、send/recv 环形索引、sendq/recvq 等待队列、closed 标志和 mutex。等待队列里的节点是 `sudog`，关联等待的 goroutine 和元素地址。
+> [!question]- 参考答案（点击展开）
+>
+> channel 底层是 `hchan`，包含元素类型、缓冲区指针、缓冲区容量和计数、send/recv 环形索引、sendq/recvq 等待队列、closed 标志和 mutex。等待队列里的节点是 `sudog`，关联等待的 goroutine 和元素地址。
 
 ### Q: 无缓冲 channel 和有缓冲 channel 的 send 有什么区别？
 
-A: 无缓冲 channel 必须找到 receiver 才能完成，值通常直接从 sender copy 到 receiver。缓冲 channel 如果 buffer 有空间，就 copy 到 circular buffer；buffer 满才阻塞 sender。两者如果对端已等待，都可能直接配对并唤醒对端。
+> [!question]- 参考答案（点击展开）
+>
+> 无缓冲 channel 必须找到 receiver 才能完成，值通常直接从 sender copy 到 receiver。缓冲 channel 如果 buffer 有空间，就 copy 到 circular buffer；buffer 满才阻塞 sender。两者如果对端已等待，都可能直接配对并唤醒对端。
 
 ### Q: nil channel 的行为是什么？
 
-A: 对 nil channel 的阻塞 send/recv 会永久阻塞；非阻塞 select 中 nil channel case 等价于禁用。这个特性常用于动态打开/关闭 select case。
+> [!question]- 参考答案（点击展开）
+>
+> 对 nil channel 的阻塞 send/recv 会永久阻塞；非阻塞 select 中 nil channel case 等价于禁用。这个特性常用于动态打开/关闭 select case。
 
 ### Q: close channel 后 receive/send 分别怎样？
 
-A: close 后 send 会 panic。receive 会先读完 buffer 中已有元素，之后返回元素零值且 `ok=false`。close nil channel 或重复 close 都会 panic。
+> [!question]- 参考答案（点击展开）
+>
+> close 后 send 会 panic。receive 会先读完 buffer 中已有元素，之后返回元素零值且 `ok=false`。close nil channel 或重复 close 都会 panic。
 
 ### Q: 为什么多 producer 关闭同一个 channel 容易出事故？
 
-A: close 表示“不会再有任何 sender 发送”。多 producer 下任意一个 producer 都无法单独知道其他 producer 是否还会发送，所以容易触发 send on closed channel。应该由拥有完整发送生命周期的一方统一 close。
+> [!question]- 参考答案（点击展开）
+>
+> close 表示“不会再有任何 sender 发送”。多 producer 下任意一个 producer 都无法单独知道其他 producer 是否还会发送，所以容易触发 send on closed channel。应该由拥有完整发送生命周期的一方统一 close。
 
 ### Q: channel 阻塞如何和 GMP 调度器交互？
 
-A: 阻塞 send/recv 会把当前 G 包装成 `sudog` 挂到 channel waitq，然后 `gopark`。M 继续调度其他 G。对端操作或 close 时调用 `goready` 把等待 G 放回 runnable queue。
+> [!question]- 参考答案（点击展开）
+>
+> 阻塞 send/recv 会把当前 G 包装成 `sudog` 挂到 channel waitq，然后 `gopark`。M 继续调度其他 G。对端操作或 close 时调用 `goready` 把等待 G 放回 runnable queue。
 
 ### Q: 怎么排查 channel 相关线上问题？
 
-A: 先抓 goroutine profile，按 `chan send`、`chan receive`、`select` 聚合堆栈；再结合 block profile 看阻塞时间；最后审查 channel ownership、close 责任、buffer 容量、context 退出路径。
+> [!question]- 参考答案（点击展开）
+>
+> 先抓 goroutine profile，按 `chan send`、`chan receive`、`select` 聚合堆栈；再结合 block profile 看阻塞时间；最后审查 channel ownership、close 责任、buffer 容量、context 退出路径。

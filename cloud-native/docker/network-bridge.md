@@ -155,25 +155,46 @@ sequenceDiagram
 ### 高频问题
 
 **Q: Docker 默认的网络模式是什么？它的核心组件有哪些？**
-A: 默认是 bridge 模式。Docker 在宿主机上创建一个名为 `docker0` 的 Linux bridge（默认网段 `172.17.0.0/16`，网关 `172.17.0.1`），每个容器通过一对 veth pair 接入：一端接在 `docker0` 上，另一端作为容器 namespace 内的 `eth0`。容器间通过网桥二层互通，容器访问外网和外部访问容器则依赖 iptables 做 NAT。
+
+> [!question]- 参考答案（点击展开）
+>
+> 默认是 bridge 模式。Docker 在宿主机上创建一个名为 `docker0` 的 Linux bridge（默认网段 `172.17.0.0/16`，网关 `172.17.0.1`），每个容器通过一对 veth pair 接入：一端接在 `docker0` 上，另一端作为容器 namespace 内的 `eth0`。容器间通过网桥二层互通，容器访问外网和外部访问容器则依赖 iptables 做 NAT。
 
 **Q: veth pair 是什么？在 bridge 模式里起什么作用？**
-A: veth pair 是一对成对出现的虚拟网卡，像一根虚拟网线，从一端进入的数据包必然从另一端出来。在 bridge 模式里它用来打通容器 network namespace 和宿主机：一端（如 `A`）通过 `brctl addif docker0 A` 接到网桥，另一端（如 `B`）通过 `ip link set B netns $pid` 移入容器 namespace 并改名为 `eth0`，从而让容器获得网络连通性。
+
+> [!question]- 参考答案（点击展开）
+>
+> veth pair 是一对成对出现的虚拟网卡，像一根虚拟网线，从一端进入的数据包必然从另一端出来。在 bridge 模式里它用来打通容器 network namespace 和宿主机：一端（如 `A`）通过 `brctl addif docker0 A` 接到网桥，另一端（如 `B`）通过 `ip link set B netns $pid` 移入容器 namespace 并改名为 `eth0`，从而让容器获得网络连通性。
 
 **Q: 容器访问外网和外部访问容器端口，分别依赖什么机制？**
-A: 容器访问外网依赖 SNAT（MASQUERADE）：`POSTROUTING` 链上对源地址 `172.17.0.0/16` 且出口不是 `docker0` 的包做源地址转换，伪装成宿主机出口网卡 IP 出去。外部访问容器映射端口（如 `docker run -p 2333:22`）依赖 DNAT：在 `DOCKER` 链对从非 `docker0` 网卡进入、目的为宿主机 `2333` 端口的包做目标地址转换到 `172.17.0.2:22`，把流量转给容器。
+
+> [!question]- 参考答案（点击展开）
+>
+> 容器访问外网依赖 SNAT（MASQUERADE）：`POSTROUTING` 链上对源地址 `172.17.0.0/16` 且出口不是 `docker0` 的包做源地址转换，伪装成宿主机出口网卡 IP 出去。外部访问容器映射端口（如 `docker run -p 2333:22`）依赖 DNAT：在 `DOCKER` 链对从非 `docker0` 网卡进入、目的为宿主机 `2333` 端口的包做目标地址转换到 `172.17.0.2:22`，把流量转给容器。
 
 **Q: 容器的 IP 是私有的且会变化，为什么外部还能稳定访问到容器服务？**
-A: 容器 IP（如 `172.17.0.x`）只在 `docker0` 网段内可见，宿主机外不可路由。外部访问的是宿主机 IP + 映射端口，由 iptables DNAT 规则转换到容器内部 IP 和端口。因此即使容器重启换了 IP，只要端口映射规则随之更新，外部访问的宿主机端口保持不变即可。
+
+> [!question]- 参考答案（点击展开）
+>
+> 容器 IP（如 `172.17.0.x`）只在 `docker0` 网段内可见，宿主机外不可路由。外部访问的是宿主机 IP + 映射端口，由 iptables DNAT 规则转换到容器内部 IP 和端口。因此即使容器重启换了 IP，只要端口映射规则随之更新，外部访问的宿主机端口保持不变即可。
 
 **Q: 同一台主机上两个 bridge 容器是怎么通信的？跨主机呢？**
-A: 同主机两个容器都接在 `docker0` 上，属于同一二层网络，通过网桥直接转发即可互通（彼此可见对方的 `172.17.0.x` 地址）。但默认 `docker0` 网段是主机本地的，跨主机时不同主机各自的 `172.17.0.0/16` 互相冲突且不可路由，所以原生 bridge 不能跨主机通信，需要 overlay 网络（VXLAN 封装）或 CNI 插件来解决。
+
+> [!question]- 参考答案（点击展开）
+>
+> 同主机两个容器都接在 `docker0` 上，属于同一二层网络，通过网桥直接转发即可互通（彼此可见对方的 `172.17.0.x` 地址）。但默认 `docker0` 网段是主机本地的，跨主机时不同主机各自的 `172.17.0.0/16` 互相冲突且不可路由，所以原生 bridge 不能跨主机通信，需要 overlay 网络（VXLAN 封装）或 CNI 插件来解决。
 
 **Q: 简述手动给一个 `--network=none` 容器配置 bridge 网络的关键步骤。**
-A: 先用 `ln -s /proc/$pid/ns/net /var/run/netns/$pid` 把容器的 net namespace 暴露给 `ip netns`；接着 `ip link add A type veth peer name B` 创建 veth pair；A 端 `brctl addif docker0 A` 接网桥并 `up`；B 端 `ip link set B netns $pid` 移入容器、改名 `eth0`、`up`、配置同网段 IP（如 `172.17.0.10/16`）；最后 `ip route add default via 172.17.0.1` 配默认网关指向 `docker0`，即可连通。
+
+> [!question]- 参考答案（点击展开）
+>
+> 先用 `ln -s /proc/$pid/ns/net /var/run/netns/$pid` 把容器的 net namespace 暴露给 `ip netns`；接着 `ip link add A type veth peer name B` 创建 veth pair；A 端 `brctl addif docker0 A` 接网桥并 `up`；B 端 `ip link set B netns $pid` 移入容器、改名 `eth0`、`up`、配置同网段 IP（如 `172.17.0.10/16`）；最后 `ip route add default via 172.17.0.1` 配默认网关指向 `docker0`，即可连通。
 
 **Q: bridge 模式相比 host 模式有什么取舍？**
-A: bridge 模式有独立的 network namespace，端口隔离、可做端口映射、安全性好，但多了一层 NAT 和 veth 转发，性能略有损耗、端口需显式映射。host 模式容器直接复用宿主机网络栈，没有 NAT 开销、性能最好，但失去网络隔离、端口直接占用宿主机端口、易冲突。高吞吐低延迟场景可考虑 host，需要隔离和端口编排时用 bridge。
+
+> [!question]- 参考答案（点击展开）
+>
+> bridge 模式有独立的 network namespace，端口隔离、可做端口映射、安全性好，但多了一层 NAT 和 veth 转发，性能略有损耗、端口需显式映射。host 模式容器直接复用宿主机网络栈，没有 NAT 开销、性能最好，但失去网络隔离、端口直接占用宿主机端口、易冲突。高吞吐低延迟场景可考虑 host，需要隔离和端口编排时用 bridge。
 
 ### 面试加分点
 

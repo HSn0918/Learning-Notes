@@ -330,20 +330,30 @@ ctr -n k8s.io tasks list
 
 ### Q: CRI 和 OCI 的区别？
 
-A: CRI 是 kubelet 到容器运行时的 Kubernetes 接口；OCI 是底层运行时创建容器进程和镜像格式的标准。containerd/CRI-O 实现 CRI，再调用 runc/crun 这类 OCI runtime。
+> [!question]- 参考答案（点击展开）
+>
+> CRI 是 kubelet 到容器运行时的 Kubernetes 接口；OCI 是底层运行时创建容器进程和镜像格式的标准。containerd/CRI-O 实现 CRI，再调用 runc/crun 这类 OCI runtime。
 
 ### Q: pause 容器有什么用？
 
-A: pause 容器持有 Pod 级别共享 namespace，尤其是 network namespace。业务容器加入这个 sandbox，从而共享 Pod IP 和网络栈。
+> [!question]- 参考答案（点击展开）
+>
+> pause 容器持有 Pod 级别共享 namespace，尤其是 network namespace。业务容器加入这个 sandbox，从而共享 Pod IP 和网络栈。
 
 ### Q: kubelet 创建 Pod 时先创建 sandbox 还是业务容器？
 
-A: 先 `RunPodSandbox` 创建 sandbox 并配置网络，再拉镜像、创建和启动业务容器。
+> [!question]- 参考答案（点击展开）
+>
+> 先 `RunPodSandbox` 创建 sandbox 并配置网络，再拉镜像、创建和启动业务容器。
 
 ### Q: containerd shim 的作用是什么？
 
-A: shim 作为容器进程的父进程和管理代理，使 containerd 重启时容器不必跟着退出，并负责 IO、exit status 等管理。
+> [!question]- 参考答案（点击展开）
+>
+> shim 作为容器进程的父进程和管理代理，使 containerd 重启时容器不必跟着退出，并负责 IO、exit status 等管理。
 
 ### Q: dockershim 移除意味着不能用 Docker 镜像了吗？
 
-A: 不是。Docker 镜像遵循 OCI/Docker image 格式，containerd/CRI-O 仍然可以拉取和运行。移除的是 kubelet 内置 Docker Engine 适配层。
+> [!question]- 参考答案（点击展开）
+>
+> 不是。Docker 镜像遵循 OCI/Docker image 格式，containerd/CRI-O 仍然可以拉取和运行。移除的是 kubelet 内置 Docker Engine 适配层。

@@ -113,25 +113,46 @@ max.poll.records=1000
 ### 高频问题
 
 **Q: `acks` 有哪几种取值？分别意味着什么？**
-A: `acks=0` 表示 Producer 不等待任何确认，吞吐最高但可能丢消息；`acks=1` 表示 Leader 写入本地日志即返回，Leader 宕机且副本未同步时会丢数据；`acks=all`（即 `-1`）表示等待所有 ISR 副本确认，可靠性最高。高可靠场景必须配 `acks=all`，高吞吐/日志采集可用 `acks=1`。
+
+> [!question]- 参考答案（点击展开）
+>
+> `acks=0` 表示 Producer 不等待任何确认，吞吐最高但可能丢消息；`acks=1` 表示 Leader 写入本地日志即返回，Leader 宕机且副本未同步时会丢数据；`acks=all`（即 `-1`）表示等待所有 ISR 副本确认，可靠性最高。高可靠场景必须配 `acks=all`，高吞吐/日志采集可用 `acks=1`。
 
 **Q: `acks=all` 是不是就一定不丢消息了？**
-A: 不一定，必须配合 `min.insync.replicas` 一起用。`acks=all` 只等待当前 ISR 中的副本确认，如果 ISR 收缩到只剩 Leader 一个，`acks=all` 就退化成 `acks=1`。所以高可靠场景要设 `min.insync.replicas>=2` 且 `replication.factor>=3`，保证消息至少落到 2 个副本，且还能容忍 1 个 Broker 宕机仍可写。注意：当存活同步副本数低于 `min.insync.replicas` 时，Producer 会直接收到 `NotEnoughReplicas` 异常而非静默丢数据。
+
+> [!question]- 参考答案（点击展开）
+>
+> 不一定，必须配合 `min.insync.replicas` 一起用。`acks=all` 只等待当前 ISR 中的副本确认，如果 ISR 收缩到只剩 Leader 一个，`acks=all` 就退化成 `acks=1`。所以高可靠场景要设 `min.insync.replicas>=2` 且 `replication.factor>=3`，保证消息至少落到 2 个副本，且还能容忍 1 个 Broker 宕机仍可写。注意：当存活同步副本数低于 `min.insync.replicas` 时，Producer 会直接收到 `NotEnoughReplicas` 异常而非静默丢数据。
 
 **Q: `replication.factor` 和 `min.insync.replicas` 为什么推荐 3 和 2，而不是 3 和 3？**
-A: `min.insync.replicas` 是写入成功需要的最小同步副本数。若设为 3（等于副本数），任何一个 Broker 宕机都会导致 ISR 不足而无法写入，可用性差。设为 2 时，既保证消息至少落到 2 个副本（容忍 1 个副本丢失不丢数据），又允许 1 个 Broker 故障仍能正常生产，是可靠性与可用性的平衡点。
+
+> [!question]- 参考答案（点击展开）
+>
+> `min.insync.replicas` 是写入成功需要的最小同步副本数。若设为 3（等于副本数），任何一个 Broker 宕机都会导致 ISR 不足而无法写入，可用性差。设为 2 时，既保证消息至少落到 2 个副本（容忍 1 个副本丢失不丢数据），又允许 1 个 Broker 故障仍能正常生产，是可靠性与可用性的平衡点。
 
 **Q: `batch.size` 和 `linger.ms` 是怎么配合工作的？**
-A: Producer 按 Partition 把消息攒成 batch 发送。`batch.size` 是单个 batch 的字节上限（默认 16384），`linger.ms` 是 batch 未满时的最大等待时间。两者满足其一即触发发送。增大它们能提升吞吐、提高压缩率，但增加延迟；低延迟场景应设 `linger.ms=0`。注意 `batch.size` 是字节而非条数。
+
+> [!question]- 参考答案（点击展开）
+>
+> Producer 按 Partition 把消息攒成 batch 发送。`batch.size` 是单个 batch 的字节上限（默认 16384），`linger.ms` 是 batch 未满时的最大等待时间。两者满足其一即触发发送。增大它们能提升吞吐、提高压缩率，但增加延迟；低延迟场景应设 `linger.ms=0`。注意 `batch.size` 是字节而非条数。
 
 **Q: 如何保证消息不丢失且不乱序？**
-A: 不丢需要三端配合：Producer 端 `acks=all` + `retries` 大值 + `enable.idempotence=true`；Broker 端 `replication.factor>=3` + `min.insync.replicas>=2` + `unclean.leader.election.enable=false`；Consumer 端 `enable.auto.commit=false` 手动提交 offset。不乱序则需控制 `max.in.flight.requests.per.connection`——开启幂等后该值 `<=5` 时 Kafka 仍能保证单分区有序（未开幂等时则需设为 `1`）。
+
+> [!question]- 参考答案（点击展开）
+>
+> 不丢需要三端配合：Producer 端 `acks=all` + `retries` 大值 + `enable.idempotence=true`；Broker 端 `replication.factor>=3` + `min.insync.replicas>=2` + `unclean.leader.election.enable=false`；Consumer 端 `enable.auto.commit=false` 手动提交 offset。不乱序则需控制 `max.in.flight.requests.per.connection`——开启幂等后该值 `<=5` 时 Kafka 仍能保证单分区有序（未开幂等时则需设为 `1`）。
 
 **Q: `unclean.leader.election.enable=true` 会带来什么风险？**
-A: 它允许不在 ISR 中的、落后的副本被选为新 Leader。这样能在所有 ISR 副本都宕机时恢复可用性，但落后副本缺失的那部分消息会永久丢失，相当于牺牲一致性换可用性。生产环境一般设为 `false`，宁可短暂不可用也不丢数据。
+
+> [!question]- 参考答案（点击展开）
+>
+> 它允许不在 ISR 中的、落后的副本被选为新 Leader。这样能在所有 ISR 副本都宕机时恢复可用性，但落后副本缺失的那部分消息会永久丢失，相当于牺牲一致性换可用性。生产环境一般设为 `false`，宁可短暂不可用也不丢数据。
 
 **Q: Consumer 为什么要关闭 `enable.auto.commit`？`max.poll.interval.ms` 又是干什么的？**
-A: 自动提交按固定周期（`auto.commit.interval.ms`，在 `poll()` 中触发）提交 offset，可能在消息真正处理完前就提交，导致消费者崩溃重启后这批消息被跳过（漏处理）。关闭后手动提交可保证「处理完再提交」。`max.poll.interval.ms`（默认 300000ms/5 分钟）是两次 `poll()` 的最大间隔，单批消息处理太慢超过该值会被判定为消费者失活，触发 rebalance，所以处理慢时要调大它或减小 `max.poll.records`。
+
+> [!question]- 参考答案（点击展开）
+>
+> 自动提交按固定周期（`auto.commit.interval.ms`，在 `poll()` 中触发）提交 offset，可能在消息真正处理完前就提交，导致消费者崩溃重启后这批消息被跳过（漏处理）。关闭后手动提交可保证「处理完再提交」。`max.poll.interval.ms`（默认 300000ms/5 分钟）是两次 `poll()` 的最大间隔，单批消息处理太慢超过该值会被判定为消费者失活，触发 rebalance，所以处理慢时要调大它或减小 `max.poll.records`。
 
 ### 面试加分点
 

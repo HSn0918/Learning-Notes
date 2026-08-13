@@ -179,19 +179,37 @@ args:
 ## 八、面试要点
 
 **Q1：CSI driver 怎么注册到 kubelet？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 通过 node-driver-registrar sidecar。它在 `/var/lib/kubelet/plugins_registry/<driver>-reg.sock` 起一个注册 socket；kubelet 用 fsnotify 监听这个目录，发现新 socket 后调 `ValidatePlugin` + `RegisterPlugin` + driver 的 `NodeGetInfo`，最终把驱动信息写到 Node annotation + CSINode 对象。这套机制对应 `pkg/volume/csi/csi_plugin.go` 里的 `RegistrationHandler`。
 
 **Q2：为什么 driver Pod 必须 privileged + Bidirectional mount propagation？**
+
+> [!question]- 参考答案（点击展开）
+>
 > bind mount 系统调用需要 `CAP_SYS_ADMIN`，所以 driver 容器必须 privileged 或显式 add SYS_ADMIN。`Bidirectional` 让 driver 在容器 mount namespace 里做的 mount 反向传播到 host，这样 kubelet（运行在 host namespace）和最终的 Pod 容器才能看到那个挂载——否则 driver 报成功但 Pod 里看不到文件。
 
 **Q3：CreateVolume 重试时怎么不创建出多个卷？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 靠插件作者保证幂等。external-provisioner 用 PVC UID 算出稳定的 `req.Name`，重试都带同一个 name。driver 实现 `CreateVolume` 时必须按 name 在后端做查重——hostPath 用 `sha1(name)` 算固定 id 是最简手段；EBS 用 EC2 tag `kubernetes.io/csi/volume-name=<name>` 查重。如果不做幂等，sidecar 偶尔重试一次就会泄漏孤儿卷。
 
 **Q4：本 demo 和 csi-driver-host-path 主要差在哪？**
+
+> [!question]- 参考答案（点击展开）
+>
 > csi-driver-host-path 多做了：(1) 完整实现 NodeStageVolume / NodeUnstageVolume，支持 STAGE_UNSTAGE_VOLUME capability；(2) 实现 CreateSnapshot / DeleteSnapshot 接入 external-snapshotter；(3) ControllerExpandVolume 支持扩容；(4) 真正的容量管理（按 dataRoot 剩余空间 reject 创建）；(5) 完整的 gRPC 错误码区分（Aborted / FailedPrecondition / DeadlineExceeded）；(6) 用 `mount-utils` 严格判断 mount point 状态。本 demo 把这些全部省略，只留最小可运行链路。
 
 **Q5：driver 在节点上没卸载干净会发生什么？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 节点上的 mount 残留 + 卷源数据残留。kubelet 在 Pod 删除时会调 NodeUnpublishVolume，driver 里没正确 unmount 的话，那个 targetPath 会一直挂着，主机的 `/var/lib/kubelet/pods/<uid>/...` 不能被回收，Node 上会有"幽灵挂载"。常见排查手段：`cat /proc/mounts | grep csi`，找到残留点 `umount -l` 强卸。生产驱动会用 mount-utils 做幂等清理 + 在 driver 启动时扫一次孤儿挂载点。
 
 **Q6：CSIDriver.spec.attachRequired 决定了什么？**
+
+> [!question]- 参考答案（点击展开）
+>
 > 决定 K8s 要不要走 attach 阶段。`true`：AD Controller 会创建 VolumeAttachment 对象，external-attacher 调 driver 的 ControllerPublishVolume；`false`：直接跳过 attach，kubelet 看到 PV 后立刻进入 NodeStage/NodePublish。hostPath 驱动设 false 因为没有远端块设备可 attach；EBS / RBD 设 true，否则 driver 收不到 attach 通知，挂载会失败。

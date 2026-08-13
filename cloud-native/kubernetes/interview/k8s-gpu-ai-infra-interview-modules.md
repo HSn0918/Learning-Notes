@@ -92,9 +92,9 @@ mindmap
 
 ### Q1：为什么用 Operator，而不是普通后端服务？
 
-**参考答案**：
-
-当业务对象有明确生命周期，并且需要和 Kubernetes 资源持续对齐时，Operator 更合适。CRD 负责表达期望状态，Controller 通过 reconcile 循环把实际状态推进到期望状态。相比普通服务，Operator 复用了 Kubernetes 的 API、watch、cache、事件、状态更新和 RBAC 模型，更适合异步、长流程、最终一致的控制面系统。
+> [!question]- 参考答案（点击展开）
+>
+> 当业务对象有明确生命周期，并且需要和 Kubernetes 资源持续对齐时，Operator 更合适。CRD 负责表达期望状态，Controller 通过 reconcile 循环把实际状态推进到期望状态。相比普通服务，Operator 复用了 Kubernetes 的 API、watch、cache、事件、状态更新和 RBAC 模型，更适合异步、长流程、最终一致的控制面系统。
 
 **设计延伸**：
 
@@ -105,9 +105,9 @@ mindmap
 
 ### Q2：CRD 的 `spec/status/conditions` 应该怎么设计？
 
-**参考答案**：
-
-`spec` 表达用户想要什么，`status` 表达系统已经做到什么，`conditions` 表达系统为什么处于当前状态。对于调度类任务，`spec` 应包含资源需求、优先级、运行时长、截止时间和 workload 引用；`status` 应包含 phase、已分配资源、调度结果、最近更新时间；`conditions` 用来表达 `Scheduled`、`Running`、`Failed`、`ResourceAvailable` 等可观测状态。
+> [!question]- 参考答案（点击展开）
+>
+> `spec` 表达用户想要什么，`status` 表达系统已经做到什么，`conditions` 表达系统为什么处于当前状态。对于调度类任务，`spec` 应包含资源需求、优先级、运行时长、截止时间和 workload 引用；`status` 应包含 phase、已分配资源、调度结果、最近更新时间；`conditions` 用来表达 `Scheduled`、`Running`、`Failed`、`ResourceAvailable` 等可观测状态。
 
 **设计延伸**：
 
@@ -138,9 +138,9 @@ status:
 
 ### Q3：Informer cache 和全量 list 有什么区别？
 
-**参考答案**：
-
-全量 list 每次都向 API Server 拉取对象，规模变大后会增加 API Server 和 etcd 压力。Informer 的模式是先 list 建立本地快照，再通过 watch 增量更新本地 cache。controller 调度或计算视图时优先读 cache，关键写入仍走 API Server。这样可以降低读压力，也能通过 indexer 构建面向调度的本地索引。
+> [!question]- 参考答案（点击展开）
+>
+> 全量 list 每次都向 API Server 拉取对象，规模变大后会增加 API Server 和 etcd 压力。Informer 的模式是先 list 建立本地快照，再通过 watch 增量更新本地 cache。controller 调度或计算视图时优先读 cache，关键写入仍走 API Server。这样可以降低读压力，也能通过 indexer 构建面向调度的本地索引。
 
 **设计延伸**：
 
@@ -150,9 +150,9 @@ status:
 
 ### Q4：`resourceVersion` 和乐观锁是什么关系？
 
-**参考答案**：
-
-`resourceVersion` 是 Kubernetes 对象的版本标识。更新对象时，如果带着旧版本提交，而对象已被其他 controller 或用户更新，API Server 会返回 conflict。这和乐观锁语义一致：先读取版本，基于版本计算变更，提交时校验版本是否仍然有效。
+> [!question]- 参考答案（点击展开）
+>
+> `resourceVersion` 是 Kubernetes 对象的版本标识。更新对象时，如果带着旧版本提交，而对象已被其他 controller 或用户更新，API Server 会返回 conflict。这和乐观锁语义一致：先读取版本，基于版本计算变更，提交时校验版本是否仍然有效。
 
 **设计延伸**：
 
@@ -162,9 +162,9 @@ status:
 
 ### Q5：workqueue 里的 retry、backoff、Forget 怎么理解？
 
-**参考答案**：
-
-workqueue 用 key 去重，并通过 rate limiter 控制失败重试。处理成功后要清理失败历史；失败时根据错误类型决定是否重新入队。`Forget` 的语义是清理该 key 的失败计数，否则后续重试退避可能异常。controller-runtime 封装了细节，但设计上仍要区分成功、可重试失败和不可重试失败。
+> [!question]- 参考答案（点击展开）
+>
+> workqueue 用 key 去重，并通过 rate limiter 控制失败重试。处理成功后要清理失败历史；失败时根据错误类型决定是否重新入队。`Forget` 的语义是清理该 key 的失败计数，否则后续重试退避可能异常。controller-runtime 封装了细节，但设计上仍要区分成功、可重试失败和不可重试失败。
 
 **设计延伸**：
 
@@ -189,9 +189,9 @@ workqueue 用 key 去重，并通过 rate limiter 控制失败重试。处理成
 
 ### Q1：如何设计一个 GPU 离线任务调度系统？
 
-**参考答案**：
-
-可以分成四层：API 层用 CRD 接收任务；资源视图层维护节点和 GPU 的可用状态；调度层根据需求做过滤和打分；执行层把调度结果转成下游平台或 K8s 资源操作。系统应采用状态机驱动，每一步结果写入 status，通过 reconcile 保证最终收敛。
+> [!question]- 参考答案（点击展开）
+>
+> 可以分成四层：API 层用 CRD 接收任务；资源视图层维护节点和 GPU 的可用状态；调度层根据需求做过滤和打分；执行层把调度结果转成下游平台或 K8s 资源操作。系统应采用状态机驱动，每一步结果写入 status，通过 reconcile 保证最终收敛。
 
 **设计延伸**：
 
@@ -209,9 +209,9 @@ flowchart LR
 
 ### Q2：资源池视图如何构建？
 
-**参考答案**：
-
-资源池视图可以由节点侧 agent 或 device plugin 上报，也可以由 controller 从已有 Node、Pod、Device CRD 中汇聚。每条资源记录要包含节点、设备 ID、卡型、健康状态、占用状态和最后更新时间。调度时要过滤过期心跳，并对候选资源做预留或二次确认，避免使用陈旧视图。
+> [!question]- 参考答案（点击展开）
+>
+> 资源池视图可以由节点侧 agent 或 device plugin 上报，也可以由 controller 从已有 Node、Pod、Device CRD 中汇聚。每条资源记录要包含节点、设备 ID、卡型、健康状态、占用状态和最后更新时间。调度时要过滤过期心跳，并对候选资源做预留或二次确认，避免使用陈旧视图。
 
 **设计延伸**：
 
@@ -224,9 +224,9 @@ flowchart LR
 
 ### Q3：如何避免多个任务调度到同一张 GPU？
 
-**参考答案**：
-
-不能只依赖内存里的资源池视图。更稳妥的方式是显式建模资源预留，例如 `GPUAllocation` 或 lease 对象。调度器选择资源后，用 resourceVersion 做乐观更新，更新成功才算预留成功；更新失败说明资源被其他任务抢占，需要重新调度。
+> [!question]- 参考答案（点击展开）
+>
+> 不能只依赖内存里的资源池视图。更稳妥的方式是显式建模资源预留，例如 `GPUAllocation` 或 lease 对象。调度器选择资源后，用 resourceVersion 做乐观更新，更新成功才算预留成功；更新失败说明资源被其他任务抢占，需要重新调度。
 
 **设计延伸**：
 
@@ -236,9 +236,9 @@ flowchart LR
 
 ### Q4：best-effort 调度如何设计才不等于“随缘”？
 
-**参考答案**：
-
-best-effort 的含义是不保证立即成功，但要保证状态可观测、可重试、可收敛。系统需要明确每个任务状态：等待资源、已预留、执行中、运行中、完成、失败。失败要区分可重试和不可重试，并写入 condition。这样用户知道任务是继续等待、已经失败，还是需要人工处理。
+> [!question]- 参考答案（点击展开）
+>
+> best-effort 的含义是不保证立即成功，但要保证状态可观测、可重试、可收敛。系统需要明确每个任务状态：等待资源、已预留、执行中、运行中、完成、失败。失败要区分可重试和不可重试，并写入 condition。这样用户知道任务是继续等待、已经失败，还是需要人工处理。
 
 **设计延伸**：
 
@@ -253,9 +253,9 @@ best-effort 的含义是不保证立即成功，但要保证状态可观测、�
 
 ### Q5：调度策略用 binpack 还是 spread？
 
-**参考答案**：
-
-取决于目标。binpack 倾向把任务压到少量节点上，有利于释放整机或整卡资源；spread 倾向分散负载，有利于降低热点和故障影响。GPU 离线任务如果目标是回收碎片并提高利用率，通常先考虑 binpack；如果任务对稳定性敏感或会引入显著 IO/网络压力，则需要引入 spread 或打散约束。
+> [!question]- 参考答案（点击展开）
+>
+> 取决于目标。binpack 倾向把任务压到少量节点上，有利于释放整机或整卡资源；spread 倾向分散负载，有利于降低热点和故障影响。GPU 离线任务如果目标是回收碎片并提高利用率，通常先考虑 binpack；如果任务对稳定性敏感或会引入显著 IO/网络压力，则需要引入 spread 或打散约束。
 
 **设计延伸**：
 
@@ -278,9 +278,9 @@ best-effort 的含义是不保证立即成功，但要保证状态可观测、�
 
 ### Q1：Device Plugin 如何把 GPU 接入 K8s？
 
-**参考答案**：
-
-Device Plugin 在每个 GPU 节点上运行，向 kubelet 注册资源名，然后通过 `ListAndWatch` 持续上报设备列表和健康状态。Pod 请求对应扩展资源后，kubelet 在创建容器前调用 plugin 的 `Allocate`，plugin 返回设备路径、环境变量、mount、CDI 等信息，最终让容器能访问对应 GPU。
+> [!question]- 参考答案（点击展开）
+>
+> Device Plugin 在每个 GPU 节点上运行，向 kubelet 注册资源名，然后通过 `ListAndWatch` 持续上报设备列表和健康状态。Pod 请求对应扩展资源后，kubelet 在创建容器前调用 plugin 的 `Allocate`，plugin 返回设备路径、环境变量、mount、CDI 等信息，最终让容器能访问对应 GPU。
 
 **设计延伸**：
 
@@ -291,9 +291,9 @@ Device Plugin 在每个 GPU 节点上运行，向 kubelet 注册资源名，然�
 
 ### Q2：GPU 型号放资源名、label 还是 annotation？
 
-**参考答案**：
-
-如果卡型是 Pod 申请资源的一部分，应该体现在扩展资源名里，例如 `nvidia.com/a100`。如果卡型用于调度选择，可以放 Node label，例如 `gpu.model=A100`。annotation 更适合描述性信息或辅助查询，不适合作为强调度约束。
+> [!question]- 参考答案（点击展开）
+>
+> 如果卡型是 Pod 申请资源的一部分，应该体现在扩展资源名里，例如 `nvidia.com/a100`。如果卡型用于调度选择，可以放 Node label，例如 `gpu.model=A100`。annotation 更适合描述性信息或辅助查询，不适合作为强调度约束。
 
 **设计延伸**：
 
@@ -305,9 +305,9 @@ Device Plugin 在每个 GPU 节点上运行，向 kubelet 注册资源名，然�
 
 ### Q3：MIG、时间片、HAMi 的差异是什么？
 
-**参考答案**：
-
-MIG 是硬件级切分，隔离强、性能稳定，但粒度固定且依赖特定 NVIDIA GPU。时间片共享是软件调度层面的复用，灵活但隔离弱。HAMi 这类方案通过 device-plugin、scheduler-extender、webhook 和 CUDA API 拦截实现显存和算力限制，粒度更细，但要关注兼容性、绕过风险和性能抖动。
+> [!question]- 参考答案（点击展开）
+>
+> MIG 是硬件级切分，隔离强、性能稳定，但粒度固定且依赖特定 NVIDIA GPU。时间片共享是软件调度层面的复用，灵活但隔离弱。HAMi 这类方案通过 device-plugin、scheduler-extender、webhook 和 CUDA API 拦截实现显存和算力限制，粒度更细，但要关注兼容性、绕过风险和性能抖动。
 
 **设计延伸**：
 
@@ -319,9 +319,9 @@ MIG 是硬件级切分，隔离强、性能稳定，但粒度固定且依赖特�
 
 ### Q4：GPU 分时调度和 GPU 虚拟化是什么关系？
 
-**参考答案**：
-
-GPU 分时调度解决的是“什么时候、把哪些 GPU 资源给哪些任务使用”，重点在峰谷复用和资源编排。GPU 虚拟化解决的是“单张 GPU 如何被多个任务共享”，重点在隔离、限额和运行时控制。两者可以结合，但不是同一个问题。
+> [!question]- 参考答案（点击展开）
+>
+> GPU 分时调度解决的是“什么时候、把哪些 GPU 资源给哪些任务使用”，重点在峰谷复用和资源编排。GPU 虚拟化解决的是“单张 GPU 如何被多个任务共享”，重点在隔离、限额和运行时控制。两者可以结合，但不是同一个问题。
 
 **设计延伸**：
 
@@ -344,9 +344,9 @@ GPU 分时调度解决的是“什么时候、把哪些 GPU 资源给哪些任�
 
 ### Q1：外部执行失败为什么不能简单不重试？
 
-**参考答案**：
-
-外部执行失败要先分类。参数错误、资源不存在属于不可重试错误，应写入终态 condition；网络超时、下游限流、服务临时不可用属于可重试错误，应带退避重试。如果完全不重试，系统很容易卡在中间状态；如果盲目重试，又可能重复执行。因此外部调用必须带幂等 key。
+> [!question]- 参考答案（点击展开）
+>
+> 外部执行失败要先分类。参数错误、资源不存在属于不可重试错误，应写入终态 condition；网络超时、下游限流、服务临时不可用属于可重试错误，应带退避重试。如果完全不重试，系统很容易卡在中间状态；如果盲目重试，又可能重复执行。因此外部调用必须带幂等 key。
 
 **设计延伸**：
 
@@ -360,9 +360,9 @@ validate request
 
 ### Q2：执行到一半失败怎么处理？
 
-**参考答案**：
-
-这类系统通常不能做强事务，要通过状态机和补偿实现最终一致。每个外部动作都要能查询状态，并能重复提交或撤销。比如资源已腾挪但任务提交失败，就需要触发资源归还；任务已启动但 status 更新失败，则只需要重试 status 更新。
+> [!question]- 参考答案（点击展开）
+>
+> 这类系统通常不能做强事务，要通过状态机和补偿实现最终一致。每个外部动作都要能查询状态，并能重复提交或撤销。比如资源已腾挪但任务提交失败，就需要触发资源归还；任务已启动但 status 更新失败，则只需要重试 status 更新。
 
 **设计延伸**：
 
@@ -375,9 +375,9 @@ validate request
 
 ### Q3：状态如何对用户可观测？
 
-**参考答案**：
-
-CRD status 应包含 phase、conditions、最近一次调度时间、失败 reason 和 message。Controller 还应该打 Kubernetes event，暴露关键 metrics，例如调度成功率、重试次数、资源池过期节点数、外部 API 延迟。这样用户和平台都能判断系统是在等待、失败还是持续重试。
+> [!question]- 参考答案（点击展开）
+>
+> CRD status 应包含 phase、conditions、最近一次调度时间、失败 reason 和 message。Controller 还应该打 Kubernetes event，暴露关键 metrics，例如调度成功率、重试次数、资源池过期节点数、外部 API 延迟。这样用户和平台都能判断系统是在等待、失败还是持续重试。
 
 **设计延伸**：
 
@@ -401,9 +401,9 @@ CRD status 应包含 phase、conditions、最近一次调度时间、失败 reas
 
 ### Q1：kubectl 创建 Pod 的完整流程是什么？
 
-**参考答案**：
-
-kubectl 请求到 API Server，经过认证、鉴权、准入后写入 etcd。Scheduler watch 到未绑定节点的 Pod 后，执行过滤、打分并绑定节点。目标节点 kubelet watch 到分配给自己的 Pod，调用 CRI 创建 sandbox 和容器，同时触发 CNI 配网、CSI 挂载，最后回写 Pod status。
+> [!question]- 参考答案（点击展开）
+>
+> kubectl 请求到 API Server，经过认证、鉴权、准入后写入 etcd。Scheduler watch 到未绑定节点的 Pod 后，执行过滤、打分并绑定节点。目标节点 kubelet watch 到分配给自己的 Pod，调用 CRI 创建 sandbox 和容器，同时触发 CNI 配网、CSI 挂载，最后回写 Pod status。
 
 **设计延伸**：
 
@@ -428,9 +428,9 @@ sequenceDiagram
 
 ### Q2：Pod 内多个容器如何共享网络？
 
-**参考答案**：
-
-Pod 内多个容器共享同一个 network namespace。运行时先创建 pause/sandbox 容器，CNI 给这个 sandbox 配网，后续业务容器加入同一个 netns。因此同一 Pod 内容器可以通过 `localhost` 通信，端口也会冲突。Pod 间通信走 CNI，Service 通信走 kube-proxy/IPVS 或 eBPF Service 转发。
+> [!question]- 参考答案（点击展开）
+>
+> Pod 内多个容器共享同一个 network namespace。运行时先创建 pause/sandbox 容器，CNI 给这个 sandbox 配网，后续业务容器加入同一个 netns。因此同一 Pod 内容器可以通过 `localhost` 通信，端口也会冲突。Pod 间通信走 CNI，Service 通信走 kube-proxy/IPVS 或 eBPF Service 转发。
 
 **设计延伸**：
 
@@ -441,9 +441,9 @@ Pod 内多个容器共享同一个 network namespace。运行时先创建 pause/
 
 ### Q3：CRI、CNI、CSI 在 Pod 创建中分别做什么？
 
-**参考答案**：
-
-CRI 是 kubelet 和容器运行时的接口，负责创建 sandbox、拉镜像、创建和启动容器。CNI 由运行时在 sandbox 创建时调用，负责创建网卡、分配 Pod IP、配置路由。CSI 负责持久卷的 attach、stage、publish，把存储挂载到 Pod 目录。
+> [!question]- 参考答案（点击展开）
+>
+> CRI 是 kubelet 和容器运行时的接口，负责创建 sandbox、拉镜像、创建和启动容器。CNI 由运行时在 sandbox 创建时调用，负责创建网卡、分配 Pod IP、配置路由。CSI 负责持久卷的 attach、stage、publish，把存储挂载到 Pod 目录。
 
 **设计延伸**：
 
@@ -468,9 +468,9 @@ CRI 是 kubelet 和容器运行时的接口，负责创建 sandbox、拉镜像�
 
 ### Q1：AI 平台里的 K8s 二开通常做什么？
 
-**参考答案**：
-
-常见方向包括 Operator、调度器扩展、Device Plugin、镜像缓存、模型服务编排、推理任务调度、资源可观测性和成本优化。重点不是写普通业务 CRUD，而是把模型服务、GPU 资源、镜像分发、弹性扩缩和平台稳定性接到 Kubernetes 控制面上。
+> [!question]- 参考答案（点击展开）
+>
+> 常见方向包括 Operator、调度器扩展、Device Plugin、镜像缓存、模型服务编排、推理任务调度、资源可观测性和成本优化。重点不是写普通业务 CRUD，而是把模型服务、GPU 资源、镜像分发、弹性扩缩和平台稳定性接到 Kubernetes 控制面上。
 
 **设计延伸**：
 
@@ -481,18 +481,18 @@ CRI 是 kubelet 和容器运行时的接口，负责创建 sandbox、拉镜像�
 
 ### Q2：如何判断岗位是真 K8s / AI Infra，而不是普通业务开发？
 
-**参考答案**：
-
-要反问团队的核心系统边界：是否维护 Operator、scheduler plugin、device plugin、image cache、model serving controller；是否需要处理 GPU 异构、镜像冷启动、推理调度、K8s 升级和控制器稳定性。如果主要工作是业务接口、页面和数据库 CRUD，那就不是偏底层的 K8s / AI Infra 岗。
-
-**设计延伸：可反问问题**
-
-1. 当前维护哪些 K8s 控制器或调度组件？
-2. GPU 节点规模和卡型是否异构？
-3. 调度优化发生在 kube-scheduler plugin，还是业务侧调度层？
-4. 镜像缓存主要解决冷启动、带宽还是大模型镜像分发？
-5. 是否涉及推理服务调度、embedding pipeline、KV cache 或 batch inference？
-6. 新人前 3 个月主要修 bug，还是参与底层组件设计？
+> [!question]- 参考答案（点击展开）
+>
+> 要反问团队的核心系统边界：是否维护 Operator、scheduler plugin、device plugin、image cache、model serving controller；是否需要处理 GPU 异构、镜像冷启动、推理调度、K8s 升级和控制器稳定性。如果主要工作是业务接口、页面和数据库 CRUD，那就不是偏底层的 K8s / AI Infra 岗。
+>
+> **设计延伸：可反问问题**
+>
+> 1. 当前维护哪些 K8s 控制器或调度组件？
+> 2. GPU 节点规模和卡型是否异构？
+> 3. 调度优化发生在 kube-scheduler plugin，还是业务侧调度层？
+> 4. 镜像缓存主要解决冷启动、带宽还是大模型镜像分发？
+> 5. 是否涉及推理服务调度、embedding pipeline、KV cache 或 batch inference？
+> 6. 新人前 3 个月主要修 bug，还是参与底层组件设计？
 
 ## 模块七：业务场景与系统边界
 
@@ -509,9 +509,9 @@ CRI 是 kubelet 和容器运行时的接口，负责创建 sandbox、拉镜像�
 
 ### Q1：如果让你设计 GPU 峰谷复用，业务指标怎么选？
 
-**参考答案**：
-
-不能只看 QPS。QPS 只能说明请求量，不能说明服务是否还有余量。更合理的判断要结合 P95/P99 延迟、错误率、排队长度、GPU 利用率、显存占用、模型实例数、冷启动时间和业务优先级。只有当在线业务满足 SLO，并且连续一段时间低于回收阈值，才允许把资源借给离线任务。
+> [!question]- 参考答案（点击展开）
+>
+> 不能只看 QPS。QPS 只能说明请求量，不能说明服务是否还有余量。更合理的判断要结合 P95/P99 延迟、错误率、排队长度、GPU 利用率、显存占用、模型实例数、冷启动时间和业务优先级。只有当在线业务满足 SLO，并且连续一段时间低于回收阈值，才允许把资源借给离线任务。
 
 **设计延伸**：
 
@@ -522,9 +522,9 @@ CRI 是 kubelet 和容器运行时的接口，负责创建 sandbox、拉镜像�
 
 ### Q2：在线推理和离线刷库混部，最核心的业务风险是什么？
 
-**参考答案**：
-
-核心风险是离线任务抢占了在线业务的资源余量，导致延迟抖动、错误率升高或扩容来不及。GPU 场景还要关注显存碎片、模型预热、PCIe/NVLink 拓扑、磁盘和网络 IO 抢占。混部系统不能只做调度成功，还要保证在线业务能快速拿回资源。
+> [!question]- 参考答案（点击展开）
+>
+> 核心风险是离线任务抢占了在线业务的资源余量，导致延迟抖动、错误率升高或扩容来不及。GPU 场景还要关注显存碎片、模型预热、PCIe/NVLink 拓扑、磁盘和网络 IO 抢占。混部系统不能只做调度成功，还要保证在线业务能快速拿回资源。
 
 **设计延伸**：
 
@@ -537,9 +537,9 @@ CRI 是 kubelet 和容器运行时的接口，负责创建 sandbox、拉镜像�
 
 ### Q3：如果面试官问“这个项目的业务价值是什么”，怎么回答？
 
-**参考答案**：
-
-可以从资源、成本和稳定性三个角度回答。资源上，提高低峰时段 GPU 利用率；成本上，把原本闲置的在线资源复用于离线任务，减少额外采购或排队等待；稳定性上，通过优先级、抢占、状态机和回滚机制保证在线业务优先。不要只说“提高利用率”，还要说明不影响在线 SLO 是系统边界。
+> [!question]- 参考答案（点击展开）
+>
+> 可以从资源、成本和稳定性三个角度回答。资源上，提高低峰时段 GPU 利用率；成本上，把原本闲置的在线资源复用于离线任务，减少额外采购或排队等待；稳定性上，通过优先级、抢占、状态机和回滚机制保证在线业务优先。不要只说“提高利用率”，还要说明不影响在线 SLO 是系统边界。
 
 **设计延伸**：
 
@@ -549,17 +549,17 @@ CRI 是 kubelet 和容器运行时的接口，负责创建 sandbox、拉镜像�
 
 ### Q4：业务方说“晚上 QPS 低，把 GPU 都拿走”，你会怎么反问？
 
-**参考答案**：
-
-要先确认业务低峰是否稳定、是否有突发流量、是否有定时任务、告警回滚标准是什么、资源归还需要多久、离线任务能否被中断。QPS 低不等于资源一定可回收，因为模型加载、缓存命中、突发流量和下游依赖也会影响在线稳定性。
-
-**设计延伸：可反问问题**
-
-1. 在线服务的 P99 和错误率 SLO 是多少？
-2. 低峰窗口是否固定，是否存在突发活动或批量请求？
-3. 抢占离线任务后，GPU 多久能归还给在线业务？
-4. 模型重新加载和预热需要多久？
-5. 离线任务是否支持 checkpoint 和幂等重试？
+> [!question]- 参考答案（点击展开）
+>
+> 要先确认业务低峰是否稳定、是否有突发流量、是否有定时任务、告警回滚标准是什么、资源归还需要多久、离线任务能否被中断。QPS 低不等于资源一定可回收，因为模型加载、缓存命中、突发流量和下游依赖也会影响在线稳定性。
+>
+> **设计延伸：可反问问题**
+>
+> 1. 在线服务的 P99 和错误率 SLO 是多少？
+> 2. 低峰窗口是否固定，是否存在突发活动或批量请求？
+> 3. 抢占离线任务后，GPU 多久能归还给在线业务？
+> 4. 模型重新加载和预热需要多久？
+> 5. 离线任务是否支持 checkpoint 和幂等重试？
 
 ## 模块八：操作系统与容器底层
 
@@ -576,9 +576,9 @@ CRI 是 kubelet 和容器运行时的接口，负责创建 sandbox、拉镜像�
 
 ### Q1：容器和虚拟机的本质区别是什么？
 
-**参考答案**：
-
-容器不是模拟一台完整机器，而是在同一个宿主机内核上用 namespace 隔离进程看到的视图，用 cgroup 限制资源，再通过 rootfs 和 union filesystem 提供文件系统环境。虚拟机通常有独立 guest kernel，隔离更强但启动和资源开销更大。
+> [!question]- 参考答案（点击展开）
+>
+> 容器不是模拟一台完整机器，而是在同一个宿主机内核上用 namespace 隔离进程看到的视图，用 cgroup 限制资源，再通过 rootfs 和 union filesystem 提供文件系统环境。虚拟机通常有独立 guest kernel，隔离更强但启动和资源开销更大。
 
 **设计延伸**：
 
@@ -589,9 +589,9 @@ CRI 是 kubelet 和容器运行时的接口，负责创建 sandbox、拉镜像�
 
 ### Q2：Pod 里的 pause 容器有什么作用？
 
-**参考答案**：
-
-pause 容器是 Pod sandbox 的承载进程。运行时先创建 sandbox，再把业务容器加入同一个 network namespace。这样 Pod 内多个容器共享同一个 IP、端口空间和 localhost。pause 还提供一个稳定的 namespace 锚点，避免业务容器重启时 Pod 网络命名空间被销毁。
+> [!question]- 参考答案（点击展开）
+>
+> pause 容器是 Pod sandbox 的承载进程。运行时先创建 sandbox，再把业务容器加入同一个 network namespace。这样 Pod 内多个容器共享同一个 IP、端口空间和 localhost。pause 还提供一个稳定的 namespace 锚点，避免业务容器重启时 Pod 网络命名空间被销毁。
 
 **设计延伸**：
 
@@ -601,9 +601,9 @@ pause 容器是 Pod sandbox 的承载进程。运行时先创建 sandbox，再�
 
 ### Q3：GPU 是怎么被放进容器里的？
 
-**参考答案**：
-
-GPU 最终是宿主机上的设备文件和驱动能力。K8s 通过 Device Plugin 把 GPU 作为扩展资源上报；Pod 被调度后，kubelet 调用 `Allocate` 获取设备分配结果；运行时再把 `/dev/nvidia*`、驱动库、环境变量或 CDI 设备注入容器，同时通过 device cgroup 控制容器能访问哪些设备。
+> [!question]- 参考答案（点击展开）
+>
+> GPU 最终是宿主机上的设备文件和驱动能力。K8s 通过 Device Plugin 把 GPU 作为扩展资源上报；Pod 被调度后，kubelet 调用 `Allocate` 获取设备分配结果；运行时再把 `/dev/nvidia*`、驱动库、环境变量或 CDI 设备注入容器，同时通过 device cgroup 控制容器能访问哪些设备。
 
 **设计延伸**：
 
@@ -613,9 +613,9 @@ GPU 最终是宿主机上的设备文件和驱动能力。K8s 通过 Device Plug
 
 ### Q4：容器内进程收到 SIGTERM 后，K8s 是怎么终止 Pod 的？
 
-**参考答案**：
-
-删除 Pod 时，kubelet 先执行 `preStop`，然后向容器主进程发送 SIGTERM，并等待 `terminationGracePeriodSeconds`。如果超时还没退出，再发送 SIGKILL。应用要正确处理 SIGTERM，停止接收新请求、等待 in-flight 请求完成、释放资源后退出。
+> [!question]- 参考答案（点击展开）
+>
+> 删除 Pod 时，kubelet 先执行 `preStop`，然后向容器主进程发送 SIGTERM，并等待 `terminationGracePeriodSeconds`。如果超时还没退出，再发送 SIGKILL。应用要正确处理 SIGTERM，停止接收新请求、等待 in-flight 请求完成、释放资源后退出。
 
 **设计延伸**：
 
@@ -639,9 +639,9 @@ GPU 最终是宿主机上的设备文件和驱动能力。K8s 通过 Device Plug
 
 ### Q1：Pod 访问另一个节点上的 Pod，网络路径是什么？
 
-**参考答案**：
-
-容器流量先从 Pod netns 的 eth0 出来，经过 veth pair 到宿主机侧，再由 CNI 配置的路由或隧道转发到目标节点。目标节点解封装或路由后，把包送进目标 Pod 的 veth。不同 CNI 数据面不同：Flannel VXLAN 走 overlay 封装，Calico 常见模式走三层路由或 BGP，Cilium 可以用 eBPF 接管转发和策略。
+> [!question]- 参考答案（点击展开）
+>
+> 容器流量先从 Pod netns 的 eth0 出来，经过 veth pair 到宿主机侧，再由 CNI 配置的路由或隧道转发到目标节点。目标节点解封装或路由后，把包送进目标 Pod 的 veth。不同 CNI 数据面不同：Flannel VXLAN 走 overlay 封装，Calico 常见模式走三层路由或 BGP，Cilium 可以用 eBPF 接管转发和策略。
 
 **设计延伸**：
 
@@ -651,9 +651,9 @@ GPU 最终是宿主机上的设备文件和驱动能力。K8s 通过 Device Plug
 
 ### Q2：Pod 访问 Service 的完整路径是什么？
 
-**参考答案**：
-
-Pod 先通过 DNS 把 Service name 解析成 ClusterIP，然后访问 ClusterIP。节点上的 kube-proxy 使用 iptables 或 IPVS 把 ClusterIP 转发到某个 Endpoint Pod；如果是 Cilium 等 eBPF 数据面，Service 转发可以由 eBPF 程序完成。Service 解决的是稳定入口和负载均衡，不是给 Pod 配 IP。
+> [!question]- 参考答案（点击展开）
+>
+> Pod 先通过 DNS 把 Service name 解析成 ClusterIP，然后访问 ClusterIP。节点上的 kube-proxy 使用 iptables 或 IPVS 把 ClusterIP 转发到某个 Endpoint Pod；如果是 Cilium 等 eBPF 数据面，Service 转发可以由 eBPF 程序完成。Service 解决的是稳定入口和负载均衡，不是给 Pod 配 IP。
 
 **设计延伸**：
 
@@ -666,9 +666,9 @@ Pod 先通过 DNS 把 Service name 解析成 ClusterIP，然后访问 ClusterIP�
 
 ### Q3：NetworkPolicy 为什么创建了不一定生效？
 
-**参考答案**：
-
-NetworkPolicy 只是 Kubernetes API 对象，真正执行要依赖支持策略的 CNI。比如 Calico、Cilium 支持网络策略，而 Flannel 默认不支持完整 NetworkPolicy。如果 CNI 不实现策略控制，创建 policy 也不会产生预期隔离效果。
+> [!question]- 参考答案（点击展开）
+>
+> NetworkPolicy 只是 Kubernetes API 对象，真正执行要依赖支持策略的 CNI。比如 Calico、Cilium 支持网络策略，而 Flannel 默认不支持完整 NetworkPolicy。如果 CNI 不实现策略控制，创建 policy 也不会产生预期隔离效果。
 
 **设计延伸**：
 
@@ -678,9 +678,9 @@ NetworkPolicy 只是 Kubernetes API 对象，真正执行要依赖支持策略�
 
 ### Q4：线上 Pod 访问 Service 偶发超时，你会怎么排查？
 
-**参考答案**：
-
-先确定是 DNS、Service 转发、Pod 网络还是应用问题。按链路排查：确认 CoreDNS 解析是否稳定；检查 Service selector 和 EndpointSlice 是否正确；看 kube-proxy/IPVS/eBPF 状态；进入 Pod netns 测试目标 Pod IP 是否可达；检查 CNI 日志、节点路由、conntrack 是否打满、MTU 是否异常；最后结合应用日志和延迟指标判断是否是服务端处理慢。
+> [!question]- 参考答案（点击展开）
+>
+> 先确定是 DNS、Service 转发、Pod 网络还是应用问题。按链路排查：确认 CoreDNS 解析是否稳定；检查 Service selector 和 EndpointSlice 是否正确；看 kube-proxy/IPVS/eBPF 状态；进入 Pod netns 测试目标 Pod IP 是否可达；检查 CNI 日志、节点路由、conntrack 是否打满、MTU 是否异常；最后结合应用日志和延迟指标判断是否是服务端处理慢。
 
 **设计延伸**：
 

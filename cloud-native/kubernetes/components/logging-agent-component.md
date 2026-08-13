@@ -260,20 +260,30 @@ df -h
 
 ### Q: `kubectl logs` 和日志平台的数据源一样吗？
 
-A: 都通常来自容器 stdout/stderr 在节点上的日志文件，但 `kubectl logs` 由 kubelet/runtime 提供读取，日志平台由 logging agent 采集后转发。
+> [!question]- 参考答案（点击展开）
+>
+> 都通常来自容器 stdout/stderr 在节点上的日志文件，但 `kubectl logs` 由 kubelet/runtime 提供读取，日志平台由 logging agent 采集后转发。
 
 ### Q: logging agent 为什么常用 DaemonSet？
 
-A: 因为容器日志文件在每个节点本地，DaemonSet 能保证每个节点都有一个采集进程。
+> [!question]- 参考答案（点击展开）
+>
+> 因为容器日志文件在每个节点本地，DaemonSet 能保证每个节点都有一个采集进程。
 
 ### Q: 日志丢失常见原因？
 
-A: agent 未运行、文件 offset 错误、缓冲区满、后端不可用、限速策略、节点磁盘压力或日志轮转配置不当。
+> [!question]- 参考答案（点击展开）
+>
+> agent 未运行、文件 offset 错误、缓冲区满、后端不可用、限速策略、节点磁盘压力或日志轮转配置不当。
 
 ### Q: 为什么要给日志补 Kubernetes metadata？
 
-A: 原始日志只包含文本。补 namespace、pod、container、label 后，才能按服务、环境、版本和租户检索。
+> [!question]- 参考答案（点击展开）
+>
+> 原始日志只包含文本。补 namespace、pod、container、label 后，才能按服务、环境、版本和租户检索。
 
 ### Q: 日志系统和 Kubernetes 控制面是什么关系？
 
-A: 日志系统通常是 addon，不参与核心调度和运行链路，但对排障、审计和可观测性非常重要。
+> [!question]- 参考答案（点击展开）
+>
+> 日志系统通常是 addon，不参与核心调度和运行链路，但对排障、审计和可观测性非常重要。

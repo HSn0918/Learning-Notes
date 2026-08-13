@@ -185,12 +185,18 @@ flowchart TD
 
 ### Q：LLM 为什么不能直接处理字符串？
 
-A：GPU 上的神经网络执行数值计算。Tokenizer 先把字符串转换为 Token IDs，Embedding Table 再把 ID 映射成连续向量，后续 Transformer 才能对这些向量做矩阵运算。
+> [!question]- 参考答案（点击展开）
+>
+> GPU 上的神经网络执行数值计算。Tokenizer 先把字符串转换为 Token IDs，Embedding Table 再把 ID 映射成连续向量，后续 Transformer 才能对这些向量做矩阵运算。
 
 ### Q：Attention 中 Q、K、V 的直觉是什么？
 
-A：Q 表示当前位置的查询，K 表示上下文中每个位置可被匹配的索引，V 表示真正被聚合的信息。Q 与 K 的相似度决定对每个 V 赋予多大权重。
+> [!question]- 参考答案（点击展开）
+>
+> Q 表示当前位置的查询，K 表示上下文中每个位置可被匹配的索引，V 表示真正被聚合的信息。Q 与 K 的相似度决定对每个 V 赋予多大权重。
 
 ### Q：训练与推理的核心区别是什么？
 
-A：训练包含 Forward、Loss、Backward 和 Optimizer 更新，目标是改变参数；推理通常只执行 Forward 与自回归 Decode，目标是使用固定参数生成结果。
+> [!question]- 参考答案（点击展开）
+>
+> 训练包含 Forward、Loss、Backward 和 Optimizer 更新，目标是改变参数；推理通常只执行 Forward 与自回归 Decode，目标是使用固定参数生成结果。

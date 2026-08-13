@@ -268,20 +268,30 @@ curl -vk -H 'Host: <host>' https://<address>/<path>
 
 ### Q: Ingress 和 Ingress Controller 区别？
 
-A: Ingress 是声明式路由规则；Ingress Controller 是 watch 规则并配置真实代理或云负载均衡器的控制器。
+> [!question]- 参考答案（点击展开）
+>
+> Ingress 是声明式路由规则；Ingress Controller 是 watch 规则并配置真实代理或云负载均衡器的控制器。
 
 ### Q: Ingress 和 Service 的关系？
 
-A: Ingress 负责七层 host/path 路由，最终通常转发到 Service；Service 再转发到后端 Pod。
+> [!question]- 参考答案（点击展开）
+>
+> Ingress 负责七层 host/path 路由，最终通常转发到 Service；Service 再转发到后端 Pod。
 
 ### Q: 为什么 Ingress 创建后没有外部地址？
 
-A: 可能没有安装对应 controller、IngressClass 不匹配、云负载均衡器创建失败或 controller RBAC/权限不足。
+> [!question]- 参考答案（点击展开）
+>
+> 可能没有安装对应 controller、IngressClass 不匹配、云负载均衡器创建失败或 controller RBAC/权限不足。
 
 ### Q: 访问 Ingress 返回 503 常见原因？
 
-A: 后端 Service 没有 ready endpoint，可能是 selector 不匹配、Pod 未 ready、端口配置错误。
+> [!question]- 参考答案（点击展开）
+>
+> 后端 Service 没有 ready endpoint，可能是 selector 不匹配、Pod 未 ready、端口配置错误。
 
 ### Q: Gateway API 和 Ingress 什么关系？
 
-A: Gateway API 是更结构化、更可扩展的新一代流量入口 API，Ingress 是较早且简单的 HTTP 路由 API。
+> [!question]- 参考答案（点击展开）
+>
+> Gateway API 是更结构化、更可扩展的新一代流量入口 API，Ingress 是较早且简单的 HTTP 路由 API。

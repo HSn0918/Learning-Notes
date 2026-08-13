@@ -238,28 +238,42 @@ rg -n 'go:linkname|runtime\\.map|hmap|bmap|unsafe\\.Pointer' --glob '*.go'
 
 ### Q: Go map 新旧实现最大的区别是什么？
 
-A: 旧实现是 `hmap/bmap/overflow bucket`，冲突主要通过 bucket 链解决，并用 `oldbuckets/nevacuate` 渐进迁移。Go 1.24+ 新实现是 Swiss Table 风格，用 `Map/Table/Group/Control word/Directory`，group 内用 H2 control byte 快速过滤，table 层用 open addressing 和 probing，顶层用 extendible hashing 控制 grow 粒度。
+> [!question]- 参考答案（点击展开）
+>
+> 旧实现是 `hmap/bmap/overflow bucket`，冲突主要通过 bucket 链解决，并用 `oldbuckets/nevacuate` 渐进迁移。Go 1.24+ 新实现是 Swiss Table 风格，用 `Map/Table/Group/Control word/Directory`，group 内用 H2 control byte 快速过滤，table 层用 open addressing 和 probing，顶层用 extendible hashing 控制 grow 粒度。
 
 ### Q: 新 map 为什么比旧 map 更关注 control word？
 
-A: control word 把 8 个 slot 的状态和 H2 hash 放在紧凑元数据中。查找时可以一次比较一个 group 的多个 H2，减少逐 slot key 比较和随机访问，从而改善局部性。
+> [!question]- 参考答案（点击展开）
+>
+> control word 把 8 个 slot 的状态和 H2 hash 放在紧凑元数据中。查找时可以一次比较一个 group 的多个 H2，减少逐 slot key 比较和随机访问，从而改善局部性。
 
 ### Q: 旧 map 的 overflow bucket 问题是什么？
 
-A: 冲突多时 overflow chain 变长，查找要追指针，局部性变差，尾延迟上升。same-size grow 可以清理 overflow，但实现状态更复杂。
+> [!question]- 参考答案（点击展开）
+>
+> 冲突多时 overflow chain 变长，查找要追指针，局部性变差，尾延迟上升。same-size grow 可以清理 overflow，但实现状态更复杂。
 
 ### Q: 新 map 为什么还需要多 table？
 
-A: 单个 Swiss Table 扩容需要重排整个 table。Go 用多个 table 加 directory，把大 map 拆成较小 table，单次只 grow 或 split 一个 table，控制延迟。
+> [!question]- 参考答案（点击展开）
+>
+> 单个 Swiss Table 扩容需要重排整个 table。Go 用多个 table 加 directory，把大 map 拆成较小 table，单次只 grow 或 split 一个 table，控制延迟。
 
 ### Q: 新 map 是否改变了 map 的并发安全语义？
 
-A: 没有。普通 map 仍然不能并发读写。新实现有 `writing` 检测并发写，但那只是 fatal 检测，不是同步。工程上仍要用锁、单 owner goroutine 或并发容器。
+> [!question]- 参考答案（点击展开）
+>
+> 没有。普通 map 仍然不能并发读写。新实现有 `writing` 检测并发写，但那只是 fatal 检测，不是同步。工程上仍要用锁、单 owner goroutine 或并发容器。
 
 ### Q: 新 map 是否会自动缩容？
 
-A: 不会。delete 不保证释放底层 table 或降低容量。长生命周期大 map 删除大量 key 后，仍建议重建 map 或做缓存淘汰。
+> [!question]- 参考答案（点击展开）
+>
+> 不会。delete 不保证释放底层 table 或降低容量。长生命周期大 map 删除大量 key 后，仍建议重建 map 或做缓存淘汰。
 
 ### Q: 面试官问 hmap 怎么办？
 
-A: 先说明版本边界：`hmap/bmap` 是 Go 1.23 及更早的经典实现；再按旧模型回答 bucket、tophash、overflow、evacuation；最后补充当前 Go 1.24+ 已迁移到 `internal/runtime/maps` 的 Swiss Table 实现。
+> [!question]- 参考答案（点击展开）
+>
+> 先说明版本边界：`hmap/bmap` 是 Go 1.23 及更早的经典实现；再按旧模型回答 bucket、tophash、overflow、evacuation；最后补充当前 Go 1.24+ 已迁移到 `internal/runtime/maps` 的 Swiss Table 实现。

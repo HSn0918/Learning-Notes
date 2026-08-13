@@ -225,32 +225,48 @@ spec:
 
 ### Q: Kubernetes 1.36 的 PodGroup 是什么？解决什么问题？
 
-A: PodGroup 是 `scheduling.k8s.io/v1alpha2` 的 Alpha API，用来表达一组 Pod 的调度语义。它解决分布式训练、MPI、Spark 等 workload 的「全有或全无」诉求：组内至少 `MinCount` 个 Pod 同时可调度并通过 Permit，才允许进入绑定。
+> [!question]- 参考答案（点击展开）
+>
+> PodGroup 是 `scheduling.k8s.io/v1alpha2` 的 Alpha API，用来表达一组 Pod 的调度语义。它解决分布式训练、MPI、Spark 等 workload 的「全有或全无」诉求：组内至少 `MinCount` 个 Pod 同时可调度并通过 Permit，才允许进入绑定。
 
 ### Q: 1.36.1 的调度入口是不是 `NextEntity()`？
 
-A: 不是。`v1.36.1` 真实代码仍是 `sched.NextPod()`。如果 Pod 开启 `GenericWorkload` 且带 `spec.schedulingGroup`，`ScheduleOne` 调 `podGroupInfoForPod()` 聚合同组未调度 Pod，再进入 `scheduleOnePodGroup()`。`NextEntity()` 更像后续演进方向或文章里的抽象化描述。
+> [!question]- 参考答案（点击展开）
+>
+> 不是。`v1.36.1` 真实代码仍是 `sched.NextPod()`。如果 Pod 开启 `GenericWorkload` 且带 `spec.schedulingGroup`，`ScheduleOne` 调 `podGroupInfoForPod()` 聚合同组未调度 Pod，再进入 `scheduleOnePodGroup()`。`NextEntity()` 更像后续演进方向或文章里的抽象化描述。
 
 ### Q: PodGroup 调度为什么要把 `schedulingAlgorithm` 和 `prepareForBindingCycle` 拆开？
 
-A: 因为整组调度需要先规划，不能边规划边真实绑定。`schedulingAlgorithm` 只算节点；`assumeAndReserve` 可以在 snapshot 里临时占位；整组成功后才调用真实 `prepareForBindingCycle` 进入 Permit / Bind。这个拆分让单 Pod 和 PodGroup 复用同一套 Filter / Score / Reserve / Permit / Bind 逻辑。
+> [!question]- 参考答案（点击展开）
+>
+> 因为整组调度需要先规划，不能边规划边真实绑定。`schedulingAlgorithm` 只算节点；`assumeAndReserve` 可以在 snapshot 里临时占位；整组成功后才调用真实 `prepareForBindingCycle` 进入 Permit / Bind。这个拆分让单 Pod 和 PodGroup 复用同一套 Filter / Score / Reserve / Permit / Bind 逻辑。
 
 ### Q: `unreserveAndForget` 在 PodGroup 场景为什么不能直接 `Cache.ForgetPod()`？
 
-A: PodGroup 规划阶段的 assume 只是快照模拟，不应该污染真实 scheduler cache。`state.IsPodGroupSchedulingCycle()` 为 true 时，`unreserveAndForget` 只从 `nodeInfoSnapshot` 撤销 Pod，并恢复 nominated 信息；普通单 Pod 才从真实 cache 里 forget。
+> [!question]- 参考答案（点击展开）
+>
+> PodGroup 规划阶段的 assume 只是快照模拟，不应该污染真实 scheduler cache。`state.IsPodGroupSchedulingCycle()` 为 true 时，`unreserveAndForget` 只从 `nodeInfoSnapshot` 撤销 Pod，并恢复 nominated 信息；普通单 Pod 才从真实 cache 里 forget。
 
 ### Q: gang scheduling 在 1.36.1 由哪些扩展点保证？
 
-A: 主要是 `PreEnqueue` 和 `Permit`。`PreEnqueue` 防止 PodGroup 不存在或可见 Pod 数小于 `MinCount` 的 Pod 进入 activeQ；`Permit` 在绑定前卡住各 Pod，直到已 assume / scheduled 的同组 Pod 达到 `MinCount`，再 Allow 所有 waiting pod。
+> [!question]- 参考答案（点击展开）
+>
+> 主要是 `PreEnqueue` 和 `Permit`。`PreEnqueue` 防止 PodGroup 不存在或可见 Pod 数小于 `MinCount` 的 Pod 进入 activeQ；`Permit` 在绑定前卡住各 Pod，直到已 assume / scheduled 的同组 Pod 达到 `MinCount`，再 Allow 所有 waiting pod。
 
 ### Q: TopologyAwareWorkloadScheduling 做了什么？
 
-A: 它把整组调度从「单个隐式 placement」升级为「多个候选 placement」。插件先生成 placement，调度器在每个 placement 上跑整组模拟，找出可行方案；多个方案都可行时再用 PlacementScore 选最优。典型场景是要求整组 Pod 落在同一个 rack / zone 等拓扑域。
+> [!question]- 参考答案（点击展开）
+>
+> 它把整组调度从「单个隐式 placement」升级为「多个候选 placement」。插件先生成 placement，调度器在每个 placement 上跑整组模拟，找出可行方案；多个方案都可行时再用 PlacementScore 选最优。典型场景是要求整组 Pod 落在同一个 rack / zone 等拓扑域。
 
 ### Q: WorkloadAwarePreemption 和普通抢占有什么差异？
 
-A: 普通抢占是单 Pod PostFilter。Workload-aware preemption 用 `PodGroupPostFilter`，先备份 snapshot，假设移除一批 victim 后重新跑整组算法，确认整组可行后再让 Pod 带 nominated 信息回队列等待抢占完成。它评估的是整组可行性，不是单个 Pod 的可行性。
+> [!question]- 参考答案（点击展开）
+>
+> 普通抢占是单 Pod PostFilter。Workload-aware preemption 用 `PodGroupPostFilter`，先备份 snapshot，假设移除一批 victim 后重新跑整组算法，确认整组可行后再让 Pod 带 nominated 信息回队列等待抢占完成。它评估的是整组可行性，不是单个 Pod 的可行性。
 
 ### Q: 原生 PodGroup 是否可以替代 Volcano？
 
-A: 不能简单替代。原生 PodGroup 是 1.36 Alpha，优势是和 kube-scheduler 原生框架收敛；Volcano 是独立 batch scheduler，Session / Action / Plugin、Queue、公平、回收、Job 语义更成熟。生产选择取决于是否需要完整 batch 调度能力，而不是只看 gang。
+> [!question]- 参考答案（点击展开）
+>
+> 不能简单替代。原生 PodGroup 是 1.36 Alpha，优势是和 kube-scheduler 原生框架收敛；Volcano 是独立 batch scheduler，Session / Action / Plugin、Queue、公平、回收、Job 语义更成熟。生产选择取决于是否需要完整 batch 调度能力，而不是只看 gang。

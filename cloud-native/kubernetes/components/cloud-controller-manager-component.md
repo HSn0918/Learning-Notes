@@ -242,20 +242,30 @@ kubectl -n kube-system logs deploy/cloud-controller-manager --tail=300
 
 ### Q: 为什么需要 cloud-controller-manager？
 
-A: Kubernetes 需要和云厂商 API 协作，但不应该把每个云厂商实现都放进核心控制器。cloud-controller-manager 把云相关逻辑外置，降低核心组件耦合。
+> [!question]- 参考答案（点击展开）
+>
+> Kubernetes 需要和云厂商 API 协作，但不应该把每个云厂商实现都放进核心控制器。cloud-controller-manager 把云相关逻辑外置，降低核心组件耦合。
 
 ### Q: `LoadBalancer` Service 是谁创建云负载均衡器？
 
-A: 通常由 cloud-controller-manager 的 ServiceController watch Service 后调用云 API 创建，并把外部地址写回 Service status。
+> [!question]- 参考答案（点击展开）
+>
+> 通常由 cloud-controller-manager 的 ServiceController watch Service 后调用云 API 创建，并把外部地址写回 Service status。
 
 ### Q: cloud-controller-manager 和 CSI 的边界？
 
-A: cloud-controller-manager 偏 Node、Route、LoadBalancer；CSI 偏卷的创建、attach、mount、扩容和快照。
+> [!question]- 参考答案（点击展开）
+>
+> cloud-controller-manager 偏 Node、Route、LoadBalancer；CSI 偏卷的创建、attach、mount、扩容和快照。
 
 ### Q: 为什么树内 cloud provider 被逐步移除？
 
-A: 树内实现让 Kubernetes 主仓承担大量云厂商代码和发布节奏耦合。树外 provider 可以独立迭代、测试和发布。
+> [!question]- 参考答案（点击展开）
+>
+> 树内实现让 Kubernetes 主仓承担大量云厂商代码和发布节奏耦合。树外 provider 可以独立迭代、测试和发布。
 
 ### Q: 排查 LoadBalancer Pending 看什么？
 
-A: 先看 Service event，再看 cloud-controller-manager 日志和云侧权限、quota、子网、安全组、负载均衡器配额。
+> [!question]- 参考答案（点击展开）
+>
+> 先看 Service event，再看 cloud-controller-manager 日志和云侧权限、quota、子网、安全组、负载均衡器配额。
